@@ -1,0 +1,15 @@
+services:
+  verify:
+    profiles: [tools]
+    build:
+      context: .
+      target: development
+    volumes:
+      - .:/src:ro
+      - go-build:/go-cache
+      - go-mod:/go/pkg/mod
+    command: ["go", "test", "-count=1", "./..."]
+
+volumes:
+  go-build:
+  go-mod:

@@ -13,6 +13,7 @@
 - 仕様検討・実装・レビューの前に [文書一覧](docs/README.md) を読み、変更対象に対応する仕様書と、適用される採用済み ADR を読む。リンクの存在だけで本文を読んだと扱わない。
 - データ保存、レビュー収集、分析、レポート、ジョブの変更では [データ・調査仕様](docs/specs/data-and-research.md) を読む。公開 UI、認証、利用期限、実行制限、README の変更では [公開デモ仕様](docs/specs/public-demo.md) を読む。
 - 実行環境、Docker、CI の検証環境、Render 配置の変更では [実行・配置方針の ADR](docs/adr/0001-runtime-and-deployment.md) を読む。追加の ADR は文書一覧の適用範囲と状態を確認する。
+- healthz、PORT、HTTP サーバーの待ち受け・期限・終了処理の変更では [最小 HTTP サーバー仕様](docs/specs/http-server.md) を読む。
 - 運用規約の検査、フック、Issue・PR テンプレート、CI の変更では [開発手順と規約検査](docs/development.md) と [ADR-0002](docs/adr/0002-conventions-tooling.md) を読む。
 - Release の作成・公開・検査の変更では [Release 手順](docs/releases.md) と ADR-0002 を読む。他のプロジェクトへの移植では [移植ガイド](docs/reuse.md) も読む。
 - アプリケーション要件の詳細は仕様書、採用理由と比較・制約は ADR を更新し、本書へ詳細を重複させない。本書には作業手順、参照条件、検証の義務を記述する。

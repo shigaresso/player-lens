@@ -1,8 +1,14 @@
 """Release の作成・公開を事前検査に接続する。"""
 
+import argparse
 import re
+import subprocess
+import sys
+from pathlib import Path
 
 import conventions
+from github import send
+from validate import github_api
 
 
 SECTIONS = ('変更内容', '利用方法', '依存環境', '制約', '検証')
@@ -124,3 +130,36 @@ def publish(repo, tag, target, *, api, send, check_only=False):
     ):
         raise ValueError('公開後の Release またはタグの対象を確認できない')
     return result
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description='事前検査後に正式版の Draft Release を作成・公開する')
+    commands = parser.add_subparsers(dest='mode', required=True)
+    for mode in ('create', 'publish'):
+        command = commands.add_parser(mode)
+        command.add_argument('--repo', required=True)
+        command.add_argument('--tag', required=True)
+        command.add_argument('--target', required=True)
+        command.add_argument('--check-only', action='store_true')
+        if mode == 'create':
+            command.add_argument('--title', required=True)
+            command.add_argument('--body-file', required=True)
+    args = parser.parse_args(argv)
+    try:
+        if args.mode == 'create':
+            body = Path(args.body_file).read_text(encoding='utf-8')
+            result = create(args.repo, args.tag, args.target, args.title, body,
+                            api=github_api, send=send, check_only=args.check_only)
+        else:
+            result = publish(args.repo, args.tag, args.target,
+                             api=github_api, send=send, check_only=args.check_only)
+    except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as error:
+        print(f'Release 検査・作成・公開のいずれかが失敗した: {error}', file=sys.stderr)
+        print('自動再試行しない。書き込みや公開後確認の失敗では GitHub の状態を確認する。', file=sys.stderr)
+        return 1
+    print('Release 検査が成功した（書き込みなし）' if args.check_only else result.strip() or 'Release の確認が成功した')
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

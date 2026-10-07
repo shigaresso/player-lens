@@ -1,6 +1,11 @@
 import unittest
 import copy
+import json
+import os
 import subprocess
+import sys
+import tempfile
+from pathlib import Path
 from unittest.mock import Mock
 
 import release
@@ -338,6 +343,118 @@ class PublicationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'タグ'):
             self.publish()
         self.send.assert_called_once()
+
+
+class CliTests(unittest.TestCase):
+    def setUp(self):
+        temp = tempfile.TemporaryDirectory(prefix='player lens release ')
+        self.addCleanup(temp.cleanup)
+        self.folder = Path(temp.name)
+        self.body_file = self.folder / 'release notes.md'
+        self.body_file.write_text(BODY, encoding='utf-8')
+        self.record = self.folder / 'calls.jsonl'
+        self.state = self.folder / 'state.json'
+        self.state.write_text(json.dumps({'releases': [], 'tags': []}))
+        fake = self.folder / 'gh'
+        fake.write_text(f'#!{sys.executable}\n' + '''import json, os, sys
+from pathlib import Path
+args = sys.argv[1:]
+body = sys.stdin.read() if '--notes-file=-' in args else None
+with open(os.environ['RELEASE_TEST_RECORD'], 'a') as file:
+    file.write(json.dumps({'args': args, 'body': body}) + '\\n')
+path = Path(os.environ['RELEASE_TEST_STATE'])
+state = json.loads(path.read_text())
+sha = 'a' * 40
+if args[0] == 'api':
+    endpoint = args[3]
+    if '/releases?' in endpoint:
+        result = [state['releases']]
+    elif '/matching-refs/' in endpoint:
+        result = [state['tags']]
+    elif '/git/ref/heads/main' in endpoint:
+        result = {'object': {'sha': sha}}
+    elif '/actions/workflows/' in endpoint:
+        result = {'workflow_runs': [{'id': 7, 'head_sha': sha, 'head_branch': 'main', 'event': 'push', 'status': 'completed', 'conclusion': 'success'}]}
+    elif '/jobs?' in endpoint:
+        result = {'total_count': 1, 'jobs': [{'name': 'verify', 'status': 'completed', 'conclusion': 'success'}]}
+    else:
+        sys.exit(2)
+    print(json.dumps(result))
+elif args[:2] == ['release', 'create']:
+    title = next(arg.removeprefix('--title=') for arg in args if arg.startswith('--title='))
+    state['releases'] = [{'id': 9, 'tag_name': 'v0.0.1', 'target_commitish': sha, 'name': title, 'body': body, 'draft': True, 'prerelease': False}]
+    path.write_text(json.dumps(state))
+    print('https://github.com/example/project/releases/tag/v0.0.1')
+elif args[:2] == ['release', 'edit']:
+    state['releases'][0]['draft'] = False
+    state['tags'] = [{'ref': 'refs/tags/v0.0.1', 'object': {'type': 'commit', 'sha': sha}}]
+    path.write_text(json.dumps(state))
+else:
+    sys.exit(3)
+''', encoding='utf-8')
+        fake.chmod(0o755)
+        self.env = {**os.environ, 'PATH': f'{self.folder}:{os.environ["PATH"]}',
+                    'RELEASE_TEST_RECORD': str(self.record), 'RELEASE_TEST_STATE': str(self.state)}
+
+    def cli(self, mode='create', *extra):
+        args = [sys.executable, release.__file__, mode, '--repo', REPO,
+                '--tag', TAG, '--target', SHA]
+        if mode == 'create':
+            args.extend(['--title=開発基盤を公開した $(echo test)', '--body-file', str(self.body_file)])
+        return subprocess.run([*args, *extra], capture_output=True, text=True,
+                              env=self.env, timeout=10)
+
+    def calls(self):
+        return [json.loads(line) for line in self.record.read_text().splitlines()]
+
+    def test_create_passes_exact_notes_and_title_without_shell(self):
+        result = self.cli()
+        self.assertEqual(0, result.returncode, result.stderr)
+        calls = self.calls()
+        self.assertEqual(['release', 'create'], calls[-1]['args'][:2])
+        self.assertEqual(BODY, calls[-1]['body'])
+        self.assertIn('--title=開発基盤を公開した $(echo test)', calls[-1]['args'])
+        self.assertIn('--draft', calls[-1]['args'])
+        self.assertIn(f'--target={SHA}', calls[-1]['args'])
+        self.assertTrue(all(call['args'][:3] == ['api', '--method', 'GET'] for call in calls[:-1]))
+
+    def test_publish_reads_saved_draft_and_confirms_tag(self):
+        self.assertEqual(0, self.cli().returncode)
+        self.record.unlink()
+        result = self.cli('publish')
+        self.assertEqual(0, result.returncode, result.stderr)
+        writes = [call for call in self.calls() if call['args'][0] != 'api']
+        self.assertEqual(1, len(writes))
+        self.assertEqual(['release', 'edit'], writes[0]['args'][:2])
+        self.assertIn('--draft=false', writes[0]['args'])
+        self.assertFalse(json.loads(self.state.read_text())['releases'][0]['draft'])
+
+    def test_cli_check_only_is_read_only_for_both_operations(self):
+        result = self.cli('create', '--check-only')
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn('書き込みなし', result.stdout)
+        self.assertTrue(all(call['args'][:3] == ['api', '--method', 'GET'] for call in self.calls()))
+        self.assertEqual(0, self.cli().returncode)
+        self.record.unlink()
+        result = self.cli('publish', '--check-only')
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertTrue(all(call['args'][:3] == ['api', '--method', 'GET'] for call in self.calls()))
+        self.assertTrue(json.loads(self.state.read_text())['releases'][0]['draft'])
+
+    def test_invalid_notes_stop_before_gh(self):
+        self.body_file.write_text('空欄')
+        result = self.cli()
+        self.assertEqual(1, result.returncode)
+        self.assertIn('自動再試行しない', result.stderr)
+        self.assertNotIn('Traceback', result.stderr)
+        self.assertFalse(self.record.exists())
+
+    def test_missing_body_file_is_a_reported_failure(self):
+        self.body_file.unlink()
+        result = self.cli()
+        self.assertEqual(1, result.returncode)
+        self.assertNotIn('Traceback', result.stderr)
+        self.assertFalse(self.record.exists())
 
 
 if __name__ == '__main__':

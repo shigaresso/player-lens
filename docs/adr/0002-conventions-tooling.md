@@ -2,7 +2,7 @@
 
 ## 状態
 
-採用。[Issue #3](https://github.com/shigaresso/player-lens/issues/3) でローカルの規約検査・フックと CI の設定を導入した。PR #4 の規約 CI を GitHub 上で確認した。Issue イベントの CI は未確認、必須チェック設定は未設定とする。対象 SHA と結果は [作業記録](../worklogs/3-conventions.md) に残す。
+採用。[Issue #3](https://github.com/shigaresso/player-lens/issues/3) でローカルの規約検査・フックと CI の設定を導入した。PR #4 の規約 CI と Issue #5 の Issue イベント CI を GitHub 上で確認した。[Issue #5](https://github.com/shigaresso/player-lens/issues/5) で Release の事前検査を同じ環境へ追加した。必須チェック設定は未設定とする。対象 SHA と結果は [Issue #3](../worklogs/3-conventions.md) と [Issue #5](../worklogs/5-release.md) の作業記録に残す。
 
 ## 背景と選択肢
 
@@ -20,6 +20,7 @@
 - 本文を判断する純粋な処理と、ファイル・Git・GitHub を扱う CLI を分離する。通常のテストは実 GitHub に接続しない。
 - GitHub の読み取りは `gh api --method GET` へ委譲し、認証情報を Git・イメージ・引数へ埋め込まない。通信失敗を成功にしない。
 - Issue・PR の作成は `scripts/github.py` で事前検査と gh の書き込みを一つの手順にする。検査済み本文を stdin で渡し、PR の head/base と Draft を明示する。`--check-only` は読み取りだけとし、自動 push・fork・作成の再試行を行わない。CI の読み取り権限は変更しない。
+- Release は `scripts/release.py` で Draft 作成と公開のそれぞれに事前検査を組み込む。本文検査と gh の I/O を再利用し、対象 SHA の remote main と規約 CI・必須ジョブを要求する。保存済み Draft の再確認と公開後のタグ・本文照合を行い、通信失敗では自動再試行しない。CI に書き込み権限を追加して自動公開する方式は採用しない。
 - ローカルと CI は同じスクリプト・検査関数を使う。ローカルの形式検査と CI の Issue 実在確認を区別する。
 - Lefthook 2.1.9、actionlint 1.7.12 の公式リリースを版・SHA-256 で固定し、プロジェクト内の `.tools` へ配置する。更新時は版・チェックサム・動作を同じ Issue で確認する。
 - `pre-push` は stdin を受け取る script 方式で接続する。コマンド方式の暗黙のファイル差分判定によって、空コミットのメッセージ検査が省略されることを避ける。
@@ -37,6 +38,7 @@
 ## 参照
 
 - [開発手順と検査の契約](../development.md)
+- [Release 手順と制約](../releases.md)
 - [ADR-0001](0001-runtime-and-deployment.md)
 - [Lefthook の stdin](https://lefthook.dev/usage/features/pass-stdin/)
 - [固定版の script 実行経路](https://github.com/evilmartians/lefthook/blob/v2.1.9/internal/run/controller/command/build_script.go)

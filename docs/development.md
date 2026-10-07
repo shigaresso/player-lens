@@ -2,9 +2,11 @@
 
 ## 導入状態
 
-Issue #3 でコミット・PR・Issue の形式検査、Git の範囲検査、GitHub の読み取り確認、Lefthook、テンプレート、CI の設定を導入する。アプリケーション、Go モジュール、Docker、DB、coverage・mutation は未導入とする。
+Issue #3 でコミット・PR・Issue の形式検査、Git の範囲検査、GitHub の読み取り確認、Lefthook、テンプレート、CI の設定を導入した。Issue #5 で Release の事前検査と移植手順を追加した。アプリケーション、Go モジュール、Docker、DB、coverage・mutation は未導入とする。
 
-ローカルと GitHub 上の検査結果は、対象 SHA と区別して [作業記録](worklogs/3-conventions.md) に残す。PR #4 の規約 CI は実行を確認した。テンプレートと Issue イベントの CI は default branch へ入ってから利用できるため、Issue イベントの実行は未確認とする。
+ローカルと GitHub 上の検査結果は、対象 SHA と区別して [Issue #3 の作業記録](worklogs/3-conventions.md) と [Issue #5 の作業記録](worklogs/5-release.md) に残す。PR #4 の規約 CI と、main 導入後の Issue #5 の Issue イベント CI の成功を確認した。PR #4 の統合コミットはメッセージ規約違反で main CI に失敗した。新しいリリース対象では同じ SHA の main CI の成功を要求する。
+
+Release の作成・公開は [Release 手順](releases.md)、他のプロジェクトへの導入は [移植ガイド](reuse.md) に従う。
 
 ## ローカルの準備
 

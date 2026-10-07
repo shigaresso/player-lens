@@ -14,7 +14,7 @@
 | [データ・調査仕様](specs/data-and-research.md) | 保存、収集、分析、レポート、ジョブと実行上限 | 基本要件を定義した。保存方式・具体的な上限などは未決定、機能は未実装 |
 | [公開デモ仕様](specs/public-demo.md) | 公開 UI、認証、利用期限、実行制限、README | 基本要件を定義した。公開範囲・認証方式などは未決定、デモは未配置 |
 | [ADR-0001：Go・Docker・Render による実行・配置](adr/0001-runtime-and-deployment.md) | 実行環境、開発・検証用 Docker、本番用 CI、Render 配置 | 採用。Docker・本番用 CI・Render 配置は未導入 |
-| [開発手順と規約検査](development.md) | 規約バリデーター、Git フック、Issue・PR テンプレート、CI | ローカルの検査を導入した。CI の設定を追加したが GitHub 上の実行は未確認 |
+| [開発手順と規約検査](development.md) | 規約バリデーター、Git フック、Issue・PR の作成手順とテンプレート、CI | ローカルの検査と作成前検査を導入した。CI の設定を追加したが GitHub 上の実行は未確認 |
 | [ADR-0002：規約検査の実行環境](adr/0002-conventions-tooling.md) | Python、検査ツール、フック・CI の責務 | 採用。保護設定は現時点の契約では利用できず未設定 |
 
 変更が複数の範囲にまたがる場合は、対応する文書をすべて読む。参照した節と ADR、要件に対応する検証を Issue・PR に記録する。ADR を追加・置換するときは、この一覧と適用範囲を更新する。

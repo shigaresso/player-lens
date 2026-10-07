@@ -38,6 +38,7 @@
 - 最新の `origin/main` からブランチを作る。既存の作業や未コミットの変更がある場合は、その内容を保護し、混在を避ける。
 - ブランチ名には Issue 番号と短い英語の説明を含め、既定の接頭辞は `codex/` とする。例：`codex/12-review-pagination`。
 - Issue・PR を作成したら、URL をユーザーに報告する。
+- Issue・PR の作成には `python3 scripts/github.py issue` / `pr` を使い、本文・ラベルと、PR のコミット・関連 Issue の事前検査を作成手順内で実行する。直接の `gh issue create` / `gh pr create` で検査を省略しない。引数と制約は [開発手順](docs/development.md) に従う。
 - GitHub に接続できない場合は、仕様案とローカルの変更を保存し、Issue 未作成であることを報告する。架空の番号でコミットしない。
 - 作業の担当構成は固定しない。委譲する場合も、目的、担当範囲、依存、検証方法を明示し、本書を適用する。
 

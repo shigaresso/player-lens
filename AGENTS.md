@@ -234,7 +234,7 @@
 ## 自動検査の導入と運用
 
 - ローカルと CI は共通のスクリプト・規則を呼び出す。導入するファイル、実行コマンド、成功条件は対応 Issue に記載する。
-- 導入済みの運用検査は `bash scripts/check.sh`、実フックの検証は `python3 scripts/verify_hooks.py` を使う。準備、本文の必須節、GitHub 上の未確認事項と保護設定の制約は [開発手順](docs/development.md) に従う。Go アプリケーションの検査は未導入と区別する。
+- 導入済みの運用検査は `bash scripts/check.sh`、Go・本番用イメージの検査は `bash scripts/check-app.sh`、実フックの検証は `python3 scripts/verify_hooks.py` を使う。準備、フックの責務、GitHub 上の未確認事項と保護設定の制約は [開発手順](docs/development.md) に従う。未導入の coverage 閾値・分岐・mutation と区別する。
 - Go の整形は `gofmt`（または `go fmt`）、静的検査は `go vet ./...`、通常のテストは `go test ./...` を基本とする。CI では整形の差分を検出して失敗させ、無言で修正して成功扱いにしない。
 - Go の検査は、Compose に定義した検証環境で共通コマンドから実行する。Go モジュール、検証サービス、検査スクリプトがまだない段階では、コマンドを予定として扱い、実行済みと記載しない。
 - 初期の必須検査は、コミット・PR 規約、Go の整形、`go vet`、ユニットテスト、本番用イメージのビルド・起動確認とする。機能導入に合わせて結合テスト、coverage、仕様対応、mutation を追加する。

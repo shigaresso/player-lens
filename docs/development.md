@@ -2,7 +2,7 @@
 
 ## 導入状態
 
-Issue #3 でコミット・PR・Issue の形式検査、Git の範囲検査、GitHub の読み取り確認、Lefthook、テンプレート、CI の設定を導入した。Issue #5 で Release の事前検査と移植手順を追加した。アプリケーション、Go モジュール、Docker、DB、coverage・mutation は未導入とする。
+Issue #3 でコミット・PR・Issue の形式検査、Git の範囲検査、GitHub の読み取り確認、Lefthook、テンプレート、CI の設定を導入した。Issue #5 で Release の事前検査と移植手順、Issue #11 で最小 Go アプリケーション・Docker・アプリケーション検査を追加した。DB、coverage・分岐・mutation は未導入とする。
 
 ローカルと GitHub 上の検査結果は、対象 SHA と区別して [Issue #3 の作業記録](worklogs/3-conventions.md) と [Issue #5 の作業記録](worklogs/5-release.md) に残す。PR #4 の規約 CI と、main 導入後の Issue #5 の Issue イベント CI の成功を確認した。PR #4 の統合コミットはメッセージ規約違反で main CI に失敗した。新しいリリース対象では同じ SHA の main CI の成功を要求する。
 
@@ -29,11 +29,29 @@ python3 scripts/verify_hooks.py
 | --- | --- |
 | commit-msg | メッセージファイルを共通検査へ渡す |
 | pre-commit | 共通検査を実行し、ステージ済みの末尾空白などを拒否する |
-| pre-push | stdin の全 ref 更新のコミットを検査してから、共通検査を実行する |
+| pre-push | stdin の全 ref 更新のコミットを検査してから、規約の共通検査とアプリケーション検査を実行する |
 
 `pre-push` は登録済み remote 名を前提とする。新規 ref は fetch 済みの remote 参照を使って対象を求め、参照がなければ失敗する。既存 ref は remote が提示した旧 SHA から対象を求める。削除はコミットの取得対象にしない。複数 ref のいずれかが違反すれば全体が失敗する。main への直接の更新・削除は拒否する。
 
-空の更新入力は送信対象がない正常な結果とする。Git を使わず直接フックを試す場合も、stdin と remote 名を渡す。`verify_hooks.py` は一時リポジトリでフックを呼び出し、実際の push は行わない。
+空の更新入力は送信対象がない正常な結果とする。Git を使わず直接フックを試す場合も、stdin と remote 名を渡す。`verify_hooks.py` は一時リポジトリでフックを呼び出し、実際の push は行わない。アプリケーション検査の呼び出し先は、この隔離テストに限って成功・失敗を制御するテスト用スクリプトへ置き換え、接続と失敗の伝播を確認する。実際の Docker・Go・本番用イメージは次の共通コマンドで別に検証する。
+
+## Go・Compose・本番用イメージの検査
+
+Docker と Compose 2.23 以降を起動し、[README](../README.md#開発環境) の手順で開発する。`scripts/check.sh` は規約ツール専用とし、pre-commit のたびに本番用イメージをビルドしない。TDD の関連テストは Compose の verify サービスで実行し、変更確定時の必要な Go 検査を別途確認する。pre-push は規約検査の後に `scripts/check-app.sh` を必ず実行する。
+
+```sh
+bash scripts/check-app.sh
+```
+
+このコマンドは以下を順に実行し、いずれかの失敗で停止する。
+
+- `bash scripts/check-go.sh unit`：読み取り専用ソースの Compose サービスで gofmt の差分を検出し、`go vet ./...` と `go test -count=1 ./...` を実行する。自動修正で成功扱いにしない。
+- `bash scripts/check-go.sh integration`：実行対象に結合テストが存在することを確認し、`go test -tags=integration -race -count=1 ./...` を実行する。通常のテストも含む。外部ネットワーク・DB・MCP は使わず、HTTP と終了処理を確認する。
+- `python3 scripts/check_image.py`：本番用イメージを一度ビルドし、同じ image ID を使って非 root 設定、ソース共有なし・読み取り専用での起動、HTTP 応答、PORT の変更、不正設定の非0終了、SIGTERM/SIGINT の正常終了を確認する。一時コンテナは削除する。
+
+Docker の停止・未導入でこの検査を省略して成功扱いにしない。Go の coverage 閾値・分岐・mutation 検査は別 Issue で導入するため、このコマンドの成功だけで100%と記載しない。
+
+`.github/workflows/application.yml` に独立した `go-unit`・`go-integration`・`production-image` のジョブを設定した。PR のソース SHA と main 更新時の SHA を取得し、同じコマンドを実行する。ローカルの成功と実 CI の成功、PR/main のイメージ検証と配置するリリース成果物の検証を区別する。今回の作業は push しないため、新 CI の実行確認は残る。配置用の registry と digest の公開・配置経路は未導入とする。
 
 ## 本文検査の契約
 
@@ -128,7 +146,7 @@ CI は共通テスト・静的検査と実フックの検証も行う。GitHub �
 
 利用可能になったら、次の手順を実施する。
 
-1. PR で `規約検査 / verify` が実際に成功したことと、GitHub に表示される必須チェック名を確認する。
+1. PR で `規約検査 / verify` と `アプリケーション検査` の3ジョブが実際に成功したことと、GitHub に表示される必須チェック名を確認する。
 2. main の更新を PR 経由にし、このチェックを必須に設定する。
 3. 管理者などの迂回範囲も確認し、違反する PR をマージできないことを確かめる。
 4. 確認した設定と結果を Issue・PR に記録して導入状態を更新する。

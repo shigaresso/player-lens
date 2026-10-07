@@ -9,18 +9,24 @@
 Docker Engine と Docker Compose 2.23 以降（Docker Desktop でも可）を用意する。Go 1.27.1 はコンテナに含むため、ホストに Go をインストールする必要はない。規約検査には Python 3.12 以降と [開発手順のツール](docs/development.md#ローカルの準備) が必要となる。
 
 ```sh
-docker compose up --build --watch app
+python3 scripts/dev.py
 ```
 
-別のターミナルで HTTP 応答を確認する。
+8080 が使用中なら8081、8082…と順に試し、起動した URL を表示する。表示されたポートを使い、別のターミナルで HTTP 応答を確認する。
 
 ```sh
 curl --fail http://localhost:8080/healthz
 ```
 
-`ok` と改行を返す。Compose Watch は `cmd/` と `go.mod` の変更を同期し、ビルド後にサーバーを再起動する。起動時も `--build` を使い、前回の Watch 終了後の変更を含める。停止は Ctrl+C、コンテナとネットワークの片付けは `docker compose down` とする。Go のキャッシュ volume は保存される。
+`ok` と改行を返す。ログは `docker compose logs --follow app` で確認できる。Compose Watch は `cmd/` と `go.mod` の変更を同期し、ビルド後にサーバーを再起動する。起動コマンドはイメージを1回ビルドし、前回の Watch 終了後の変更も含める。停止は Ctrl+C、コンテナとネットワークの片付けは `docker compose down` とする。Go のキャッシュ volume は保存される。
 
-`.env.example` に PORT とローカル公開ポートの説明を記載した。必要なら `.env` へコピーして変更する。`.env` は Git とビルド対象に含めない。
+`.env.example` の `DEV_PORT` は探索を始めるポート（既定8080）、`PORT` はコンテナ内の待ち受けポートとなる。必要なら `.env` へコピーするか、次のように開始値を指定する。
+
+```sh
+DEV_PORT=3000 python3 scripts/dev.py
+```
+
+選択したポートは `.env` に保存しない。本番の `PORT` は自動変更しない。Docker のポート割り当て失敗だけを再試行し、設定・ビルド・healthcheck などの失敗は原因を表示して終了する。同じ Compose プロジェクトで起動済みの場合は、先の起動を Ctrl+C または `docker compose stop app` で停止してから起動する。`.env` は Git とビルド対象に含めない。
 
 ## 検証
 
@@ -52,7 +58,7 @@ docker run --rm -v "$PWD:/src:rw" -w /src player-lens-verify gofmt -w .
 - `cmd/server/`：HTTP 応答、設定、サーバー起動・終了とテストを管理する。
 - `compose.yaml`：開発用サーバーと検証用 Go 環境を管理する。
 - `Dockerfile`：development と production を分け、Go・実行用のベースイメージを digest で固定する。
-- `scripts/`：共通検査と Issue・PR・Release の作成手順を管理する。
+- `scripts/`：開発用の起動と共通検査、Issue・PR・Release の作成手順を管理する。
 - `docs/`：[仕様・ADR・開発手順](docs/README.md) を管理する。
 
 `/healthz` は HTTP サーバーの応答を確認する。外部サービスや調査の成功を保証しない。[HTTP の仕様](docs/specs/http-server.md) に従い、PORT と終了時の期限を扱う。

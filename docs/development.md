@@ -21,7 +21,7 @@ python3 scripts/verify_hooks.py
 
 `install-tools.sh` は固定版と SHA-256 を検証して `.tools` に配置する。チェックサムが違う場合は実行ファイルを配置せず失敗する。フックが既にある checkout では、上書き前にその管理方法と用途を確認する。
 
-`check.sh` は規約ツールの全テスト（0件なら失敗）、未ステージ・ステージ済みの空白、Lefthook 設定、actionlint、シェル構文を確認する。actionlint の ShellCheck 連携は無効にし、シェル構文は `bash -n` で確認する。静的解析による意味の保証とは区別する。
+`check.sh` は規約・開発用ツールの全 Python テスト（0件なら失敗）、未ステージ・ステージ済みの空白、Lefthook 設定、actionlint、シェル構文を確認する。actionlint の ShellCheck 連携は無効にし、シェル構文は `bash -n` で確認する。静的解析による意味の保証とは区別する。
 
 ## 各フックの責務
 
@@ -37,7 +37,7 @@ python3 scripts/verify_hooks.py
 
 ## Go・Compose・本番用イメージの検査
 
-Docker と Compose 2.23 以降を起動し、[README](../README.md#開発環境) の手順で開発する。`scripts/check.sh` は規約ツール専用とし、pre-commit のたびに本番用イメージをビルドしない。TDD の関連テストは Compose の verify サービスで実行し、変更確定時の必要な Go 検査を別途確認する。pre-push は規約検査の後に `scripts/check-app.sh` を必ず実行する。
+Docker と Compose 2.23 以降を起動し、[README](../README.md#開発環境) の手順で開発する。`scripts/check.sh` は Docker・ネットワークを使わない Python テストと静的検査を行い、pre-commit のたびに本番用イメージをビルドしない。開発用の起動テストは `python3 -m unittest discover -s scripts -p test_dev.py` でも実行できる。Go の TDD の関連テストは Compose の verify サービスで実行し、変更確定時の必要な Go 検査を別途確認する。pre-push は規約検査の後に `scripts/check-app.sh` を必ず実行する。
 
 ```sh
 bash scripts/check-app.sh

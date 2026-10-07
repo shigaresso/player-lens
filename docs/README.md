@@ -13,7 +13,7 @@
 | --- | --- | --- |
 | [データ・調査仕様](specs/data-and-research.md) | 保存、収集、分析、レポート、ジョブと実行上限 | 基本要件を定義した。保存方式・具体的な上限などは未決定、機能は未実装 |
 | [公開デモ仕様](specs/public-demo.md) | 公開 UI、認証、利用期限、実行制限、README | 基本要件を定義した。公開範囲・認証方式などは未決定、デモは未配置 |
-| [最小 HTTP サーバー仕様](specs/http-server.md) | healthz、PORT、サーバーの期限・終了処理 | Issue #11 で実装した。ローカル検証結果は作業記録へ記載する |
+| [最小 HTTP サーバー仕様](specs/http-server.md) | healthz、PORT、開発用の公開ポート選択、サーバーの期限・終了処理 | Issue #11 で実装した。ローカル検証結果は作業記録へ記載する |
 | [ADR-0001：Go・Docker・Render による実行・配置](adr/0001-runtime-and-deployment.md) | 実行環境、開発・検証用 Docker、本番用 CI、Render 配置 | 採用。Compose・本番用イメージと検証 CI の設定を追加した。配置経路は未導入 |
 | [開発手順と規約検査](development.md) | 規約バリデーター、Git フック、Issue・PR の作成手順とテンプレート、CI | ローカル検査と PR・Issue イベントの規約 CI を確認した |
 | [Release 手順](releases.md) | Draft の作成・公開、本文・タグ・対象・CI の事前検査 | Issue #5 で CLI と通常テストを追加した。実 CI・公開結果は Issue に記録する |

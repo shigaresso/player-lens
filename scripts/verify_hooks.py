@@ -20,6 +20,15 @@ class HookTests(unittest.TestCase):
         for filename in ("lefthook.yml", "AGENTS.md", ".gitignore"):
             shutil.copy2(ROOT / filename, self.repo / filename)
         (self.repo / ".tools").symlink_to(ROOT / ".tools", target_is_directory=True)
+        # フックの接続と失敗伝播を検証する。Docker 自体は別の実資源検査で扱う。
+        (self.repo / "scripts/check-app.sh").write_text('''#!/usr/bin/env bash
+set -euo pipefail
+printf 'called\\n' >> app-check.txt
+if [[ "${HOOK_APP_FAIL:-0}" == 1 ]]; then
+  echo 'アプリケーション検査の失敗' >&2
+  exit 1
+fi
+''', encoding="utf-8")
         self.env = {**os.environ, "PATH": f"{self.repo / '.tools'}:{os.environ['PATH']}"}
         self.command(["git", "init", "-q", "--initial-branch=main"])
         self.command(["git", "config", "user.name", "フック検証"])
@@ -67,6 +76,17 @@ class HookTests(unittest.TestCase):
         head = self.command(["git", "rev-parse", "HEAD"]).stdout.strip()
         updates = f"refs/heads/topic {head} refs/heads/topic {'0' * 40}\n"
         self.command([str(self.repo / ".git/hooks/pre-push"), "origin", "unused"], input=updates)
+        self.assertEqual("called\n", (self.repo / "app-check.txt").read_text())
+
+    def test_pre_push_rejects_application_failure(self):
+        self.command(["git", "update-ref", "refs/remotes/origin/main", self.bad])
+        self.commit("(#3) ci: 検査を追加した\n\n- 検査を実装した\n", expected=0)
+        head = self.command(["git", "rev-parse", "HEAD"]).stdout.strip()
+        self.env["HOOK_APP_FAIL"] = "1"
+        updates = f"refs/heads/topic {head} refs/heads/topic {'0' * 40}\n"
+        result = self.command([str(self.repo / ".git/hooks/pre-push"), "origin", "unused"],
+                              input=updates, expected=1)
+        self.assertIn("アプリケーション検査の失敗", result.stdout + result.stderr)
 
 
 if __name__ == "__main__":

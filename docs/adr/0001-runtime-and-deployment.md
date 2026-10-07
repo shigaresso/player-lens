@@ -2,7 +2,7 @@
 
 ## 状態
 
-採用。ユーザーが合意した実行・配置方針を記録した。Go アプリケーション、Docker、本番イメージの検証・配置用 CI、Render 配置は未導入であり、実装・稼働・本番接続を保証する文書ではない。運用規約を検査する CI の導入状態は [ADR-0002](0002-conventions-tooling.md) で扱う。
+採用。ユーザーが合意した実行・配置方針を記録した。Issue #11 で最小 HTTP サーバー、Compose、本番用イメージと検証 CI の設定を追加した。リリース対象の公開・配置経路と Render 配置は未導入であり、本番接続を保証する文書ではない。ローカル検証・実 CI の状態は [作業記録](../worklogs/11-http-server.md)、運用規約を検査する CI の導入状態は [ADR-0002](0002-conventions-tooling.md) で扱う。
 
 ## 背景
 
@@ -29,6 +29,21 @@ PlayerLens は、レビュー収集・分析・レポート生成の操作を We
 - Render のワークスペースは Hobby を選ぶ。サービス構成は `render.yaml` などで明示し、ローカルの Compose 構成と区別する。
 - 永続化方式は、この決定に含めない。[データ・調査仕様](../specs/data-and-research.md) を満たす方式を別の Issue・ADR で決める。
 
+### Issue #11 の初期構成
+
+- Go 1.27.1 と `golang:1.27.1-bookworm`、`distroless/static-debian12:nonroot` のマルチアーキテクチャ index digest を Dockerfile に固定した。タグは版の説明、digest は取得内容の特定に使う。更新時は Go のパッチ版・go.mod・digest を同じ Issue で変更し、ローカルと CI と本番用イメージを再検証する。
+- 開発用には Go のコンパイラを含め、Compose Watch でソースを同期して再起動する。`go run` の子プロセスへ終了シグナルを伝える問題を避けるため、ビルドしたバイナリを `exec` する。検証用のソース共有は読み取り専用とし、ビルド・モジュールのキャッシュだけを volume へ置く。
+- 外部 Go 依存はまだないため go.sum は生成されない。将来の依存導入時は go.mod・go.sum を管理し、Dockerfile と Watch の対象も更新する。
+- 本番用には実行ファイルと証明書を含む Distroless を使い、非 root で実行する。現在は標準ライブラリだけの構成なので本番ビルドで CGO を無効にする。CGO 依存を導入するときはビルドと実行用ライブラリを見直す。
+- スモーク検査は一度ビルドした image ID を再利用する。これはローカルのイメージを特定するものであり、registry の manifest digest や配置対象の公開・検証を代用しない。ホストと CI のアーキテクチャは異なる場合があり、ローカル arm64 の成功だけで CI の amd64 を検証済みとは扱わない。
+
+### 開発用のホストポート選択
+
+- Python 標準ライブラリの `scripts/dev.py` から Compose を起動する。既存の開発ツールに Python が必要なので、ホスト Go や追加のパッケージを要求しない。
+- 事前のソケット検査は Docker の割り当てまでに競合する可能性があるため、実際の Docker のホストポート割り当て失敗を使って `DEV_PORT` を1ずつ増やす。Docker が出力する既知のポート使用中エラーだけを再試行し、他の失敗を隠さない。Docker のエラー表現が変わった場合は中断する。
+- Compose の設定解決で `.env` とシェル環境変数を扱い、選択値だけを子プロセスへ渡す。本番の `PORT` と bind 失敗の契約は維持する。ランダムな公開ポートは、連番で選びたい要件に合わないため採用しない。
+- ビルド後に `up --detach --wait --no-build` で起動と healthcheck を確認し、`watch --no-up` で再ビルド・起動を繰り返さずソースを監視する。終了時は起動入口が `app` を停止する。同じ Compose プロジェクトの同時起動と remote Docker のポート探索は扱わない。
+
 ## 配置時の条件
 
 - アプリケーションは Render の `PORT` に対応し、外部から接続できるアドレスで待ち受ける。
@@ -42,10 +57,13 @@ PlayerLens は、レビュー収集・分析・レポート生成の操作を We
 - digest で成果物を特定できる。ただし、同じイメージであることだけでは、配置先の設定と動作の一致を保証しない。
 - Docker の利用と永続化は別の設計事項となる。ローカルの Compose volume が Render に引き継がれるとは扱わない。
 - Render のワークスペースプランとサービスの実行プランは別となる。Hobby の選択だけで常時稼働・永続ディスクが提供されるとは判断しない。
-- イメージ検証・配置用 CI、配置経路、サービス実行プランは今後導入・決定する。運用規約のフック・CI は [ADR-0002](0002-conventions-tooling.md) に従う。必要な費用・運用負担は各導入 Issue に記録する。
+- イメージ検証用 CI の設定は Issue #11 で追加したが、実行結果は対象 SHA を確認して記録する。リリース対象の公開・配置用 CI、配置経路、サービス実行プランは今後導入・決定する。運用規約のフック・CI は [ADR-0002](0002-conventions-tooling.md) に従う。必要な費用・運用負担は各導入 Issue に記録する。
 
 ## 関連資料
 
 - [開発規約](../../AGENTS.md)
 - [文書一覧](../README.md)
 - [Issue #1：Go 向けの開発規約を整備する](https://github.com/shigaresso/player-lens/issues/1)
+- [Docker Compose Watch](https://docs.docker.com/compose/how-tos/file-watch/)
+- [Go の配布版](https://go.dev/dl/)
+- [Distroless の公式リポジトリ](https://github.com/GoogleContainerTools/distroless)

@@ -1,0 +1,63 @@
+name: 開発タスク
+description: 仕様・検証方法を決めて機能・不具合・文書・開発基盤に対応する
+body:
+  - type: markdown
+    attributes:
+      value: 内容に合う英語ラベルを付ける。機能、不具合、文書、CI のどれでも責務と検証を具体化する。
+  - type: textarea
+    id: purpose
+    attributes:
+      label: 背景・目的
+      description: 誰が何を達成できるようにするか、その理由を記載する。
+    validations:
+      required: true
+  - type: textarea
+    id: changes
+    attributes:
+      label: 対応内容
+      description: 今回の変更範囲を記載する。不具合では再現手順、期待した動作、実際の動作も含める。
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: 入力・正常な結果・想定する失敗
+      description: 各状況の期待結果と責務、入力・結果・エラー・依存、I/O の境界を記載する。UI があれば表示状態も含める。該当しない項目は理由を記載する。
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: 完了条件
+      description: 確認可能な動作・成果物をチェックリストで記載する。完了後はチェックできる。
+      placeholder: '- [ ] 条件を記載する'
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: 検証方法
+      description: 正常・失敗時の各完了条件を確認する操作やテストを記載する。
+    validations:
+      required: true
+  - type: textarea
+    id: references
+    attributes:
+      label: 参照仕様・ADR
+      description: 読んだ文書と節を記載する。該当しない場合は理由を記載する。
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: 依存する Issue
+      description: 依存する番号と状態を記載する。なければ「なし」と記載する。
+    validations:
+      required: true
+  - type: textarea
+    id: exclusions
+    attributes:
+      label: 今回扱わない範囲
+      description: 今回変更しない範囲を記載する。なければ「なし」と記載する。
+    validations:
+      required: true

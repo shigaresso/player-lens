@@ -3,4 +3,4 @@ WORKDIR /src
 ENV GOTOOLCHAIN=local GOCACHE=/go-cache
 COPY go.mod ./
 COPY cmd ./cmd
-CMD ["go", "test", "-count=1", "./..."]
+CMD ["sh", "-c", "go build -o /tmp/player-lens ./cmd/server && exec /tmp/player-lens"]

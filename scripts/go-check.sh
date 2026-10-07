@@ -12,5 +12,12 @@ case "${1:-unit}" in
     go vet ./...
     go test -count=1 ./...
     ;;
-  *) echo '検証対象は unit を指定する' >&2; exit 1 ;;
+  integration)
+    if ! go list -tags=integration -f '{{range .TestGoFiles}}{{println .}}{{end}}{{range .XTestGoFiles}}{{println .}}{{end}}' ./... | grep '_integration_test.go$' > /dev/null; then
+      echo '結合テストが存在しない' >&2
+      exit 1
+    fi
+    go test -tags=integration -race -count=1 ./...
+    ;;
+  *) echo '検証対象は unit または integration を指定する' >&2; exit 1 ;;
 esac

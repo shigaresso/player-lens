@@ -146,6 +146,62 @@ class CreationTests(unittest.TestCase):
         self.send.assert_not_called()
 
 
+    def test_invalid_pr_body_stops_before_api(self):
+        with self.assertRaises(ValueError):
+            self.create('pr', pr('本文なし'), head='codex/3-check')
+        self.api.assert_not_called()
+        self.send.assert_not_called()
+
+
+    def test_api_failure_stops_creation(self):
+        self.api.side_effect = subprocess.CalledProcessError(1, ['gh', 'api'])
+        with self.assertRaises(subprocess.CalledProcessError):
+            self.create('issue', issue())
+        self.send.assert_not_called()
+
+
+    def test_missing_remote_branch_stops_creation(self):
+        def api(endpoint, **kwargs):
+            if '/git/ref/heads/' in endpoint and not endpoint.endswith('/main'):
+                raise subprocess.CalledProcessError(1, ['gh', 'api'])
+            return self.remote_api(endpoint, **kwargs)
+        self.api.side_effect = api
+        with self.assertRaises(subprocess.CalledProcessError):
+            self.create('pr', pr(), head='codex/3-check')
+        self.send.assert_not_called()
+
+
+    def test_empty_comparison_stops_creation(self):
+        def api(endpoint, **kwargs):
+            return {'total_commits': 0, 'commits': []} if '/compare/' in endpoint else self.remote_api(endpoint, **kwargs)
+        self.api.side_effect = api
+        with self.assertRaises(ValueError):
+            self.create('pr', pr(), head='codex/3-check')
+        self.send.assert_not_called()
+
+
+    def test_commit_issue_is_checked_even_when_not_in_pr_body(self):
+        def api(endpoint, **kwargs):
+            data = self.remote_api(endpoint, **kwargs)
+            if '/compare/' in endpoint:
+                data['commits'][0]['commit']['message'] = '(#7) ci: 検査を追加した\n\n- 実装した\n'
+            if endpoint.endswith('/issues/7'):
+                return {'pull_request': {}}
+            return data
+        self.api.side_effect = api
+        with self.assertRaises(ValueError):
+            self.create('pr', pr(), head='codex/3-check')
+        self.api.assert_any_call('repos/example/project/issues/7')
+        self.send.assert_not_called()
+
+
+    def test_creation_failure_is_not_retried(self):
+        self.send.side_effect = subprocess.TimeoutExpired(['gh', 'issue', 'create'], 60)
+        with self.assertRaises(subprocess.TimeoutExpired):
+            self.create('issue', issue())
+        self.send.assert_called_once()
+
+
 class CliTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix='player lens github ')
@@ -159,14 +215,26 @@ class CliTests(unittest.TestCase):
 body = sys.stdin.read() if '--body-file=-' in sys.argv else None
 with open(os.environ['GH_TEST_RECORD'], 'a') as file:
     file.write(json.dumps({'args': sys.argv[1:], 'body': body}) + '\\n')
-print(json.dumps([[{'name': 'ci'}]]) if sys.argv[1] == 'api' else 'https://github.com/example/project/issues/4')
+if sys.argv[1] == 'api':
+    endpoint = sys.argv[4]
+    if '/labels' in endpoint:
+        result = [[{'name': 'ci'}]]
+    elif '/git/ref/heads/' in endpoint:
+        result = {'object': {'sha': 'a' * 40 if endpoint.endswith('/main') else 'b' * 40}}
+    elif '/compare/' in endpoint:
+        result = {'total_commits': 1, 'commits': [{'sha': 'b' * 40, 'commit': {'message': '(#3) ci: 検査を追加した\\n\\n- 実装した\\n'}}]}
+    else:
+        result = {'number': 3}
+    print(json.dumps(result))
+else:
+    print('https://github.com/example/project/' + ('pull/4' if sys.argv[1] == 'pr' else 'issues/4'))
 ''')
         fake.chmod(0o755)
         self.env = {**os.environ, 'PATH': f'{self.folder}:{os.environ["PATH"]}',
                     'GH_TEST_RECORD': str(self.record)}
 
-    def cli(self, *extra):
-        return subprocess.run([sys.executable, str(Path(github.__file__)), 'issue',
+    def cli(self, *extra, kind='issue'):
+        return subprocess.run([sys.executable, str(Path(github.__file__)), kind,
                                '--repo', 'example/project', '--title=検査を追加する $(echo test)',
                                '--body-file', str(self.body), '--label', 'ci', *extra],
                               env=self.env, capture_output=True, text=True, timeout=10)
@@ -195,6 +263,29 @@ print(json.dumps([[{'name': 'ci'}]]) if sys.argv[1] == 'api' else 'https://githu
         self.assertEqual(1, len(calls))
         self.assertEqual(['api', '--method', 'GET'], calls[0]['args'][:3])
         self.assertIn('書き込みなし', result.stdout)
+
+    def test_cli_pr_checks_remote_then_creates_draft_without_pushing(self):
+        self.body.write_text(pr()['body'])
+        result = self.cli('--head=codex/3-check', kind='pr')
+        self.assertEqual(0, result.returncode, result.stderr)
+        calls = [json.loads(line) for line in self.record.read_text().splitlines()]
+        self.assertEqual(8, len(calls))
+        for call in calls[:-1]:
+            self.assertEqual(['api', '--method', 'GET'], call['args'][:3])
+        self.assertEqual(['pr', 'create'], calls[-1]['args'][:2])
+        self.assertIn('--head=codex/3-check', calls[-1]['args'])
+        self.assertIn('--base=main', calls[-1]['args'])
+        self.assertIn('--draft', calls[-1]['args'])
+        self.assertEqual(self.body.read_text(), calls[-1]['body'])
+        self.assertIn('https://github.com/example/project/pull/4', result.stdout)
+
+    def test_cli_pr_check_only_does_not_create(self):
+        self.body.write_text(pr()['body'])
+        result = self.cli('--head=codex/3-check', '--check-only', kind='pr')
+        self.assertEqual(0, result.returncode, result.stderr)
+        calls = [json.loads(line) for line in self.record.read_text().splitlines()]
+        self.assertEqual(7, len(calls))
+        self.assertTrue(all(call['args'][:3] == ['api', '--method', 'GET'] for call in calls))
 
 
 if __name__ == "__main__":

@@ -50,12 +50,20 @@ Git の不正なコミット・削除・複数更新・参照不足、API 失敗
 - 正常な Issue・Draft PR の作成と本文・引数の伝播は、偽の gh と分離した依存で確認した。実際の新規 Issue・PR 作成は検証目的で実施しなかった。
 - AI による差分のセルフレビューを実施した。人によるレビューは未実施とした。
 
-## 未実施・未導入
+## ローカル実装を完了した時点の未実施・未導入
 
 ユーザーの指示に従い push・PR 作成・Issue のクローズは行わなかった。そのため GitHub Actions の実行結果は未確認とした。CI の設定・固定版ツールとローカルの静的検査を確認しても、GitHub 上で成功したとは扱わなかった。
 
 main の保護・Rulesets は API が403を返したため未設定とした。公開化・契約変更は行わなかった。Go アプリケーション・Docker・DB・coverage/mutation も未導入とした。
 
-## ローカル確認と PR の準備
+## ローカル実装を完了した時点の PR 準備
 
 ブランチは `codex/3-conventions-validation` とし、最新の origin/main から作成した。上流と remote の同名ブランチは作成しなかった。ユーザーが確認・調整してから、[PR 本文案](3-pr.md) と検査を更新して PR を作成できる状態とした。
+
+## PR 作成と GitHub 上の検証
+
+ユーザーの PR 作成依頼を受け、pre-push の共通検査を通して同名 remote ブランチへ送信し、upstream を `origin/codex/3-conventions-validation` に設定した。`scripts/github.py pr` の事前検査を通して [Draft PR #4](https://github.com/shigaresso/player-lens/pull/4) を作成した。ラベル `ci` と `Closes #3` の実際の連携を確認した。Issue の手動クローズと main へのマージは行わなかった。
+
+[PR 作成時の規約 CI](https://github.com/shigaresso/player-lens/actions/runs/37625026603) は、対象 SHA `8b5830f868196e263a4f468d9fadb5440a855a1d` で成功した。Ubuntu 上で固定版ツールの準備、共通検査58テスト、実フック5テスト、PR・全コミット・関連 Issue の現在状態の検査が実行されたことをログで確認した。main 更新用ステップは PR イベントのためスキップされた。
+
+この記録の変更コミットも PR に含める。最新版の HEAD と CI 結果は PR のメタデータ・本文で確認する。Issue イベントの CI と main 更新時の CI は未実行で、保護設定は引き続き未設定とする。

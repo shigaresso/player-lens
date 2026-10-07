@@ -15,12 +15,13 @@ PlayerLens の Git・GitHub 運用規約を、ローカルと CI の共通検査
 ## 検証
 
 - `bash scripts/check.sh` が成功した。規約ツール58テスト、空白、Lefthook、actionlint、シェル構文を確認した。
-- `python3 scripts/verify_hooks.py` の実フック5テストが成功した。実際の push は行わなかった。
+- `python3 scripts/verify_hooks.py` の実フック5テストが成功した。一時リポジトリでの検証では push を行わなかった。
 - `python3 scripts/validate.py range origin/main HEAD`、PR 本文案、現在の Issue 本文、文書リンクを確認した。
 - 作成 CLI の本文と引数の伝播、失敗時の無書き込みは偽の gh で確認した。実 API では Issue の check-only 成功と未送信 head の PR 拒否を確認し、検証目的の新規 Issue・PR は作成しなかった。
 - 状況ごとの Red・Green は `docs/worklogs/3-conventions.md` に記録した。既に成功した状況は回帰テストとして保存した。
 - AI によるセルフレビューを実施した。人によるレビューは未実施とした。
-- この本文案の作成時点では push・PR 作成を行わず、GitHub 上の CI は未実行とした。PR 作成後に run と対象 SHA を確認して結果を追記する必要がある。
+- [PR 作成時の規約 CI](https://github.com/shigaresso/player-lens/actions/runs/37625026603) が SHA `8b5830f868196e263a4f468d9fadb5440a855a1d` で成功した。Ubuntu 上の58テスト・実フック5テスト・静的検査・PR と全コミットと関連 Issue の実在確認をログで確認した。最新版の HEAD の結果は PR 本文へ追記する。
+- Issue イベントと main 更新時の CI は未実行とした。
 - private リポジトリの保護・Rulesets API が403を返したため必須チェックは未設定とした。公開化・契約変更は行わなかった。
 
 ## 参照仕様・ADR

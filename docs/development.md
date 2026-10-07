@@ -4,7 +4,7 @@
 
 Issue #3 でコミット・PR・Issue の形式検査、Git の範囲検査、GitHub の読み取り確認、Lefthook、テンプレート、CI の設定を導入する。アプリケーション、Go モジュール、Docker、DB、coverage・mutation は未導入とする。
 
-ローカルの検査結果は [作業記録](worklogs/3-conventions.md) に残す。GitHub 上で CI を実行したとは扱わない。テンプレートと Issue イベントの CI は default branch へ入ってから利用できる。
+ローカルと GitHub 上の検査結果は、対象 SHA と区別して [作業記録](worklogs/3-conventions.md) に残す。PR #4 の規約 CI は実行を確認した。テンプレートと Issue イベントの CI は default branch へ入ってから利用できるため、Issue イベントの実行は未確認とする。
 
 ## ローカルの準備
 
@@ -80,7 +80,7 @@ python3 scripts/github.py pr \
 4. PR の head/base を再取得し、検査中に変わっていた場合は作成を止める。
 5. 検査した本文の同じスナップショットを `--body-file=-` の stdin へ渡して作成する。PR は head/base を明示し、Draft として作成する。入力をシェルコードとして展開せず、編集画面・自動補完で検査済み内容を変更しない。
 
-PR のブランチは先に通常の push 手順で送信する必要がある。未送信のブランチは読み取り API が失敗し、PR を作成しない。`gh pr create` の [head 指定](https://cli.github.com/manual/gh_pr_create) を使って自動 push・fork を抑止する。この作業時点ではユーザーの指示により push・PR 作成を実施していない。
+PR のブランチは先に通常の push 手順で送信する必要がある。未送信のブランチは読み取り API が失敗し、PR を作成しない。`gh pr create` の [head 指定](https://cli.github.com/manual/gh_pr_create) を使って自動 push・fork を抑止する。PR #4 は通常の push 後に、この作成 CLI の検査を通して作成した。
 
 比較 API はページングなしの [250件上限](https://docs.github.com/en/rest/commits/commits#compare-two-commits) を持つため、件数の一致を確認し、取得できた一部だけで成功にしない。250件を超える PR は作成前検査・既存の PR CI とも成功扱いにせず、変更の分割などを検討する。
 

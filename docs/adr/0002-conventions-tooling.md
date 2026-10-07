@@ -2,7 +2,7 @@
 
 ## 状態
 
-採用。[Issue #3](https://github.com/shigaresso/player-lens/issues/3) でローカルの規約検査・フックと CI の設定を導入する。GitHub 上の CI 実行と必須チェック設定は未確認・未設定とする。
+採用。[Issue #3](https://github.com/shigaresso/player-lens/issues/3) でローカルの規約検査・フックと CI の設定を導入した。PR #4 の規約 CI を GitHub 上で確認した。Issue イベントの CI は未確認、必須チェック設定は未設定とする。対象 SHA と結果は [作業記録](../worklogs/3-conventions.md) に残す。
 
 ## 背景と選択肢
 

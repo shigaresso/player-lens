@@ -1,4 +1,10 @@
+import json
+import os
+import subprocess
+import sys
+import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import Mock
 
 import github
@@ -125,6 +131,70 @@ class CreationTests(unittest.TestCase):
         self.api.side_effect = api
         self.create('issue', data)
         self.assertEqual(original, self.send.call_args.kwargs['body'])
+
+    def test_check_only_validates_without_creation(self):
+        self.assertEqual('', self.create('issue', issue(), check_only=True))
+        self.api.assert_called_once_with('repos/example/project/labels', paginate=True)
+        self.send.assert_not_called()
+
+    def test_comma_label_is_not_reinterpreted_as_multiple_labels(self):
+        data = issue()
+        data['labels'] = ['ci,testing']
+        self.api.return_value = [{'name': 'ci,testing'}]
+        with self.assertRaisesRegex(ValueError, 'カンマ'):
+            self.create('issue', data)
+        self.send.assert_not_called()
+
+
+class CliTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(prefix='player lens github ')
+        self.addCleanup(self.temp.cleanup)
+        self.folder = Path(self.temp.name)
+        self.body = self.folder / 'body.md'
+        self.body.write_text(issue()['body'])
+        self.record = self.folder / 'calls.jsonl'
+        fake = self.folder / 'gh'
+        fake.write_text(f'#!{sys.executable}\n' + '''import json, os, sys
+body = sys.stdin.read() if '--body-file=-' in sys.argv else None
+with open(os.environ['GH_TEST_RECORD'], 'a') as file:
+    file.write(json.dumps({'args': sys.argv[1:], 'body': body}) + '\\n')
+print(json.dumps([[{'name': 'ci'}]]) if sys.argv[1] == 'api' else 'https://github.com/example/project/issues/4')
+''')
+        fake.chmod(0o755)
+        self.env = {**os.environ, 'PATH': f'{self.folder}:{os.environ["PATH"]}',
+                    'GH_TEST_RECORD': str(self.record)}
+
+    def cli(self, *extra):
+        return subprocess.run([sys.executable, str(Path(github.__file__)), 'issue',
+                               '--repo', 'example/project', '--title=検査を追加する $(echo test)',
+                               '--body-file', str(self.body), '--label', 'ci', *extra],
+                              env=self.env, capture_output=True, text=True, timeout=10)
+
+    def test_cli_sends_exact_input_to_gh_without_shell(self):
+        result = self.cli()
+        self.assertEqual(0, result.returncode, result.stderr)
+        calls = [json.loads(line) for line in self.record.read_text().splitlines()]
+        self.assertEqual(2, len(calls))
+        self.assertEqual(self.body.read_text(), calls[1]['body'])
+        self.assertIn('--title=検査を追加する $(echo test)', calls[1]['args'])
+        self.assertIn('https://github.com/example/project/issues/4', result.stdout)
+
+    def test_cli_reports_validation_failure_without_creating(self):
+        self.body.write_text('本文なし')
+        result = self.cli()
+        self.assertEqual(1, result.returncode)
+        self.assertIn('作成前検査失敗', result.stderr)
+        self.assertNotIn('Traceback', result.stderr)
+        self.assertFalse(self.record.exists())
+
+    def test_cli_check_only_calls_read_api_without_creation(self):
+        result = self.cli('--check-only')
+        self.assertEqual(0, result.returncode, result.stderr)
+        calls = [json.loads(line) for line in self.record.read_text().splitlines()]
+        self.assertEqual(1, len(calls))
+        self.assertEqual(['api', '--method', 'GET'], calls[0]['args'][:3])
+        self.assertIn('書き込みなし', result.stdout)
 
 
 if __name__ == "__main__":

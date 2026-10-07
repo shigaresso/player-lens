@@ -1,0 +1,17 @@
+min_version: 2.1.9
+
+commit-msg:
+  commands:
+    message:
+      run: python3 scripts/validate.py commit "{1}"
+
+pre-commit:
+  scripts:
+    check.sh:
+      runner: bash
+
+pre-push:
+  scripts:
+    check.sh:
+      runner: bash
+      use_stdin: true

@@ -67,3 +67,14 @@ AGENTS.md の契約単位の機能開発・Go・テスト・Docker・自動検�
 - 追加後の `bash scripts/check.sh` は127テスト（開発用起動の12テストを含む）、規約・Lefthook・actionlint・構文検査が成功した。`bash scripts/check-app.sh` の Go 整形・vet・ユニット、結合テストを含む race、本番用の同じ image ID の HTTP・PORT・終了・不正設定検査も成功した。
 - セルフレビューで Compose の設定優先順位、連番の上限、再試行の限定、所有する app の停止、既存起動の保護、`.env` を更新しないこと、実機検証との対応を確認した。本番の Go コードとイメージ内容は変更しなかった。GitHub の新 CI は未実行、push・PR 作成・Issue のクローズは行わない。
 - 設定検査と起動・停止の2つの追加コミットで pre-commit と commit-msg を通した。運用フックのコードは変更せず、既存の実フック6テストの結果を再利用した。
+
+
+## PR #12 の結合テスト検査の修正
+
+初回のアプリケーション CI（run 37675901636、対象 `a958b758266450d7ea71d291a4699fc645fa6956`）では go-unit と production-image が成功し、go-integration はテスト一覧の `go list` による VCS 情報取得（終了コード128）で失敗した。後続のテストは未実行であり、一覧取得の失敗を「結合テストが存在しない」と表示していた。
+
+- コンテナ内の一時コピーを別の所有者にし、Git の dubious ownership と同じ VCS 取得失敗を再現した。ホストの所有者・Git の安全設定は変更しなかった。
+- ネットワークと Docker を使わないシェル実行の回帰テストを追加した。VCS 取得を要求する条件で Red、一覧取得への `-buildvcs=false` 追加後に Green になった。
+- 一覧取得の終了コードと原因を保持するテストは、誤った終了コード1で Red、一覧取得と未検出判定を分離した後に Green になった。
+- テスト未検出の拒否と race テスト失敗の伝播は、既存の契約として Green を確認した。結合テストの検出・race・キャッシュ無効化を維持し、Go サーバーと本番用イメージの実装は変更しなかった。
+- `python3 -m unittest discover -s scripts -p test_go_check.py` の4テストと、Git 所有者不一致の一時コピーで実行した `scripts/go-check.sh integration` の実テスト・race 検査が成功した。修正後の CI 結果は Issue・PR に対象 SHA とともに記録する。

@@ -46,7 +46,7 @@ bash scripts/check-app.sh
 このコマンドは以下を順に実行し、いずれかの失敗で停止する。
 
 - `bash scripts/check-go.sh unit`：読み取り専用ソースの Compose サービスで gofmt の差分を検出し、`go vet ./...` と `go test -count=1 ./...` を実行する。自動修正で成功扱いにしない。
-- `bash scripts/check-go.sh integration`：実行対象に結合テストが存在することを確認し、`go test -tags=integration -race -count=1 ./...` を実行する。通常のテストも含む。外部ネットワーク・DB・MCP は使わず、HTTP と終了処理を確認する。
+- `bash scripts/check-go.sh integration`：実行対象に結合テストが存在することを確認し、`go test -tags=integration -race -count=1 ./...` を実行する。通常のテストも含む。テスト一覧を取得する `go list` は `-buildvcs=false` で不要な Git 情報の取得を省略し、取得失敗をテスト未検出とは区別して中断する。外部ネットワーク・DB・MCP は使わず、HTTP と終了処理を確認する。
 - `python3 scripts/check_image.py`：本番用イメージを一度ビルドし、同じ image ID を使って非 root 設定、ソース共有なし・読み取り専用での起動、HTTP 応答、PORT の変更、不正設定の非0終了、SIGTERM/SIGINT の正常終了を確認する。一時コンテナは削除する。
 
 Docker の停止・未導入でこの検査を省略して成功扱いにしない。Go の coverage 閾値・分岐・mutation 検査は別 Issue で導入するため、このコマンドの成功だけで100%と記載しない。

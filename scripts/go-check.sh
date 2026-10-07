@@ -13,7 +13,8 @@ case "${1:-unit}" in
     go test -count=1 ./...
     ;;
   integration)
-    if ! go list -tags=integration -f '{{range .TestGoFiles}}{{println .}}{{end}}{{range .XTestGoFiles}}{{println .}}{{end}}' ./... | grep '_integration_test.go$' > /dev/null; then
+    test_files="$(go list -buildvcs=false -tags=integration -f '{{range .TestGoFiles}}{{println .}}{{end}}{{range .XTestGoFiles}}{{println .}}{{end}}' ./...)"
+    if ! grep '_integration_test.go$' <<< "$test_files" > /dev/null; then
       echo '結合テストが存在しない' >&2
       exit 1
     fi

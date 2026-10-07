@@ -19,7 +19,8 @@ def visible_lines(text):
                 fence = None
             continue
         if fence is None:
-            yield line
+            if not line.startswith(("    ", "\t")):
+                yield line
 
 
 def validate_commit(message):
@@ -30,7 +31,8 @@ def validate_commit(message):
         errors.append("タイトルを (#Issue番号) 種別: 要約 の形式にする")
     if len(lines) < 2 or lines[1] != "":
         errors.append("タイトルと本文の間に空行を入れる")
-    if not any(re.fullmatch(r"- +\S.*", line) for line in visible_lines("\n".join(lines[2:]))):
+    if not any(re.fullmatch(r"- +\S.*", line) and has_content(line)
+               for line in visible_lines("\n".join(lines[2:]))):
         errors.append("本文に内容のある箇条書きを記載する")
     if "\\n" in message or "\r" in message.replace("\r\n", "\n"):
         errors.append("改行には LF または CRLF を使い、文字列の \\n を含めない")
@@ -99,7 +101,7 @@ def has_content(text):
     for line in visible_lines(text):
         content = re.sub(r"^\s*(?:[-*+]\s+|[0-9]+[.)]\s+)?(?:\[[ xX]\]\s*)?", "", line).strip()
         normalized = content.strip("*_`>.。 ").casefold()
-        if normalized and not re.fullmatch(r"[-*_+]+", normalized) and not content.startswith("#") and normalized not in PLACEHOLDERS:
+        if normalized and not re.fullmatch(r"[-*_+]+", normalized) and not re.match(r"^#{1,6}(?:\s|$)", content) and normalized not in PLACEHOLDERS:
             return True
     return False
 

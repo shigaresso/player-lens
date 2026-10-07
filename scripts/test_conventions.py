@@ -34,6 +34,9 @@ class CommitTests(unittest.TestCase):
         self.assertTrue(conventions.validate_commit(
             "(#3) ci: 検査した\n\n```text\n- 実装した\n```\n"))
 
+    def test_placeholder_bullet_does_not_count(self):
+        self.assertTrue(conventions.validate_commit("(#3) ci: 検査した\n\n- TODO\n"))
+
 
 PR_BODY = """## 背景・目的
 記載漏れを防ぐ。
@@ -119,6 +122,12 @@ class IssueTests(unittest.TestCase):
 class ContentTests(unittest.TestCase):
     def test_empty_markers(self):
         self.assertFalse(conventions.has_content("-\n*\n---\n[ ]\n**TODO**\n> TODO"))
+
+    def test_dependency_number_is_content(self):
+        self.assertTrue(conventions.has_content("#1（完了済み）。"))
+
+    def test_indented_code_reference_does_not_count(self):
+        self.assertEqual([], conventions.related_issues("## 関連 Issue\n\n    Closes #3\n"))
 
 
 if __name__ == "__main__":

@@ -148,9 +148,12 @@ def main(argv=None):
         metadata.add_argument("--title", required=True)
         metadata.add_argument("--body-file", required=True)
         metadata.add_argument("--label", action="append", default=[])
-    commits = commands.add_parser("range")
-    commits.add_argument("base")
-    commits.add_argument("head")
+    for name in ("range", "main-range"):
+        commits = commands.add_parser(name)
+        commits.add_argument("base")
+        commits.add_argument("head")
+        if name == "main-range":
+            commits.add_argument("--repo", required=True)
     commands.add_parser("pre-push").add_argument("remote")
     commands.add_parser("github").add_argument("event_file")
     args = parser.parse_args(argv)
@@ -162,6 +165,9 @@ def main(argv=None):
             errors = (conventions.validate_pr if args.command == "pr" else conventions.validate_issue)(data)
         elif args.command == "range":
             validate_range(args.base, args.head)
+            errors = []
+        elif args.command == "main-range":
+            validate_main_range(args.base, args.head, args.repo, github_api)
             errors = []
         elif args.command == "pre-push":
             validate_pre_push(sys.stdin.read(), args.remote)

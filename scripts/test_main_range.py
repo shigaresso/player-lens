@@ -1,6 +1,10 @@
 import copy
+import json
+import os
 import subprocess
+import sys
 import unittest
+from pathlib import Path
 from unittest.mock import Mock
 
 import validate
@@ -105,6 +109,85 @@ class MainRangeTests(unittest.TestCase):
     def test_regular_range_remains_strict(self):
         with self.assertRaisesRegex(ValueError, self.merge):
             validate.validate_range(self.base, self.merge, cwd=self.repo)
+
+    def prepare_cli(self):
+        self.responses = self.repo / 'responses.json'
+        self.responses.write_text(json.dumps({
+            f'repos/{REPO}/commits/{self.merge}/pulls': self.pulls,
+            f'repos/{REPO}/pulls/3': self.pull,
+        }), encoding='utf-8')
+        self.record = self.repo / 'calls.jsonl'
+        fake = self.repo / 'gh'
+        fake.write_text(f'#!{sys.executable}\n' + '''import json, os, sys
+from pathlib import Path
+with open(os.environ['MAIN_RANGE_RECORD'], 'a') as file:
+    file.write(json.dumps(sys.argv[1:]) + '\\n')
+if os.environ.get('MAIN_RANGE_API_FAIL'):
+    sys.exit(1)
+responses = json.loads(Path(os.environ['MAIN_RANGE_RESPONSES']).read_text())
+data = responses[sys.argv[4]]
+print(json.dumps([data] if '--paginate' in sys.argv else data))
+''', encoding='utf-8')
+        fake.chmod(0o755)
+        self.env = {**os.environ, 'PATH': f'{self.repo}:{os.environ["PATH"]}',
+                    'MAIN_RANGE_RECORD': str(self.record), 'MAIN_RANGE_RESPONSES': str(self.responses)}
+
+    def cli(self, mode='main-range'):
+        args = [sys.executable, validate.__file__, mode, self.base, self.merge]
+        if mode == 'main-range':
+            args.extend(['--repo', REPO])
+        return subprocess.run(args, cwd=self.repo, env=self.env,
+                              capture_output=True, text=True, timeout=10)
+
+    def test_cli_allows_confirmed_merge_using_read_only_api(self):
+        self.prepare_cli()
+        result = self.cli()
+        self.assertEqual(0, result.returncode, result.stderr)
+        calls = [json.loads(line) for line in self.record.read_text().splitlines()]
+        self.assertEqual(2, len(calls))
+        self.assertTrue(all(call[:3] == ['api', '--method', 'GET'] for call in calls))
+
+    def test_cli_unconfirmed_merge_is_reported_as_failure(self):
+        self.pull['merged'] = False
+        self.prepare_cli()
+        result = self.cli()
+        self.assertEqual(1, result.returncode)
+        self.assertIn('規約検査失敗', result.stderr)
+        self.assertNotIn('Traceback', result.stderr)
+
+    def test_cli_api_failure_is_not_success(self):
+        self.prepare_cli()
+        self.env['MAIN_RANGE_API_FAIL'] = '1'
+        result = self.cli()
+        self.assertEqual(1, result.returncode)
+        self.assertIn('規約検査失敗', result.stderr)
+        self.assertNotIn('Traceback', result.stderr)
+
+    def test_cli_regular_range_has_no_exception_or_network(self):
+        self.prepare_cli()
+        result = self.cli('range')
+        self.assertEqual(1, result.returncode)
+        self.assertFalse(self.record.exists())
+
+    def test_valid_merge_message_needs_no_exemption(self):
+        self.git('commit', '--amend', '-q', '-m', GOOD)
+        self.merge = self.git('rev-parse', 'HEAD')
+        self.check()
+        self.api.assert_not_called()
+
+    def test_three_parent_merge_is_not_exempted(self):
+        tree = self.git('rev-parse', f'{self.merge}^{{tree}}')
+        head = self.git('commit-tree', tree, '-p', self.main, '-p', self.topic,
+                        '-p', self.base, '-m', 'Merge pull request #3 from topic')
+        with self.assertRaises(ValueError):
+            validate.validate_main_range(self.base, head, REPO, self.api, cwd=self.repo)
+        self.api.assert_not_called()
+
+    def test_invalid_repository_stops_before_api(self):
+        with self.assertRaises(ValueError):
+            validate.validate_main_range(self.base, self.merge, REPO + '?other',
+                                         self.api, cwd=self.repo)
+        self.api.assert_not_called()
 
 
 if __name__ == '__main__':

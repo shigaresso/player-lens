@@ -90,6 +90,8 @@ def validate_github(event, api):
     commits = api(f"repos/{repo}/pulls/{number}/commits", paginate=True)
     if not commits or len(commits) != data["commits"]:
         errors.append("PR のコミット取得が不完全（API 上限も確認する）")
+    elif commits[-1]["sha"] != data["head"]["sha"]:
+        errors.append("取得したコミットと現在の HEAD が一致しない")
     for commit in commits:
         errors.extend(f"{commit['sha']}: {error}" for error in conventions.validate_commit(commit["commit"]["message"]))
         match = conventions.COMMIT_TITLE.fullmatch(commit["commit"]["message"].splitlines()[0])

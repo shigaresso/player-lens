@@ -95,6 +95,14 @@ class GitHubTests(unittest.TestCase):
         event["pull_request"]["head"]["sha"] = "b" * 40
         self.assertTrue(validate.validate_github(event, self.api))
 
+    def test_commit_list_must_end_at_current_head(self):
+        def api(endpoint, **kwargs):
+            data = self.api(endpoint, **kwargs)
+            if endpoint.endswith("/commits"):
+                data[0]["sha"] = "b" * 40
+            return data
+        self.assertTrue(validate.validate_github(self.event(), api))
+
 
     def test_issue_edited_to_completed(self):
         event = {"repository": {"full_name": "shigaresso/player-lens"}, "issue": {"number": 3}}

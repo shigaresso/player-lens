@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class HookTests(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="player-lens-hooks-")
+        self.temp = tempfile.TemporaryDirectory(prefix="player lens hooks ")
         self.addCleanup(self.temp.cleanup)
         self.repo = Path(self.temp.name)
         for directory in ("scripts", ".github", ".lefthook", "docs"):

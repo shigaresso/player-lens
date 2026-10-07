@@ -37,6 +37,33 @@ def validate_commits(commits, *, cwd=None):
             raise ValueError(f"{commit}: {'; '.join(errors)}")
 
 
+def validate_main_range(base, head, repo, api, *, cwd=None):
+    """validate_main_range は全変更を検査し、確認済み PR 統合の書式だけを免除する。"""
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo):
+        raise ValueError("リポジトリ名が不正")
+    base = resolve_commit(base, cwd=cwd)
+    head = resolve_commit(head, cwd=cwd)
+    commits = run(["git", "rev-list", "--reverse", f"{base}..{head}"], cwd=cwd).splitlines()
+    for commit in commits:
+        message = run(["git", "show", "--no-patch", "--format=%B", commit], cwd=cwd)
+        errors = conventions.validate_commit(message)
+        if not errors:
+            continue
+        parents = run(["git", "show", "--no-patch", "--format=%P", commit], cwd=cwd).split()
+        if len(parents) == 2:
+            candidates = [pull for pull in api(f"repos/{repo}/commits/{commit}/pulls", paginate=True)
+                          if pull.get("merge_commit_sha") == commit]
+            if len(candidates) == 1:
+                pull = api(f"repos/{repo}/pulls/{candidates[0]['number']}")
+                if (pull["merged"] is True and pull["merge_commit_sha"] == commit
+                        and pull["base"]["ref"] == "main"
+                        and pull["base"]["repo"]["full_name"] == repo
+                        and pull["head"]["sha"] == parents[1]):
+                    continue
+        raise ValueError(f"{commit}: {'; '.join(errors)}")
+    return commits
+
+
 def validate_pre_push(updates, remote, *, cwd=None):
     """validate_pre_push は Git が stdin に渡す全 ref 更新を確認する。"""
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", remote):
@@ -121,9 +148,12 @@ def main(argv=None):
         metadata.add_argument("--title", required=True)
         metadata.add_argument("--body-file", required=True)
         metadata.add_argument("--label", action="append", default=[])
-    commits = commands.add_parser("range")
-    commits.add_argument("base")
-    commits.add_argument("head")
+    for name in ("range", "main-range"):
+        commits = commands.add_parser(name)
+        commits.add_argument("base")
+        commits.add_argument("head")
+        if name == "main-range":
+            commits.add_argument("--repo", required=True)
     commands.add_parser("pre-push").add_argument("remote")
     commands.add_parser("github").add_argument("event_file")
     args = parser.parse_args(argv)
@@ -135,6 +165,9 @@ def main(argv=None):
             errors = (conventions.validate_pr if args.command == "pr" else conventions.validate_issue)(data)
         elif args.command == "range":
             validate_range(args.base, args.head)
+            errors = []
+        elif args.command == "main-range":
+            validate_main_range(args.base, args.head, args.repo, github_api)
             errors = []
         elif args.command == "pre-push":
             validate_pre_push(sys.stdin.read(), args.remote)

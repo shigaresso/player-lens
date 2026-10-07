@@ -28,6 +28,10 @@ go.work.sum
 # env file
 .env
 
+# Python の規約検査で生成するキャッシュ
+__pycache__/
+*.py[cod]
+
 # Editor/IDE
 # .idea/
 # .vscode/

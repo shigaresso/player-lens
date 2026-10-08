@@ -26,8 +26,6 @@ var ErrInvalidResponse = errors.New("invalid Steam review response")
 // ErrResponseTooLarge は応答が2 MiBを超えたことを表す。
 var ErrResponseTooLarge = errors.New("steam review response exceeds 2 MiB")
 
-var languagePattern = regexp.MustCompile(`^[a-z][a-z0-9_-]{0,31}$`)
-
 var reviewIDPattern = regexp.MustCompile(`^[0-9]+$`)
 
 // HTTPStatusError は200以外の応答を表す。再試行するかどうかは呼び出し側が決める。
@@ -36,13 +34,6 @@ type HTTPStatusError struct{ StatusCode int }
 // Error は本文を含めず HTTP ステータスを返す。
 func (e *HTTPStatusError) Error() string {
 	return fmt.Sprintf("Steam review HTTP status %d", e.StatusCode)
-}
-
-// PageOptions は1ページの取得条件を表す。ゼロ値は英語・先頭・20件となる。
-type PageOptions struct {
-	Language string
-	Cursor   string
-	PageSize int
 }
 
 // Review は元の ID と本文、推薦、作成・更新の UNIX 秒を保持する。
@@ -88,17 +79,12 @@ func NewClient(httpClient *http.Client, endpoint string) (*Client, error) {
 
 // FetchReviewsPage は1ページを取得する。再試行や保存は行わず、失敗時にはゼロ値を返す。
 func (c *Client) FetchReviewsPage(ctx context.Context, appID uint32, options PageOptions) (page ReviewPage, err error) {
-	if options.Language == "" {
-		options.Language = "english"
+	if appID == 0 {
+		return ReviewPage{}, fmt.Errorf("invalid Steam AppID: %w", ErrInvalidArgument)
 	}
-	if options.Cursor == "" {
-		options.Cursor = "*"
-	}
-	if options.PageSize == 0 {
-		options.PageSize = 20
-	}
-	if appID == 0 || options.PageSize < 1 || options.PageSize > 100 || !languagePattern.MatchString(options.Language) || len(options.Cursor) > 4096 {
-		return ReviewPage{}, fmt.Errorf("invalid Steam review page options or AppID: %w", ErrInvalidArgument)
+	options, err = NormalizePageOptions(options)
+	if err != nil {
+		return ReviewPage{}, fmt.Errorf("prepare Steam review page options: %w", err)
 	}
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()

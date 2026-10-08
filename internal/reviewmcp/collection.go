@@ -19,6 +19,10 @@ type toolOutput struct {
 	Message        string          `json:"message"`
 }
 
+const maxResultBytes = 128 * 1024
+
+var errResponseTooLarge = errors.New("MCP collection response exceeds size limit")
+
 func collect(ctx context.Context, fetcher steam.PageFetcher, input json.RawMessage) (*mcp.CallToolResult, error) {
 	appID, options, err := parseInput(input)
 	if err != nil {
@@ -39,7 +43,7 @@ func collect(ctx context.Context, fetcher steam.PageFetcher, input json.RawMessa
 		if encodeErr != nil {
 			return nil, encodeErr
 		}
-		result.SetError(err)
+		result.SetError(errors.Join(result.GetError(), err))
 		return result, nil
 	}
 	return encodeResult(collection, "", "", 0)
@@ -55,5 +59,20 @@ func encodeResult(collection steam.Collection, code, message string, omitted int
 	if err != nil {
 		return nil, fmt.Errorf("encode MCP result: %w", err)
 	}
-	return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: string(content)}}, StructuredContent: json.RawMessage(content), IsError: code != ""}, nil
+	result := &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: string(content)}}, StructuredContent: json.RawMessage(content), IsError: code != ""}
+	serialized, err := json.Marshal(result)
+	if err != nil {
+		return nil, fmt.Errorf("measure MCP result: %w", err)
+	}
+	if len(serialized) <= maxResultBytes {
+		return result, nil
+	}
+	count := len(collection.Reviews)
+	collection.Reviews = nil
+	result, err = encodeResult(collection, "response_too_large", "応答量の上限を超えたためレビュー本文を返せません。max_reviews を減らしてください。", count)
+	if err != nil {
+		return nil, err
+	}
+	result.SetError(errResponseTooLarge)
+	return result, nil
 }

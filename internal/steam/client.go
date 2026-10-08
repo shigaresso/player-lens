@@ -10,14 +10,24 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"strconv"
 )
 
 const defaultEndpoint = "https://api.steampowered.com/IUserReviewsService/GetAppReviews/v1/"
+const maxResponseBytes = 2 * 1024 * 1024
 
 // ErrInvalidArgument は通信前に入力または接続設定が拒否されたことを表す。
 var ErrInvalidArgument = errors.New("invalid Steam review argument")
 
+// ErrInvalidResponse は JSON または取得結果がページの契約を満たさないことを表す。
+var ErrInvalidResponse = errors.New("invalid Steam review response")
+
+// ErrResponseTooLarge は応答が2 MiBを超えたことを表す。
+var ErrResponseTooLarge = errors.New("Steam review response exceeds 2 MiB")
+
 var languagePattern = regexp.MustCompile(`^[a-z][a-z0-9_-]{0,31}$`)
+
+var reviewIDPattern = regexp.MustCompile(`^[0-9]+$`)
 
 // HTTPStatusError は200以外の応答を表す。再試行するかどうかは呼び出し側が決める。
 type HTTPStatusError struct{ StatusCode int }
@@ -120,18 +130,33 @@ func (c *Client) FetchReviewsPage(ctx context.Context, appID uint32, options Pag
 	if response.StatusCode != http.StatusOK {
 		return ReviewPage{}, &HTTPStatusError{StatusCode: response.StatusCode}
 	}
-	body, err := io.ReadAll(response.Body)
+	body, err := io.ReadAll(io.LimitReader(response.Body, maxResponseBytes+1))
 	if err != nil {
 		return ReviewPage{}, fmt.Errorf("read Steam review response: %w", err)
 	}
+	if len(body) > maxResponseBytes {
+		return ReviewPage{}, ErrResponseTooLarge
+	}
 	var result struct {
-		Response struct {
+		Response *struct {
 			Reviews []Review `json:"reviews"`
 			Cursor  string   `json:"cursor"`
 		} `json:"response"`
 	}
 	if err := json.Unmarshal(body, &result); err != nil {
-		return ReviewPage{}, fmt.Errorf("decode Steam review response: %w", err)
+		return ReviewPage{}, fmt.Errorf("decode Steam review response: %w", errors.Join(ErrInvalidResponse, err))
+	}
+	if result.Response == nil || len(result.Response.Reviews) > options.PageSize {
+		return ReviewPage{}, fmt.Errorf("missing response or too many reviews: %w", ErrInvalidResponse)
+	}
+	if len(result.Response.Reviews) > 0 && result.Response.Cursor == "" {
+		return ReviewPage{}, fmt.Errorf("missing next cursor: %w", ErrInvalidResponse)
+	}
+	for _, review := range result.Response.Reviews {
+		id, parseErr := strconv.ParseUint(review.ID, 10, 64)
+		if parseErr != nil || id == 0 || !reviewIDPattern.MatchString(review.ID) {
+			return ReviewPage{}, fmt.Errorf("invalid review ID: %w", ErrInvalidResponse)
+		}
 	}
 	if result.Response.Reviews == nil {
 		result.Response.Reviews = []Review{}

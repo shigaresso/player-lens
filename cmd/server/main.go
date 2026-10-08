@@ -34,7 +34,7 @@ func run(ctx context.Context, port string) error {
 	defer transport.CloseIdleConnections()
 	fetcher, err := steam.NewClient(&http.Client{Transport: transport, Timeout: 10 * time.Second}, "")
 	if err != nil {
-		return fmt.Errorf("Steam クライアントの準備に失敗した: %w", err)
+		return fmt.Errorf("レビュー取得クライアントの準備に失敗した: %w", err)
 	}
 	mcpHandler, err := reviewmcp.NewHandler(fetcher)
 	if err != nil {

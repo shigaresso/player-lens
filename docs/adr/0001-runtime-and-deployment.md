@@ -37,6 +37,14 @@ PlayerLens は、レビュー収集・分析・レポート生成の操作を We
 - 本番用には実行ファイルと証明書を含む Distroless を使い、非 root で実行する。現在は標準ライブラリだけの構成なので本番ビルドで CGO を無効にする。CGO 依存を導入するときはビルドと実行用ライブラリを見直す。
 - スモーク検査は一度ビルドした image ID を再利用する。これはローカルのイメージを特定するものであり、registry の manifest digest や配置対象の公開・検証を代用しない。ホストと CI のアーキテクチャは異なる場合があり、ローカル arm64 の成功だけで CI の amd64 を検証済みとは扱わない。
 
+### Git 情報に依存しない Go 実行（Issue #23）
+
+- Dockerfile の development ステージで `GOFLAGS=-buildvcs=false` を設定する。app・collect・verify・format と、development を継承する lint・本番ビルドへ共通に適用し、テストから起動する子 Go コマンドにも引き継ぐ。個々のコマンドへ同じフラグを重複して追加しない。
+- Git の所有権・読み取り権限、Git コマンドや `.git` の有無を理由に Go のビルド・検証を失敗させない。環境変数を上書きする起動経路やホスト上の直接実行は、この共通設定の保証範囲へ含めない。
+- バイナリへ VCS revision・時刻・変更状態を自動埋め込みする機能は使用しない。ソースの対象 SHA と成果物の対応は GitHub CI・作業記録、イメージ ID・digest で管理する。配置経路の導入状態は既存の記録に従う。
+- `scripts/verify_go_vcs.sh` を integration の共通検査へ接続する。隔離した一時モジュールで Git が128を返す場合、Git が PATH にない場合、`.git` がない場合の `go list`・`go build`・`go test` とテスト内の子ビルドを実行する。失敗は検査全体へ伝播し、一時資源は終了時に削除する。ホストの Git 設定・safe.directory は変更しない。
+- コミット・範囲・Issue・PR・Release の規約検査に必要な Git・GitHub 接続は維持する。取得できない場合に成功扱いへ変更しない。
+
 ### 開発用のホストポート選択
 
 - Python 標準ライブラリの `scripts/dev.py` から Compose を起動する。既存の開発ツールに Python が必要なので、ホスト Go や追加のパッケージを要求しない。

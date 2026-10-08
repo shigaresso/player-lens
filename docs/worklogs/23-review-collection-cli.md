@@ -51,3 +51,19 @@ DB の採用と adapter、永続的な取得時刻・本文版・分析集合、
 2026-10-09 のユーザー指示に従いブランチを push し、[Draft PR #24](https://github.com/shigaresso/player-lens/pull/24) を作成した。上記の push 前の記録は当時の操作範囲を示す。
 
 HEAD `b6868f078e8e45cd486733391b2debfd6e0dbbf1` の [アプリケーション CI](https://github.com/shigaresso/player-lens/actions/runs/37798603664) で CLI プロセステストのビルドが `error obtaining VCS status: exit status 128` により失敗した。検証コンテナの読み取り専用 checkout から Git 情報を取得する環境差を確認し、CLI の検証用・ローカル用のビルドに `-buildvcs=false` を指定した。実プロセステストを省略せず、収集や出力の契約は変更しない。修正後のローカル検証と実 CI の結果を PR と Issue に記録する。
+
+
+## Git 情報の取得に依存しない共通環境への変更
+
+2026-10-09 のユーザー指示に従い、Git 情報を取得できない場合の対応を Issue #23 の範囲・完了条件へ追加した。これまでの `go list`、CLI の検証用・ローカル用ビルド、lint の個別設定を Dockerfile の development ステージの `GOFLAGS=-buildvcs=false` へまとめた。開発・検証・解析・本番ビルドと、テストから起動する子 Go コマンドへ引き継ぐ。Git の safe.directory・ホスト設定は変更しない。
+
+`bash scripts/verify_go_vcs.sh` は隔離した一時モジュールを使い、Git が128を返す場合、Git コマンドが PATH にない場合、`.git` がない場合を同じ契約の状況として検証する。個別フラグを付けていない `go list`・`go build`・`go test` と、テスト内の子 Go ビルドを確認し、一時資源は終了時に削除する。integration の共通検査へ接続し、pre-push と CI の go-integration で継続して実行する。アプリケーションのテストをこの一時モジュールへ置き換えず、既存の integration/race も維持する。
+
+- Red：共通設定のない verify イメージで追加した回帰検査が `error obtaining VCS status: exit status 128` で失敗した。
+- Red：回帰検査の終了コード19を注入した Python テストで、integration の共通検査が0を返し、失敗が伝播していなかった。
+- Green：共通環境へ移した後、3状況すべてで実 Go コマンドと子ビルドが成功した。Python の対象5テストも成功し、回帰検査の失敗を伝播した。
+- `python3 /private/tmp/player-lens-collect-run.py bash scripts/check-app.sh` が終了コード0となった。通常テスト5パッケージ、gofmt・vet・lint 0件、Git 非依存の3状況、既存の integration/race、本番用イメージの HTTP・PORT・SIGTERM/SIGINT・不正 PORT を確認した。本番イメージ ID は `sha256:74fc2ec8fcaeee2f910e45035718303e606aa16a6b3ab924a45781c29665e3d5` となった。
+
+個別フラグを除いた `docker compose run --rm --no-deps --build -T collect --help` も終了コード0となり、CLI の起動を外部通信なしで確認した。
+
+ADR-0001 の共通環境・VCS 情報の制約、ADR-0003 の解析設定、開発手順と CLI 仕様を整合させた。Go バイナリへの VCS revision・時刻・変更状態の自動埋め込みは省略する。対象 SHA と成果物の対応は CI・作業記録とイメージ ID・digest で管理する。Git・GitHub を使うコミット・Issue・PR・Release の規約検査は維持し、取得失敗を成功扱いへ変更しない。共通環境を使わないホスト実行や GOFLAGS を上書きする経路は適用範囲へ含めない。実 Steam へ追加通信は行っていない。

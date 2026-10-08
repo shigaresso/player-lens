@@ -50,8 +50,8 @@
 
 ## Docker と検証
 
-Compose の collect サービスで読み取り専用のソースをビルドし、CLI バイナリを exec する。サーバーの PORT・本番用イメージを変更しない。ビルドと収集コマンドを分け、JSON にビルドログを混ぜない。使い方は [README](../../README.md#レビュー収集-cli) に記載する。
+Compose の collect サービスで読み取り専用のソースをビルドし、CLI バイナリを exec する。サーバーの PORT の契約を維持し、CLI は本番用イメージへ含めない。ビルドと収集コマンドを分け、JSON にビルドログを混ぜない。使い方は [README](../../README.md#レビュー収集-cli) に記載する。
 
-検証用とローカル CLI のビルドでは `-buildvcs=false` を指定し、コンテナの Git 所有権・権限に依存する VCS 情報の埋め込みを省略する。ソースの対象 SHA は GitHub CI と作業記録で別に確認する。Git の取得失敗をアプリケーションの失敗へ混入させず、実 CLI プロセスの検査を維持する。
+Dockerfile の共通 `GOFLAGS=-buildvcs=false` を使い、ローカル CLI とテスト内の子ビルドもコンテナの Git 所有権・権限・有無に依存する VCS 情報の埋め込みを省略する。個別のビルド引数へ重複してフラグを追加しない。適用範囲と制約は [ADR-0001](../adr/0001-runtime-and-deployment.md#git-情報に依存しない-go-実行issue-23) に従う。ソースの対象 SHA は GitHub CI と作業記録で別に確認する。Git の取得失敗をアプリケーションの失敗へ混入させず、実 CLI プロセスの検査を維持する。
 
 通常テストは取得・保存のテスト実装と httptest を使い、Steam へ接続しない。実 Client と JSON Saver の連携、別実装のメモリ Saver を確認する。integration タグのプロセステストはバイナリをビルドし、help・不正入力の終了コードと出力を外部通信なしで確認する。実 DB・MCP・永続保存と同等の保証とは扱わない。検証結果は [作業記録](../worklogs/23-review-collection-cli.md) に残す。

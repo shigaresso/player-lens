@@ -16,7 +16,8 @@ case "${1:-unit}" in
     ;;
   format-fix) gofmt -w . ;;
   integration)
-    test_files="$(go list -buildvcs=false -tags=integration -f '{{range .TestGoFiles}}{{println .}}{{end}}{{range .XTestGoFiles}}{{println .}}{{end}}' ./...)"
+    bash scripts/verify_go_vcs.sh
+    test_files="$(go list -tags=integration -f '{{range .TestGoFiles}}{{println .}}{{end}}{{range .XTestGoFiles}}{{println .}}{{end}}' ./...)"
     if ! grep '_integration_test.go$' <<< "$test_files" > /dev/null; then
       echo '結合テストが存在しない' >&2
       exit 1

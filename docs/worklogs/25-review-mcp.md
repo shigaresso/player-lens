@@ -50,3 +50,17 @@ AI によるセルフレビューで、I/O の組み立て・元の収集操作�
 ChatGPT アプリへのサーバー登録と再起動はユーザーの操作が必要であり、アプリ設定を自動変更していない。したがって、ChatGPT での実接続・実 Steam の取得・モデルの分析回答は未確認である。[MCP デバッグ手順](../mcp-debug.md) に localhost の登録、表示ポート、App ID 440・日本語3件・1ページの確認例と、引用 ID の照合を記載した。SDK と本番イメージでの自動検証の成功を、ChatGPT での分析確認済みと扱わない。
 
 手動確認後は日時・取得条件・件数・終了理由・引用 ID の対応を追記する。秘密情報・全文レビューは記録しない。レビューの保存・バックエンドの LLM 実行・公開配置は導入していない。
+
+
+## 追加の実 Steam 確認
+
+2026-10-09T02:26:57+09:00 の「実際に実行してみたい」というユーザー指示で、`python3 scripts/dev.py` を起動した。空きポート8080で healthcheck が成功し、Compose Watch を継続した。接続 URL は `http://127.0.0.1:8080/mcp`。
+
+Python 標準の HTTP クライアントで MCP 2025-11-25 の initialize・tools/list・tools/call を実行した。取得先を差し替えず、本番の Steam Client を通して App ID 440・language=japanese・max_reviews=3・max_pages=1 のレビューを取得した。
+
+- isError=false、error_code は空、returned_count=3、pages_fetched=1、stop_reason=review_limit。
+- 呼び出しは約0.49秒で成功した。レビュー ID は236407859・235397710・235116218だった。本文を検証記録やファイルへ保存していない。
+- Steam の通信は1ページの1リクエストに限定した。通常テスト・CI に実 Steam 通信を追加していない。
+- ChatGPT アプリへの登録と、アプリからのツール呼び出し・分析回答は引き続き未確認。上記はローカル HTTP クライアントからの実 API 確認である。
+
+サーバーはユーザーが接続を試すため起動を継続した。push・PR 作成・Issue クローズは行っていない。

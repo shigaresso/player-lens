@@ -15,6 +15,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  go-lint:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: 対象ソースを取得
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Python を準備
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Go のリンター
+        run: bash scripts/check-lint.sh
+      - name: 実ツールの正常・違反の判定と整形の入力保持
+        run: python3 scripts/verify_go_tools.py
   go-unit:
     runs-on: ubuntu-24.04
     timeout-minutes: 10

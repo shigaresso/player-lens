@@ -40,6 +40,7 @@ python3 scripts/verify_hooks.py
 
 ```sh
 bash scripts/check-go.sh unit
+bash scripts/check-lint.sh
 bash scripts/check-go.sh integration
 python3 scripts/check_image.py
 ```
@@ -47,11 +48,11 @@ python3 scripts/check_image.py
 テストは読み取り専用のソース共有を持つ Compose の検証サービスで実行する。整形の差分を修正するときは、同じ Go の development イメージで整形専用コンテナを起動する。
 
 ```sh
-docker compose build verify
-docker run --rm -v "$PWD:/src:rw" -w /src player-lens-verify gofmt -w .
+bash scripts/check-go.sh format
+bash scripts/check-go.sh format-fix
 ```
 
-`player-lens-verify` は既定の Compose プロジェクト名で作られるイメージ名とする。プロジェクト名を変更した場合は `docker compose --profile tools config --images` で対象を確認する。
+検査はソースを書き換えず、`format-fix` だけが作業ツリーを修正する。pre-commit はステージ済み Go を整形検査し、pre-push と CI は固定版 golangci-lint も実行する。版・検査範囲・更新時の実ツール検証は [開発手順](docs/development.md#go-の整形修正とリンターの更新) に従う。
 
 ## 構成と制約
 

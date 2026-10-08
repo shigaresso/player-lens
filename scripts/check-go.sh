@@ -3,7 +3,11 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 mode="${1:-unit}"
 case "$mode" in
-  unit|integration) ;;
-  *) echo '検証対象は unit または integration を指定する' >&2; exit 1 ;;
+  format|format-fix|unit|integration) ;;
+  *) echo '対象は format、format-fix、unit、integration を指定する' >&2; exit 1 ;;
 esac
-docker compose run --rm --build -T verify bash scripts/go-check.sh "$mode"
+service=verify
+if [[ "$mode" == format-fix ]]; then
+  service=format
+fi
+docker compose run --rm --no-deps --build -T "$service" bash scripts/go-check.sh "$mode"

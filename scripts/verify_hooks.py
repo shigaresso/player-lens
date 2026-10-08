@@ -30,6 +30,16 @@ if [[ "${HOOK_APP_FAIL:-0}" == 1 ]]; then
 fi
 ''', encoding="utf-8")
         self.env = {**os.environ, "PATH": f"{self.repo / '.tools'}:{os.environ['PATH']}"}
+        binary = self.repo / "fake-bin"
+        binary.mkdir()
+        docker = binary / "docker"
+        docker.write_text('''#!/usr/bin/env bash
+if [[ "$2" == run && "${HOOK_FORMAT_FAIL:-0}" == 1 ]]; then
+  echo '/format-input/example.go'
+fi
+''')
+        docker.chmod(0o755)
+        self.env["PATH"] = f"{binary}:{self.env['PATH']}"
         self.command(["git", "init", "-q", "--initial-branch=main"])
         self.command(["git", "config", "user.name", "フック検証"])
         self.command(["git", "config", "user.email", "hooks@example.invalid"])
@@ -63,6 +73,27 @@ fi
         self.command(["git", "add", "example.txt"])
         result = self.commit("(#3) ci: 検査を追加した\n\n- 検査を実装した\n", expected=1)
         self.assertIn("trailing whitespace", result.stdout + result.stderr)
+
+    def test_pre_commit_rejects_staged_go_format(self):
+        source = self.repo / "example.go"
+        staged = "package example;var Value=1\n"
+        source.write_text(staged)
+        self.command(["git", "add", "example.go"])
+        source.write_text("package example\n\nvar Value = 1\n")
+        self.env["HOOK_FORMAT_FAIL"] = "1"
+        result = self.commit("(#13) test: 整形検査を確認した\n\n- 検査を確認した\n", expected=1)
+        self.assertIn("example.go", result.stdout + result.stderr)
+        self.assertEqual(staged, self.command(["git", "show", ":example.go"]).stdout)
+
+    def test_pre_commit_accepts_staged_go_format(self):
+        source = self.repo / "example.go"
+        staged = "package example\n\nvar Value = 1\n"
+        source.write_text(staged)
+        self.command(["git", "add", "example.go"])
+        source.write_text("package example;var Value=2\n")
+        self.commit("(#13) test: 整形検査を確認した\n\n- 検査を確認した\n", expected=0)
+        self.assertEqual(staged, self.command(["git", "show", "HEAD:example.go"]).stdout)
+        self.assertEqual("package example;var Value=2\n", source.read_text())
 
     def test_pre_push_receives_stdin_and_rejects(self):
         updates = f"refs/heads/topic {self.bad} refs/heads/topic {self.base}\n"

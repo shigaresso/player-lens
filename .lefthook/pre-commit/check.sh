@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
 set -euo pipefail
-exec bash scripts/check.sh
+bash scripts/check.sh
+exec python3 scripts/staged_format.py

@@ -33,7 +33,9 @@ func TestShutdownDeadlineClosesConnection(t *testing.T) {
 	go func() {
 		response, err := client.Get(url)
 		if response != nil {
-			response.Body.Close()
+			if closeErr := response.Body.Close(); closeErr != nil {
+				t.Errorf("応答の解放に失敗した: %v", closeErr)
+			}
 		}
 		requestDone <- err
 	}()
@@ -66,7 +68,11 @@ func TestRunBindFailure(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { listener.Close() })
+	t.Cleanup(func() {
+		if err := listener.Close(); err != nil {
+			t.Errorf("listener の解放に失敗した: %v", err)
+		}
+	})
 	port := strconv.Itoa(listener.Addr().(*net.TCPAddr).Port)
 	err = run(t.Context(), port)
 	var operation *net.OpError
@@ -131,7 +137,9 @@ func TestServerHealthAndShutdown(t *testing.T) {
 		t.Fatal("終了しなかった")
 	}
 	if response, err := client.Get(url + "/healthz"); err == nil {
-		response.Body.Close()
+		if closeErr := response.Body.Close(); closeErr != nil {
+			t.Errorf("応答の解放に失敗した: %v", closeErr)
+		}
 		t.Fatal("終了後に新しい接続を受け付けた")
 	}
 }
@@ -144,7 +152,9 @@ func TestShutdownWaitsForActiveRequest(t *testing.T) {
 		close(started)
 		select {
 		case <-release:
-			w.Write([]byte("completed\n"))
+			if _, err := w.Write([]byte("completed\n")); err != nil {
+				t.Errorf("応答の書き込みに失敗した: %v", err)
+			}
 		case <-r.Context().Done():
 		}
 	})
@@ -155,10 +165,9 @@ func TestShutdownWaitsForActiveRequest(t *testing.T) {
 		response, err := client.Get(url)
 		if err == nil {
 			body, readErr := io.ReadAll(response.Body)
-			response.Body.Close()
-			err = readErr
+			err = errors.Join(readErr, response.Body.Close())
 			if string(body) != "completed\n" {
-				err = io.ErrUnexpectedEOF
+				err = errors.Join(err, io.ErrUnexpectedEOF)
 			}
 		}
 		result <- err

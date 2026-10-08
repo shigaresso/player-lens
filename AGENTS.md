@@ -15,6 +15,7 @@
 - 実行環境、Docker、CI の検証環境、Render 配置の変更では [実行・配置方針の ADR](docs/adr/0001-runtime-and-deployment.md) を読む。追加の ADR は文書一覧の適用範囲と状態を確認する。
 - healthz、PORT、HTTP サーバーの待ち受け・期限・終了処理の変更では [最小 HTTP サーバー仕様](docs/specs/http-server.md) を読む。
 - 運用規約の検査、フック、Issue・PR テンプレート、CI の変更では [開発手順と規約検査](docs/development.md) と [ADR-0002](docs/adr/0002-conventions-tooling.md) を読む。
+- Go の整形・リンターとそのフック・CI の変更では [ADR-0003](docs/adr/0003-go-format-and-lint.md) を読む。
 - Release の作成・公開・検査の変更では [Release 手順](docs/releases.md) と ADR-0002 を読む。他のプロジェクトへの移植では [移植ガイド](docs/reuse.md) も読む。
 - アプリケーション要件の詳細は仕様書、採用理由と比較・制約は ADR を更新し、本書へ詳細を重複させない。本書には作業手順、参照条件、検証の義務を記述する。
 - 仕様上の要件、未決定事項、実装・検証の状態を区別する。ADR の「採用」は方針の決定を表し、実装・配置済みを意味しない。提案・廃止・置換済みの ADR を現在の決定として扱わない。
@@ -235,9 +236,9 @@
 
 - ローカルと CI は共通のスクリプト・規則を呼び出す。導入するファイル、実行コマンド、成功条件は対応 Issue に記載する。
 - 導入済みの運用検査は `bash scripts/check.sh`、Go・本番用イメージの検査は `bash scripts/check-app.sh`、実フックの検証は `python3 scripts/verify_hooks.py` を使う。準備、フックの責務、GitHub 上の未確認事項と保護設定の制約は [開発手順](docs/development.md) に従う。未導入の coverage 閾値・分岐・mutation と区別する。
-- Go の整形は `gofmt`（または `go fmt`）、静的検査は `go vet ./...`、通常のテストは `go test ./...` を基本とする。CI では整形の差分を検出して失敗させ、無言で修正して成功扱いにしない。
+- Go の整形は固定版 Compose で `bash scripts/check-go.sh format`、明示的な修正は `bash scripts/check-go.sh format-fix` を使う。静的検査は `go vet ./...` と `bash scripts/check-lint.sh`、通常のテストは `go test ./...` を基本とする。フック・CI の検査で無言の修正・再ステージをしない。pre-commit はステージ済み Go の内容を検査する。
 - Go の検査は、Compose に定義した検証環境で共通コマンドから実行する。Go モジュール、検証サービス、検査スクリプトがまだない段階では、コマンドを予定として扱い、実行済みと記載しない。
-- 初期の必須検査は、コミット・PR 規約、Go の整形、`go vet`、ユニットテスト、本番用イメージのビルド・起動確認とする。機能導入に合わせて結合テスト、coverage、仕様対応、mutation を追加する。
+- 導入済みの検査は、コミット・PR 規約、Go の整形、`go vet`、golangci-lint、ユニットテスト、結合テストを含む race、本番用イメージのビルド・起動確認とする。coverage は最初のユースケースが動く段階、mutation はユニットテストが安定した段階で専用 Issue により導入を検討する。品質目標は維持し、未導入と達成済みを区別する。
 - Lefthook を導入し、`commit-msg` でタイトルの形式、許可した種別、空行、本文の箇条書き、誤った改行表現を確認する。
 - push 前に、導入済みの静的検査、ユニット・結合テスト、coverage、仕様対応、mutation を共通の検証コマンドで実行する。TDD の各反復では関連テストを実行する。
 - フック失敗時は原因を修正する。`--no-verify` などで回避して通さない。

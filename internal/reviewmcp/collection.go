@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/shigaresso/player-lens/internal/jsonoutput"
@@ -21,6 +22,8 @@ type toolOutput struct {
 
 const maxResultBytes = 128 * 1024
 
+const toolTimeout = 8 * time.Second
+
 var errResponseTooLarge = errors.New("MCP collection response exceeds size limit")
 
 func collect(ctx context.Context, fetcher steam.PageFetcher, input json.RawMessage) (*mcp.CallToolResult, error) {
@@ -28,6 +31,8 @@ func collect(ctx context.Context, fetcher steam.PageFetcher, input json.RawMessa
 	if err != nil {
 		return encodeResult(steam.Collection{}, "invalid_input", "取得条件が不正です。app_id とツールの入力上限を確認してください。", 0)
 	}
+	ctx, cancel := context.WithTimeout(ctx, toolTimeout)
+	defer cancel()
 	collection, err := steam.CollectReviews(ctx, fetcher, appID, options)
 	if err != nil {
 		code := "fetch_failed"

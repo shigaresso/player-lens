@@ -3,6 +3,7 @@ package jsonoutput_test
 import (
 	"encoding/json"
 	"reflect"
+	"slices"
 	"testing"
 
 	"github.com/shigaresso/player-lens/internal/jsonoutput"
@@ -21,6 +22,7 @@ func TestMarshalCollection(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			input := steam.Collection{AppID: 440, Options: steam.CollectionOptions{Language: "japanese", PageSize: 10, MaxReviews: 20, MaxPages: 3}, Reviews: test.reviews, PagesFetched: 2, StopReason: test.reason}
+			original := slices.Clone(input.Reviews)
 			data, err := jsonoutput.MarshalCollection(input)
 			if err != nil {
 				t.Fatal(err)
@@ -57,7 +59,7 @@ func TestMarshalCollection(t *testing.T) {
 					t.Fatalf("レビューを失った: %+v", got)
 				}
 			}
-			if !reflect.DeepEqual(input.Reviews, test.reviews) {
+			if !reflect.DeepEqual(input.Reviews, original) {
 				t.Fatal("入力を書き換えた")
 			}
 		})

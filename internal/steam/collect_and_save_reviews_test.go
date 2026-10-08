@@ -16,24 +16,20 @@ func (f collectionSaverFunc) SaveCollection(ctx context.Context, result steam.Co
 }
 
 func TestCollectAndSaveReviews(t *testing.T) {
-	for _, destination := range []string{"JSONを想定した保存先", "DBを想定した保存先"} {
-		t.Run(destination, func(t *testing.T) {
-			var events []string
-			var saved steam.Collection
-			fetcher := pageFetcherFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
-				events = append(events, "fetch")
-				return steam.ReviewPage{Reviews: collectionReviews("1"), NextCursor: "next"}, nil
-			})
-			saver := collectionSaverFunc(func(_ context.Context, result steam.Collection) error {
-				events = append(events, "save")
-				saved = result
-				return nil
-			})
-			result, err := steam.CollectAndSaveReviews(t.Context(), fetcher, saver, 440, steam.CollectionOptions{MaxReviews: 1})
-			if err != nil || !reflect.DeepEqual(saved, result) || result.StopReason != steam.StopReviewLimit || !reflect.DeepEqual(events, []string{"fetch", "save"}) {
-				t.Fatalf("result=%+v saved=%+v events=%v err=%v", result, saved, events, err)
-			}
-		})
+	var events []string
+	var saved steam.Collection
+	fetcher := pageFetcherFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
+		events = append(events, "fetch")
+		return steam.ReviewPage{Reviews: collectionReviews("1"), NextCursor: "next"}, nil
+	})
+	saver := collectionSaverFunc(func(_ context.Context, result steam.Collection) error {
+		events = append(events, "save")
+		saved = result
+		return nil
+	})
+	result, err := steam.CollectAndSaveReviews(t.Context(), fetcher, saver, 440, steam.CollectionOptions{MaxReviews: 1})
+	if err != nil || !reflect.DeepEqual(saved, result) || result.StopReason != steam.StopReviewLimit || !reflect.DeepEqual(events, []string{"fetch", "save"}) {
+		t.Fatalf("result=%+v saved=%+v events=%v err=%v", result, saved, events, err)
 	}
 }
 

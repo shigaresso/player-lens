@@ -32,9 +32,15 @@ func collect(ctx context.Context, fetcher steam.PageFetcher, input json.RawMessa
 		return encodeResult(steam.Collection{}, "invalid_input", "取得条件が不正です。app_id とツールの入力上限を確認してください。", 0)
 	}
 	if ctx.Err() == nil {
-		if code := gate.allow(); code != "" {
-			return encodeResult(steam.Collection{AppID: appID, Options: options, StopReason: steam.StopFailed}, code, "収集開始回数の上限に達しました。利用枠が戻ってから再実行してください。", 0)
+		release, code := gate.acquire()
+		if code != "" {
+			message := "収集開始回数の上限に達しました。利用枠が戻ってから再実行してください。"
+			if code == "busy" {
+				message = "同時実行数の上限に達しました。処理の完了後に再実行してください。"
+			}
+			return encodeResult(steam.Collection{AppID: appID, Options: options, StopReason: steam.StopFailed}, code, message, 0)
 		}
+		defer release()
 	}
 	ctx, cancel := context.WithTimeout(ctx, toolTimeout)
 	defer cancel()

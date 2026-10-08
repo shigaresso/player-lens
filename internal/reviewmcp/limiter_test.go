@@ -26,8 +26,12 @@ func TestLimiterWindows(t *testing.T) {
 			start = start.Add(7 * time.Hour)
 			for i, offset := range tc.offsets {
 				now = start.Add(offset)
-				if code := gate.allow(); code != tc.codes[i] {
+				release, code := gate.acquire()
+				if code != tc.codes[i] {
 					t.Fatalf("受付%d 時刻=%v code=%q want=%q", i, offset, code, tc.codes[i])
+				}
+				if release != nil {
+					release()
 				}
 			}
 		})

@@ -23,25 +23,34 @@ type limiter struct {
 	now    func() time.Time
 	minute window
 	day    window
+	active int
 }
 
 func newLimiter(limits Limits, now func() time.Time) *limiter {
 	return &limiter{limits: limits, now: now}
 }
 
-func (l *limiter) allow() string {
+func (l *limiter) acquire() (func(), string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	now := l.now()
 	l.minute.reset(now, time.Minute)
 	l.day.reset(now, 24*time.Hour)
 	if l.day.count >= l.limits.RequestsPerDay {
-		return "daily_limit_reached"
+		return nil, "daily_limit_reached"
 	}
 	if l.minute.count >= l.limits.RequestsPerMinute {
-		return "rate_limited"
+		return nil, "rate_limited"
+	}
+	if l.active >= l.limits.MaxConcurrent {
+		return nil, "busy"
 	}
 	l.minute.count++
 	l.day.count++
-	return ""
+	l.active++
+	return sync.OnceFunc(func() {
+		l.mu.Lock()
+		defer l.mu.Unlock()
+		l.active--
+	}), ""
 }

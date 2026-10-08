@@ -6,6 +6,8 @@
     "client.go": "client_test.go, context_test.go, http_test.go, response_test.go, resources_test.go, validation_test.go, regression_test.go",
     "*.py": "test_${capture}.py",
     "validate.py": "test_validate.py, test_main_range.py",
-    "go.mod": "go.sum"
+    "go.mod": "go.sum",
+    "collect_and_save_reviews.go": "collect_and_save_reviews_test.go, collection_save_failure_test.go, collection_save_context_test.go",
+    "run.go": "run_test.go, http_test.go"
   }
 }

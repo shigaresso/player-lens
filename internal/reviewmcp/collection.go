@@ -3,6 +3,7 @@ package reviewmcp
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -25,7 +26,21 @@ func collect(ctx context.Context, fetcher steam.PageFetcher, input json.RawMessa
 	}
 	collection, err := steam.CollectReviews(ctx, fetcher, appID, options)
 	if err != nil {
-		return nil, fmt.Errorf("collect reviews for MCP: %w", err)
+		code := "fetch_failed"
+		message := "レビューの取得に失敗しました。取得済みの部分結果を確認してください。"
+		if errors.Is(err, context.Canceled) {
+			code = "cancelled"
+			message = "取得がキャンセルされました。取得済みの部分結果を返します。"
+		} else if errors.Is(err, context.DeadlineExceeded) {
+			code = "deadline_exceeded"
+			message = "取得期限を超えました。件数やページ数を減らしてください。"
+		}
+		result, encodeErr := encodeResult(collection, code, message, 0)
+		if encodeErr != nil {
+			return nil, encodeErr
+		}
+		result.SetError(err)
+		return result, nil
 	}
 	return encodeResult(collection, "", "", 0)
 }

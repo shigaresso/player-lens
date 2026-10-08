@@ -16,13 +16,15 @@ func NewHandler(fetcher steam.PageFetcher) (http.Handler, error) {
 	if fetcher == nil {
 		return nil, fmt.Errorf("prepare review MCP handler: %w", steam.ErrInvalidArgument)
 	}
-	return mcp.NewStreamableHTTPHandler(func(request *http.Request) *mcp.Server {
+	handler := mcp.NewStreamableHTTPHandler(func(request *http.Request) *mcp.Server {
 		return newServer(fetcher, request.Context())
 	}, &mcp.StreamableHTTPOptions{
 		Stateless:                    true,
 		JSONResponse:                 true,
 		PropagateRequestCancellation: true,
-	}), nil
+		MaxRequestBodyBytes:          16 * 1024,
+	})
+	return http.NewCrossOriginProtection().Handler(handler), nil
 }
 
 func newServer(fetcher steam.PageFetcher, requestContext context.Context) *mcp.Server {

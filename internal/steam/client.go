@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"regexp"
 	"strconv"
+	"time"
 )
 
 const defaultEndpoint = "https://api.steampowered.com/IUserReviewsService/GetAppReviews/v1/"
@@ -99,6 +100,8 @@ func (c *Client) FetchReviewsPage(ctx context.Context, appID uint32, options Pag
 	if appID == 0 || options.PageSize < 1 || options.PageSize > 100 || !languagePattern.MatchString(options.Language) || len(options.Cursor) > 4096 {
 		return ReviewPage{}, fmt.Errorf("invalid Steam review page options or AppID: %w", ErrInvalidArgument)
 	}
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
 	input, err := json.Marshal(struct {
 		AppID          uint32   `json:"appid"`
 		Filter         int      `json:"filter"`

@@ -14,3 +14,7 @@ PR 本文・タイトル・ラベルの変更はメタデータ検査だけを�
 ## 検証と状態
 
 `python3 -m unittest discover -s scripts -p test_pr_ci_scope.py` の4テストが成功した。フック・CI の設定と共通検査、実 CI の結果は対応後に記録する。
+
+`.tools/actionlint -shellcheck=''` と空白検査が成功した。conventions.yml のソースイベント・main の verify を維持し、PR 検査を pr-conventions.yml の metadata へ移した。編集だけの場合のコード検査の起動・キャンセル・チェック上書きを避けるため、ワークフローと concurrency を分けた。統合先などの編集は PR 側で規約の全検査へ戻す。バリデーターと Release の処理、ローカルフックと Go・本番用イメージの検査は変更していない。AI が差分をセルフレビューした。人のレビューは未実施とする。
+
+変更確定の共通検査は commit フックで、全アプリケーション検査は push フックで実行する。既存フックの8テストは PR のコード検査で確認する。実 CI の対象 SHA と各イベントの結果は Issue・PR へ記録する。PR を一時的に不正な形式へ編集して軽量検査の拒否を確認した後、適切な本文へ戻す。

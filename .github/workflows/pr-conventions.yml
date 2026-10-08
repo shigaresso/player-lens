@@ -1,0 +1,45 @@
+name: PR 規約検査
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited, labeled, unlabeled, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+
+concurrency:
+  group: pr-conventions-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  metadata:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: 対象ソースを取得
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Python を準備
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: PR 編集の検査範囲を判定
+        id: scope
+        run: python3 scripts/pr_ci_scope.py "$GITHUB_EVENT_PATH"
+      - name: 統合先変更などの固定版検査ツールを準備
+        if: steps.scope.outputs.full_checks == 'true'
+        run: bash scripts/install-tools.sh
+      - name: 統合先変更などの共通検査
+        if: steps.scope.outputs.full_checks == 'true'
+        run: bash scripts/check.sh
+      - name: 統合先変更などの実フック検証
+        if: steps.scope.outputs.full_checks == 'true'
+        run: python3 scripts/verify_hooks.py
+      - name: PR と全コミットと関連 Issue の現在の状態を確認
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/validate.py github "$GITHUB_EVENT_PATH"

@@ -1,0 +1,25 @@
+# Steam レビューの1ページ取得
+
+## 範囲
+
+[Issue #17](https://github.com/shigaresso/player-lens/issues/17) の HTTP adapter の契約を定める。複数ページの収集操作、保存、取得時刻・本文の版、再試行、MCP は対象外とする。操作全体を導入する段階で `docs/use-cases.md` を作る。
+
+## API と入力
+
+[ADR-0004](../adr/0004-steam-review-api.md) の公開 API を GET で呼ぶ。キーは使わず、`format=json` と URL エンコードした `input_json` を送る。`appid` は正の uint32、`filter=1`（Recent）、`review_type=0`（All）、`purchase_type=1`（All）、`filter_offtopic_activity=true` とする。
+
+`PageOptions` の言語は既定 `english`、カーソルは `*`、件数は20とする。件数は1〜100、言語は小文字の英字で始まる英小文字・数字・ハイフン・アンダースコア32文字以内、カーソルは4096バイト以内とする。言語コードの対応は Steam 側に依存し、この構文検査だけで対応言語を保証しない。不正入力は通信前に拒否する。
+
+HTTP クライアントと接続先は外から渡す。空の接続先は公式 URL を使い、指定先は絶対 http/https URL とし、userinfo・query・fragment を禁止する。接続プールの終了は呼び出し側の責務とする。
+
+## 結果と失敗
+
+成功時は AppID、既定値適用後の条件、レビュー配列、次のカーソルを返す。ID は正の uint64 を表す文字列のまま保持し、本文、言語、推薦、作成・更新の UNIX 秒を返す。未知のフィールドは無視する。空配列は成功で、空ページのカーソルは省略可能とする。
+
+HTTP 200 以外はステータスを持つエラーとし、リダイレクトを追わず、再試行しない。JSON 不正、`response` 欠落、不正な ID、要求件数を超える配列、非空配列でのカーソル欠落は不正応答とする。失敗時は部分結果を返さずゼロ値のページを返す。
+
+呼び出し側の context と期限を引き継ぎ、1回を最大10秒に制限する。応答は最大2 MiBとする。応答 Body は成功・失敗とも adapter が閉じ、読込・Close・通信・context の原因は `errors.Is` / `errors.As` で追跡可能にする。複数原因は併せて返す。
+
+## 検証
+
+通常テストでは `httptest` とテスト用 Transport / Body を使い、実 Steam API は使わない。正常・空ページ、入力境界、HTTP エラーと非再試行、JSON・スキーマ・サイズ、期限・キャンセル、Body の解放とエラーを確認する。作業記録は [Issue #17 の記録](../worklogs/17-steam-review-page.md) に残す。API を呼べることと、収集・保存・分析が実装済みであることを区別する。

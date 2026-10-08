@@ -3,7 +3,9 @@ package reviewmcp
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
+	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/shigaresso/player-lens/internal/steam"
@@ -24,7 +26,25 @@ func NewHandler(fetcher steam.PageFetcher) (http.Handler, error) {
 		PropagateRequestCancellation: true,
 		MaxRequestBodyBytes:          16 * 1024,
 	})
-	return http.NewCrossOriginProtection().Handler(handler), nil
+	protected := http.NewCrossOriginProtection().Handler(handler)
+	return http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		if !localHost(request.Host) {
+			http.Error(w, "ローカルの Host のみ利用できます", http.StatusForbidden)
+			return
+		}
+		protected.ServeHTTP(w, request)
+	}), nil
+}
+
+func localHost(host string) bool {
+	if name, _, err := net.SplitHostPort(host); err == nil {
+		host = name
+	}
+	if strings.EqualFold(host, "localhost") {
+		return true
+	}
+	ip := net.ParseIP(strings.Trim(host, "[]"))
+	return ip != nil && ip.IsLoopback()
 }
 
 func newServer(fetcher steam.PageFetcher, requestContext context.Context) *mcp.Server {

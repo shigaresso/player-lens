@@ -69,6 +69,18 @@ def check_mcp(port):
     invalid = call(3, "tools/call", {"name": "collect_reviews", "arguments": {"app_id": 0}})
     if not invalid.get("isError") or invalid["structuredContent"]["error_code"] != "invalid_input":
         raise RuntimeError("MCP の不正入力を取得前に拒否しなかった")
+    connection = http.client.HTTPConnection("127.0.0.1", port, timeout=3)
+    try:
+        connection.request("POST", "/mcp", "{}", {
+            "Host": "external.example", "Content-Type": "application/json",
+            "Accept": "application/json, text/event-stream",
+        })
+        response = connection.getresponse()
+        response.read()
+        if response.status != 403:
+            raise RuntimeError("Docker 転送経由で外部 Host を拒否しなかった")
+    finally:
+        connection.close()
 
 
 def check_running(image, port, signal, *environment):

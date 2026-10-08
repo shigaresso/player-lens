@@ -2,6 +2,7 @@ package steam
 
 import (
 	"context"
+	"errors"
 	"fmt"
 )
 
@@ -14,16 +15,17 @@ type CollectionSaver interface {
 
 // CollectAndSaveReviews は収集して結果を注入された保存先へ1回渡す。
 // 有効な依存と非 nil の context を渡す。不正入力では取得・保存を行わない。
+// 途中失敗でも部分結果を保存し、収集と保存の両方の原因を保持する。
 func CollectAndSaveReviews(ctx context.Context, fetcher PageFetcher, saver CollectionSaver, appID uint32, options CollectionOptions) (Collection, error) {
 	if saver == nil {
 		return Collection{}, fmt.Errorf("collection saver is required: %w", ErrInvalidArgument)
 	}
-	result, err := CollectReviews(ctx, fetcher, appID, options)
-	if err != nil {
-		return result, err
+	result, collectErr := CollectReviews(ctx, fetcher, appID, options)
+	if result.AppID == 0 {
+		return result, collectErr
 	}
 	if err := saver.SaveCollection(ctx, result); err != nil {
-		return result, fmt.Errorf("save Steam review collection: %w", err)
+		return result, errors.Join(collectErr, fmt.Errorf("save Steam review collection: %w", err))
 	}
-	return result, nil
+	return result, collectErr
 }

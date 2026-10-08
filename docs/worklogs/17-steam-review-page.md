@@ -32,3 +32,19 @@
 コミットの必須 pre-commit で共通144テスト、Lefthook・actionlint・空白・シェル構文と Go の index 整形を確認し、commit-msg で日本語の本文付きメッセージを検査した。成功済みの検査を手動で重ねず、必須フックは回避しなかった。
 
 AI によるセルフレビューで入出力、固定条件、期限・読込上限、HTTP クライアントの保持、ゼロ値、原因の保持と資源の解放、Docker の許可対象と秘密情報・生成物が差分へ入っていないことを確認した。Render 配置、保存、複数ページの収集、MCP、coverage・分岐・mutation の目標達成、人によるレビューは未実施とする。push・PR 作成・Issue クローズは行わず、このブランチの実装に対する GitHub CI の結果も未確認とする。
+
+## 追補：取得条件の共通検査を公開した
+
+同じ Issue・未公開の作業ブランチで `NormalizePageOptions` と `MaxPageSize` を追加した。`PageOptions` と言語の構文規則を `options.go` へ移し、取得処理も同じ公開関数を通すようにした。AppID は引き続き取得処理の入口で検査する。普通の struct としての呼び出し方を維持し、書き換え後の有効性を型で保証したとは扱わない。
+
+別パッケージのテストで公開関数・定数が未定義で Red となり、実装と取得処理の共通化後に Green を確認した。既定値、指定値・境界の保持、不正値のゼロ値と `ErrInvalidArgument`、正規化の再適用をテーブルで検証した。既存の取得テストで HTTP 通信前の拒否と正規化済みの条件の送信を維持した。
+
+共通検査ラッパーの Docker 再ビルドがベースイメージのメタデータ取得で2分以上待機したため、その検証を中断した。Docker・依存の変更がないことと既存の固定版イメージを確認し、現在のソースを共有して次の共通スクリプト・設定で成功を確認した。
+
+- `docker compose run --rm --no-deps -T verify bash scripts/go-check.sh unit`：整形・vet・通常テストが成功した。
+- `docker compose run --rm --no-deps -T lint`：golangci-lint が0件となった。
+- `docker compose run --rm --no-deps -T verify bash scripts/go-check.sh integration`：通常テストと integration タグ・race を含む実行が成功した。
+
+追補ではサーバーの入口・Docker・実行設定を変更しておらず、本番イメージの実検査は再実行していない。AI のセルフレビューで条件の定義が `options.go` に集約され、取得処理からの検査を維持し、公開コメント・仕様と入出力が一致することを確認した。
+
+Go コミットの必須 pre-commit でも同じ待機が起き、`docker-credential-desktop get` が停止していることと、レジストリへの通信が応答することを確認した。待機中の自分のビルドを終了し、フックが失敗してコミットされていないことを確認した。一時的な `DOCKER_CONFIG` で公開イメージを認証ヘルパーなしで取得し、普段の Docker 設定を変更せず、必須フックを最初から再実行した。共通144テスト、ステージした Go の整形、commit-msg が成功し、`774eb64` にテストと実装をまとめた。フックは回避・無効化していない。

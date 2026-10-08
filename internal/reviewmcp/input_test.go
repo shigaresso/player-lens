@@ -35,6 +35,7 @@ func TestParseInput(t *testing.T) {
 		"言語が不正だった": `{"app_id":440,"language":"日本語"}`, "未知の項目があった": `{"app_id":440,"cursor":"*"}`,
 		"nullだった": `null`, "配列だった": `[]`, "壊れたJSONだった": `{"app_id":`,
 		"JSONの後に値があった": `{"app_id":440} {}`, "数値がnullだった": `{"app_id":440,"max_reviews":null}`,
+		"大文字の未定義項目があった": `{"APP_ID":440}`, "大文字の追加項目があった": `{"app_id":440,"MAX_PAGES":1}`,
 	} {
 		t.Run(name+"ため拒否する", func(t *testing.T) {
 			appID, options, err := parseInput([]byte(input))

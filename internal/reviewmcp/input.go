@@ -33,7 +33,12 @@ func parseInput(data []byte) (uint32, steam.CollectionOptions, error) {
 	if err := json.Unmarshal(data, &fields); err != nil || fields == nil {
 		return invalid()
 	}
-	for _, value := range fields {
+	for name, value := range fields {
+		switch name {
+		case "app_id", "language", "page_size", "max_reviews", "max_pages":
+		default:
+			return invalid()
+		}
 		if bytes.Equal(bytes.TrimSpace(value), []byte("null")) {
 			return invalid()
 		}

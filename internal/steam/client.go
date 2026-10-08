@@ -19,6 +19,14 @@ var ErrInvalidArgument = errors.New("invalid Steam review argument")
 
 var languagePattern = regexp.MustCompile(`^[a-z][a-z0-9_-]{0,31}$`)
 
+// HTTPStatusError は200以外の応答を表す。再試行するかどうかは呼び出し側が決める。
+type HTTPStatusError struct{ StatusCode int }
+
+// Error は本文を含めず HTTP ステータスを返す。
+func (e *HTTPStatusError) Error() string {
+	return fmt.Sprintf("Steam review HTTP status %d", e.StatusCode)
+}
+
 // PageOptions は1ページの取得条件を表す。ゼロ値は英語・先頭・20件となる。
 type PageOptions struct {
 	Language string
@@ -62,7 +70,9 @@ func NewClient(httpClient *http.Client, endpoint string) (*Client, error) {
 	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Hostname() == "" || parsed.User != nil || parsed.RawQuery != "" || parsed.ForceQuery || parsed.Fragment != "" {
 		return nil, fmt.Errorf("invalid Steam review endpoint: %w", ErrInvalidArgument)
 	}
-	return &Client{httpClient: httpClient, endpoint: endpoint}, nil
+	clientCopy := *httpClient
+	clientCopy.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+	return &Client{httpClient: &clientCopy, endpoint: endpoint}, nil
 }
 
 // FetchReviewsPage は1ページを取得する。再試行や保存は行わず、失敗時にはゼロ値を返す。
@@ -108,7 +118,7 @@ func (c *Client) FetchReviewsPage(ctx context.Context, appID uint32, options Pag
 		}
 	}()
 	if response.StatusCode != http.StatusOK {
-		return ReviewPage{}, fmt.Errorf("Steam review HTTP status %d", response.StatusCode)
+		return ReviewPage{}, &HTTPStatusError{StatusCode: response.StatusCode}
 	}
 	body, err := io.ReadAll(response.Body)
 	if err != nil {

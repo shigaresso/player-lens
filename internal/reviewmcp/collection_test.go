@@ -57,7 +57,17 @@ func decodeOutput(t *testing.T, result *mcp.CallToolResult) decodedOutput {
 		t.Fatalf("content = %v", result.Content)
 	}
 	text, ok := result.Content[0].(*mcp.TextContent)
-	if !ok || text.Text != string(data) {
+	if !ok {
+		t.Fatal("JSON テキストではない")
+	}
+	var structuredValue, textValue any
+	if err := json.Unmarshal(data, &structuredValue); err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal([]byte(text.Text), &textValue); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(structuredValue, textValue) {
 		t.Fatal("構造化結果と JSON テキストが異なる")
 	}
 	return out

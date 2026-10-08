@@ -18,6 +18,7 @@
 | [Steam レビューの上限付き収集](specs/collect-reviews.md) | 複数ページ収集、条件・重複・上限・途中失敗 | Issue #21 で実装した。MCP 接続を導入した。永続保存・再開・Web 接続は未導入 |
 | [収集 CLI と保存先](specs/review-cli.md) | CLI の入力・終了・JSON・保存先の契約 | Issue #23 でローカル CLI と JSON 保存実装を導入した。永続保存は未導入 |
 | [レビュー収集 MCP](specs/review-mcp.md) | ローカルの MCP 接続、入力・応答・期限・部分失敗 | Issue #25 でローカル MCP を導入した。SDK と ChatGPT の確認を区別して記録する |
+| [MCP 利用制限](specs/mcp-usage-limits.md) | MCP の開始回数・固定窓・同時実行数・設定・拒否 | Issue #27 で1プロセスの制限を導入した。共有予算・認証・公開配置は未導入 |
 | [ユースケース](use-cases.md) | 操作全体の一覧・責務と adapter・入口の境界 | 収集と収集・保存操作を導入した。CLI と MCP を接続した。Web は未接続 |
 | [ADR-0001：Go・Docker・Render による実行・配置](adr/0001-runtime-and-deployment.md) | 実行環境、開発・検証用 Docker、本番用 CI、Render 配置 | 採用。Compose・本番用イメージと検証 CI の設定を追加した。配置経路は未導入 |
 | [開発手順と規約検査](development.md) | 規約バリデーター、Git フック、Issue・PR の作成手順とテンプレート、CI | ローカル検査と PR・Issue イベントの規約 CI を確認した |
@@ -29,6 +30,7 @@
 | [ADR-0005：上限付き収集と部分結果](adr/0005-bounded-review-collection.md) | 収集操作の依存・上限・途中失敗・重複の判断 | 採用。実装と検証は Issue #21 の作業記録へ記載する |
 | [ADR-0006：収集結果の保存先](adr/0006-collection-output-boundary.md) | 保存先の注入、JSON の境界、部分結果の保存期限・失敗 | 採用。CLI と JSON adapter を導入した。DB は未導入 |
 | [ADR-0007：ローカルのレビュー収集 MCP](adr/0007-review-mcp.md) | SDK、プロトコル、短時間の取得と分析の担当 | 採用。実装・検証の状態は Issue #25 の作業記録へ記載する |
+| [ADR-0008：MCP 利用制限](adr/0008-mcp-usage-limits.md) | 制限の状態所有・受付・返却・固定窓と保証範囲 | 採用。1プロセスで管理する。再起動・複数台の予算保証は持たない |
 
 変更が複数の範囲にまたがる場合は、対応する文書をすべて読む。参照した節と ADR、要件に対応する検証を Issue・PR に記録する。ADR を追加・置換するときは、この一覧と適用範囲を更新する。
 
@@ -41,5 +43,7 @@ Issue #17 で [Steam レビューの1ページ取得 adapter](specs/steam-review
 Issue #23 で [収集 CLI と保存先の境界](specs/review-cli.md) を追加した。JSON 変換と writer への出力を分離し、取得と CLI の入力処理は保存先の共通契約を使う。検証は [作業記録](worklogs/23-review-collection-cli.md) に残す。
 
 Issue #25 で [レビュー収集 MCP](specs/review-mcp.md) を導入した。分析は接続元の ChatGPT が担当する。ローカルの SDK・本番イメージ検証と ChatGPT アプリの手動確認の状態は [作業記録](worklogs/25-review-mcp.md) に分けて残す。
+
+Issue #27 で [MCP 利用制限](specs/mcp-usage-limits.md) を追加した。登録済み MCP ツールの実呼び出し・取得・分析を確認した。検証と公開前の制約は [作業記録](worklogs/27-mcp-usage-limits.md) に残す。
 
 導入が進んだら、対応 PR でこの状態を更新する。`docs/use-cases.md` は操作の追加・変更時に更新する。自動生成の仕様目次は別 Issue で形式と検査を決定してから導入する。

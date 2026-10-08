@@ -14,7 +14,8 @@ import (
 
 // NewHandler は読み取り専用のレビュー収集を Streamable HTTP で公開する。
 // fetcher はキャンセル・期限を尊重する取得依存とする。nil はエラーとする。
-// limits は正の整数で指定する。
+// limits は正の整数で指定し、このハンドラーの全呼び出しで共有する。
+// 利用回数はメモリ内に保持し、ハンドラーの作り直しでは引き継がない。
 // HTTP クライアントと接続プールの終了は呼び出し側が担当する。
 func NewHandler(fetcher steam.PageFetcher, limits Limits) (http.Handler, error) {
 	if fetcher == nil {

@@ -25,6 +25,9 @@ services:
         - action: sync+restart
           path: ./go.mod
           target: /src/go.mod
+        - action: sync+restart
+          path: ./internal
+          target: /src/internal
   verify:
     profiles: [tools]
     build:

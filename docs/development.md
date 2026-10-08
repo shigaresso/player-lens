@@ -2,7 +2,7 @@
 
 ## 導入状態
 
-Issue #3 でコミット・PR・Issue の形式検査、Git の範囲検査、GitHub の読み取り確認、Lefthook、テンプレート、CI の設定を導入した。Issue #5 で Release の事前検査と移植手順、Issue #11 で最小 Go アプリケーション・Docker・アプリケーション検査を追加した。DB、coverage・分岐・mutation は未導入とする。
+Issue #3 でコミット・PR・Issue の形式検査、Git の範囲検査、GitHub の読み取り確認、Lefthook、テンプレート、CI の設定を導入した。Issue #5 で Release の事前検査と移植手順、Issue #11 で最小 Go アプリケーション・Docker・アプリケーション検査、Issue #13 で Go リンターとコミット前の整形検査を追加した。DB、coverage・分岐・mutation は未導入とする。
 
 ローカルと GitHub 上の検査結果は、対象 SHA と区別して [Issue #3 の作業記録](worklogs/3-conventions.md) と [Issue #5 の作業記録](worklogs/5-release.md) に残す。PR #4 の規約 CI と、main 導入後の Issue #5 の Issue イベント CI の成功を確認した。PR #4 の統合コミットはメッセージ規約違反で main CI に失敗した。新しいリリース対象では同じ SHA の main CI の成功を要求する。
 
@@ -28,12 +28,14 @@ python3 scripts/verify_hooks.py
 | フック | 検査 |
 | --- | --- |
 | commit-msg | メッセージファイルを共通検査へ渡す |
-| pre-commit | 共通検査を実行し、ステージ済みの末尾空白などを拒否する |
+| pre-commit | 共通検査と、変更された Go の index の内容の整形検査を実行する。自動修正・再ステージはしない |
 | pre-push | stdin の全 ref 更新のコミットを検査してから、規約の共通検査とアプリケーション検査を実行する |
 
 `pre-push` は登録済み remote 名を前提とする。新規 ref は fetch 済みの remote 参照を使って対象を求め、参照がなければ失敗する。既存 ref は remote が提示した旧 SHA から対象を求める。削除はコミットの取得対象にしない。複数 ref のいずれかが違反すれば全体が失敗する。main への直接の更新・削除は拒否する。
 
-空の更新入力は送信対象がない正常な結果とする。Git を使わず直接フックを試す場合も、stdin と remote 名を渡す。`verify_hooks.py` は一時リポジトリでフックを呼び出し、実際の push は行わない。アプリケーション検査の呼び出し先は、この隔離テストに限って成功・失敗を制御するテスト用スクリプトへ置き換え、接続と失敗の伝播を確認する。実際の Docker・Go・本番用イメージは次の共通コマンドで別に検証する。
+空の更新入力は送信対象がない正常な結果とする。Git を使わず直接フックを試す場合も、stdin と remote 名を渡す。`verify_hooks.py` は一時リポジトリでフックを呼び出し、実際の push は行わない。隔離テストではアプリケーション検査と Docker の実行先をテスト用処理へ置き換え、接続と失敗の伝播を確認する。実際の Docker・Go・本番用イメージは次の共通コマンドで別に検証する。
+
+`scripts/staged_format.py` は追加・変更・改名・コピーされた `.go` を index から一時ディレクトリへ取り出す。削除と Go 以外の変更だけなら Docker を使わない。部分ステージや空白付きパスを扱い、index と作業ツリーを保持する。Go の変更がある場合は固定版 verify イメージを用意し、読み取り専用の一時コピーへ gofmt を実行する。整形差分、Docker の停止やビルド失敗はコミットを拒否し、一時コピーは失敗時も解放する。
 
 ## Go・Compose・本番用イメージの検査
 
@@ -46,12 +48,23 @@ bash scripts/check-app.sh
 このコマンドは以下を順に実行し、いずれかの失敗で停止する。
 
 - `bash scripts/check-go.sh unit`：読み取り専用ソースの Compose サービスで gofmt の差分を検出し、`go vet ./...` と `go test -count=1 ./...` を実行する。自動修正で成功扱いにしない。
+- `bash scripts/check-lint.sh`：読み取り専用ソースの lint サービスで固定版 golangci-lint を実行する。通常のソースと integration タグ付きテストを含める。
 - `bash scripts/check-go.sh integration`：実行対象に結合テストが存在することを確認し、`go test -tags=integration -race -count=1 ./...` を実行する。通常のテストも含む。テスト一覧を取得する `go list` は `-buildvcs=false` で不要な Git 情報の取得を省略し、取得失敗をテスト未検出とは区別して中断する。外部ネットワーク・DB・MCP は使わず、HTTP と終了処理を確認する。
 - `python3 scripts/check_image.py`：本番用イメージを一度ビルドし、同じ image ID を使って非 root 設定、ソース共有なし・読み取り専用での起動、HTTP 応答、PORT の変更、不正設定の非0終了、SIGTERM/SIGINT の正常終了を確認する。一時コンテナは削除する。
 
 Docker の停止・未導入でこの検査を省略して成功扱いにしない。Go の coverage 閾値・分岐・mutation 検査は別 Issue で導入するため、このコマンドの成功だけで100%と記載しない。
 
-`.github/workflows/application.yml` に独立した `go-unit`・`go-integration`・`production-image` のジョブを設定した。PR のソース SHA と main 更新時の SHA を取得し、同じコマンドを実行する。ローカルの成功と実 CI の成功、PR/main のイメージ検証と配置するリリース成果物の検証を区別する。今回の作業は push しないため、新 CI の実行確認は残る。配置用の registry と digest の公開・配置経路は未導入とする。
+`.github/workflows/application.yml` に独立した `go-lint`・`go-unit`・`go-integration`・`production-image` のジョブを設定した。PR のソース SHA と main 更新時の SHA を取得し、同じコマンドを実行する。`go-lint` では実ツールの正常・違反の判定も確認する。ローカルの成功と実 CI の成功、PR/main のイメージ検証と配置するリリース成果物の検証を区別し、[Issue #13 の作業記録](worklogs/13-go-lint-format.md) と Issue・PR に対象 SHA の結果を残す。配置用の registry と digest の公開・配置経路は未導入とする。
+
+### Go の整形修正とリンターの更新
+
+全体の整形チェックは `bash scripts/check-go.sh format`、明示的な修正は `bash scripts/check-go.sh format-fix` を使う。修正だけが Compose の format サービスを使い、作業ツリーへ書き込む。修正後に差分を確認してステージする。検査用サービスの読み取り専用設定を変更して修正を行わない。
+
+[ADR-0003](adr/0003-go-format-and-lint.md) に従い、golangci-lint v2.14.0 の公式イメージをタグと複数アーキテクチャ用 index digest で固定し、development と同じ Go 1.27.1 の lint ステージへバイナリを取り込む。設定 `.golangci.yml` は errcheck（blank identifier のエラーも含む）、staticcheck、ineffassign、unused を有効にする。検査ツールはアプリケーションの go.mod と本番用イメージへ追加しない。解析時の不要な VCS 情報取得だけを `GOFLAGS=-buildvcs=false` で省略する。go-build・go-mod・go-lint volume は再利用可能なキャッシュで、データ永続化ではない。
+
+ツール更新時は版・digest・公式の Go 対応情報を確認し、`python3 scripts/verify_go_tools.py` を実行する。この実 Docker 検証は一時ソースで正常、4種類のリンター違反、integration タグ、部分ステージ、全体の整形検査と修正を確認し、一時ファイル・コンテナを削除する。通常の Python テストと隔離したフック検証には Docker を要求しない。pre-push はアプリケーション全体の検査を行い、ツール自体の違反入力検証は独立した CI と更新時に行う。
+
+coverage は最初のユースケースが動く段階、mutation はユニットテストが安定した段階で専用 Issue により導入を検討する。AGENTS.md の品質目標を維持し、現在の検査成功を目標達成と記載しない。
 
 ## 本文検査の契約
 
@@ -146,7 +159,7 @@ CI は共通テスト・静的検査と実フックの検証も行う。GitHub �
 
 利用可能になったら、次の手順を実施する。
 
-1. PR で `規約検査 / verify` と `アプリケーション検査` の3ジョブが実際に成功したことと、GitHub に表示される必須チェック名を確認する。
+1. PR で `規約検査 / verify` と `アプリケーション検査` の4ジョブ（go-lint・go-unit・go-integration・production-image）が実際に成功したことと、GitHub に表示される必須チェック名を確認する。
 2. main の更新を PR 経由にし、このチェックを必須に設定する。
 3. 管理者などの迂回範囲も確認し、違反する PR をマージできないことを確かめる。
 4. 確認した設定と結果を Issue・PR に記録して導入状態を更新する。

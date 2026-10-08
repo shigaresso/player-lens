@@ -19,3 +19,9 @@
 - `python3 scripts/verify_go_tools.py` で正常・4種類のリンター違反・integration タグ、空白付きパスの部分ステージと入力の保持、全体の整形検査・明示修正を確認した。最初の実検証では mount の `:rw` 上書きでも読み取り専用が残って修正に失敗した。修正専用サービスを選ぶ回帰テストで Red、サービス導入後に Green を確認し、実 Docker でも修正できた。
 - `bash scripts/check-go.sh unit` の整形・vet・通常テストが成功した。整形コマンドの3テストと、既存の integration 実行スクリプトの4テストも成功した。
 - 実フックのステージ済み Go の拒否は、フック未接続でコミットされて Red、接続後の結果は以下の最終検証へ記録する。
+
+## 最終検証とレビュー
+
+`python3 scripts/verify_hooks.py` の8テストが成功し、pre-commit の整形拒否・部分ステージの許可、commit-msg、pre-push の既存検査と失敗伝播を確認した。共通検査は140テスト、Lefthook、actionlint、空白・シェル構文が成功した。実 Docker のツール検証も成功した。AI が差分をセルフレビューし、本番用の依存・HTTP サーバーの契約を変更していないことを確認した。人のレビューは未実施とする。
+
+変更を index の整形、全体の整形、固定版の実ツール環境、フック・CI・文書の単位へ分けてコミットした。push 時の全アプリケーション検査と、PR 対象 SHA の CI は実行後に Issue・PR へ記録する。main の CI、必須チェック保護、Render 配置、coverage・分岐・mutation の達成はこの記録では確認済みとしない。

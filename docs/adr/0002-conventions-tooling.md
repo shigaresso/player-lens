@@ -39,6 +39,7 @@
 
 ## 参照
 
+- [ADR-0003：Go の整形・リンターとフックへの接続](0003-go-format-and-lint.md)
 - [開発手順と検査の契約](../development.md)
 - [Release 手順と制約](../releases.md)
 - [ADR-0001](0001-runtime-and-deployment.md)

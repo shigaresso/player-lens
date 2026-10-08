@@ -15,7 +15,7 @@ func TestHandlerLimits(t *testing.T) {
 	handler, err := NewHandler(fetchFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
 		t.Fatal("拒否する HTTP リクエストで取得した")
 		return steam.ReviewPage{}, nil
-	}))
+	}), DefaultLimits())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,7 +50,7 @@ func TestHandlerLimits(t *testing.T) {
 }
 
 func TestNewHandlerRejectsNilFetcher(t *testing.T) {
-	handler, err := NewHandler(nil)
+	handler, err := NewHandler(nil, DefaultLimits())
 	if handler != nil || !errors.Is(err, steam.ErrInvalidArgument) {
 		t.Fatalf("handler=%v err=%v", handler, err)
 	}
@@ -60,7 +60,7 @@ func TestLocalHost(t *testing.T) {
 	handler, err := NewHandler(fetchFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
 		t.Fatal("HTTP Host 検査で取得した")
 		return steam.ReviewPage{}, nil
-	}))
+	}), DefaultLimits())
 	if err != nil {
 		t.Fatal(err)
 	}

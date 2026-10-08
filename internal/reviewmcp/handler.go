@@ -13,10 +13,14 @@ import (
 
 // NewHandler は読み取り専用のレビュー収集を Streamable HTTP で公開する。
 // fetcher はキャンセル・期限を尊重する取得依存とする。nil はエラーとする。
+// limits は正の整数で指定する。
 // HTTP クライアントと接続プールの終了は呼び出し側が担当する。
-func NewHandler(fetcher steam.PageFetcher) (http.Handler, error) {
+func NewHandler(fetcher steam.PageFetcher, limits Limits) (http.Handler, error) {
 	if fetcher == nil {
 		return nil, fmt.Errorf("prepare review MCP handler: %w", steam.ErrInvalidArgument)
+	}
+	if err := limits.Validate(); err != nil {
+		return nil, err
 	}
 	handler := mcp.NewStreamableHTTPHandler(func(request *http.Request) *mcp.Server {
 		return newServer(fetcher, request.Context())

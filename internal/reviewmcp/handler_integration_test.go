@@ -38,7 +38,7 @@ func TestMCPProtocol(t *testing.T) {
 			handler, err := NewHandler(fetchFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
 				calls.Add(1)
 				return steam.ReviewPage{Reviews: []steam.Review{{ID: "sdk", Text: "分析用の本文"}}, NextCursor: "next"}, nil
-			}))
+			}), DefaultLimits())
 			if err != nil {
 				t.Fatal(err)
 			}

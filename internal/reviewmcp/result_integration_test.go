@@ -43,7 +43,7 @@ func TestMCPResultResponse(t *testing.T) {
 						return steam.ReviewPage{}, errors.New("secret internal error")
 					}
 					return steam.ReviewPage{}, nil
-				}))
+				}), DefaultLimits())
 				if err != nil {
 					t.Fatal(err)
 				}

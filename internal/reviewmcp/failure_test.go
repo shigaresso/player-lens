@@ -6,6 +6,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/shigaresso/player-lens/internal/steam"
 )
@@ -32,7 +33,7 @@ func TestCollectFailure(t *testing.T) {
 				}
 				return steam.ReviewPage{}, tc.cause
 			})
-			result, err := collect(context.Background(), fetcher, json.RawMessage(`{"app_id":440,"max_reviews":3}`))
+			result, err := collect(context.Background(), fetcher, json.RawMessage(`{"app_id":440,"max_reviews":3}`), newLimiter(DefaultLimits(), time.Now))
 			if err != nil || result == nil || !result.IsError {
 				t.Fatalf("result=%+v err=%v", result, err)
 			}

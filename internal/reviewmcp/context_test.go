@@ -43,7 +43,7 @@ func TestCollectionContext(t *testing.T) {
 				}
 				return steam.ReviewPage{}, nil
 			})
-			result, err := collect(ctx, fetcher, json.RawMessage(`{"app_id":440}`))
+			result, err := collect(ctx, fetcher, json.RawMessage(`{"app_id":440}`), newLimiter(DefaultLimits(), time.Now))
 			if err != nil || result.IsError {
 				t.Fatalf("%+v %v", result, err)
 			}
@@ -72,7 +72,7 @@ func TestCollectionContext(t *testing.T) {
 			result, err := collect(ctx, fetchFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
 				t.Fatal("終了済み context で取得した")
 				return steam.ReviewPage{}, nil
-			}), json.RawMessage(`{"app_id":440}`))
+			}), json.RawMessage(`{"app_id":440}`), newLimiter(DefaultLimits(), time.Now))
 			if err != nil || !result.IsError || decodeOutput(t, result).ErrorCode != tc.code {
 				t.Fatalf("%+v %v", result, err)
 			}

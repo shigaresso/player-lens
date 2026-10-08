@@ -30,13 +30,17 @@ func run(ctx context.Context, port string) error {
 	if err != nil {
 		return err
 	}
+	limits, err := readMCPLimits(os.Getenv)
+	if err != nil {
+		return fmt.Errorf("MCP 利用制限の設定に失敗した: %w", err)
+	}
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	defer transport.CloseIdleConnections()
 	fetcher, err := steam.NewClient(&http.Client{Transport: transport, Timeout: 10 * time.Second}, "")
 	if err != nil {
 		return fmt.Errorf("レビュー取得クライアントの準備に失敗した: %w", err)
 	}
-	mcpHandler, err := reviewmcp.NewHandler(fetcher)
+	mcpHandler, err := reviewmcp.NewHandler(fetcher, limits)
 	if err != nil {
 		return fmt.Errorf("MCP サーバーの準備に失敗した: %w", err)
 	}

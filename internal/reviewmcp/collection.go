@@ -26,10 +26,15 @@ const toolTimeout = 8 * time.Second
 
 var errResponseTooLarge = errors.New("MCP collection response exceeds size limit")
 
-func collect(ctx context.Context, fetcher steam.PageFetcher, input json.RawMessage) (*mcp.CallToolResult, error) {
+func collect(ctx context.Context, fetcher steam.PageFetcher, input json.RawMessage, gate *limiter) (*mcp.CallToolResult, error) {
 	appID, options, err := parseInput(input)
 	if err != nil {
 		return encodeResult(steam.Collection{}, "invalid_input", "取得条件が不正です。app_id とツールの入力上限を確認してください。", 0)
+	}
+	if ctx.Err() == nil {
+		if code := gate.allow(); code != "" {
+			return encodeResult(steam.Collection{AppID: appID, Options: options, StopReason: steam.StopFailed}, code, "収集開始回数の上限に達しました。利用枠が戻ってから再実行してください。", 0)
+		}
 	}
 	ctx, cancel := context.WithTimeout(ctx, toolTimeout)
 	defer cancel()

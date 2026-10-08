@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/shigaresso/player-lens/internal/steam"
@@ -92,7 +93,7 @@ func TestCollect(t *testing.T) {
 			}
 			return steam.ReviewPage{Reviews: []steam.Review{{ID: "a", Text: "重複の本文"}, {ID: "c", Text: "最後の本文"}}, NextCursor: "end"}, nil
 		})
-		result, err := collect(context.Background(), fetcher, json.RawMessage(`{"app_id":440,"language":"japanese","max_reviews":3}`))
+		result, err := collect(context.Background(), fetcher, json.RawMessage(`{"app_id":440,"language":"japanese","max_reviews":3}`), newLimiter(DefaultLimits(), time.Now))
 		if err != nil || result.IsError {
 			t.Fatalf("result = %+v, %v", result, err)
 		}
@@ -115,7 +116,7 @@ func TestCollect(t *testing.T) {
 	t.Run("空の結果も配列と終了理由を返す", func(t *testing.T) {
 		result, err := collect(context.Background(), fetchFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
 			return steam.ReviewPage{}, nil
-		}), json.RawMessage(`{"app_id":440}`))
+		}), json.RawMessage(`{"app_id":440}`), newLimiter(DefaultLimits(), time.Now))
 		if err != nil || result.IsError {
 			t.Fatalf("%+v %v", result, err)
 		}
@@ -128,7 +129,7 @@ func TestCollect(t *testing.T) {
 		result, err := collect(context.Background(), fetchFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
 			t.Fatal("不正入力で取得した")
 			return steam.ReviewPage{}, nil
-		}), json.RawMessage(`{"app_id":0}`))
+		}), json.RawMessage(`{"app_id":0}`), newLimiter(DefaultLimits(), time.Now))
 		if err != nil || !result.IsError || decodeOutput(t, result).ErrorCode != "invalid_input" {
 			t.Fatalf("%+v %v", result, err)
 		}

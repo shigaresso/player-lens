@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/shigaresso/player-lens/internal/steam"
@@ -22,8 +23,9 @@ func NewHandler(fetcher steam.PageFetcher, limits Limits) (http.Handler, error) 
 	if err := limits.Validate(); err != nil {
 		return nil, err
 	}
+	gate := newLimiter(limits, time.Now)
 	handler := mcp.NewStreamableHTTPHandler(func(request *http.Request) *mcp.Server {
-		return newServer(fetcher, request.Context())
+		return newServer(fetcher, request.Context(), gate)
 	}, &mcp.StreamableHTTPOptions{
 		Stateless:                    true,
 		JSONResponse:                 true,
@@ -51,7 +53,7 @@ func localHost(host string) bool {
 	return ip != nil && ip.IsLoopback()
 }
 
-func newServer(fetcher steam.PageFetcher, requestContext context.Context) *mcp.Server {
+func newServer(fetcher steam.PageFetcher, requestContext context.Context, gate *limiter) *mcp.Server {
 	server := mcp.NewServer(&mcp.Implementation{Name: "PlayerLens", Version: "0.1.0"}, &mcp.ServerOptions{
 		SupportedProtocolVersions: []string{"2026-07-28", "2025-11-25", "2025-06-18", "2025-03-26"},
 	})
@@ -67,7 +69,7 @@ func newServer(fetcher steam.PageFetcher, requestContext context.Context) *mcp.S
 		stop := context.AfterFunc(sdkContext, cancel)
 		defer stop()
 		defer cancel()
-		return collect(ctx, fetcher, request.Params.Arguments)
+		return collect(ctx, fetcher, request.Params.Arguments, gate)
 	})
 	return server
 }

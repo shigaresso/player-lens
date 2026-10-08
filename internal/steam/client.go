@@ -4,13 +4,20 @@ package steam
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
 )
 
 const defaultEndpoint = "https://api.steampowered.com/IUserReviewsService/GetAppReviews/v1/"
+
+// ErrInvalidArgument は通信前に入力または接続設定が拒否されたことを表す。
+var ErrInvalidArgument = errors.New("invalid Steam review argument")
+
+var languagePattern = regexp.MustCompile(`^[a-z][a-z0-9_-]{0,31}$`)
 
 // PageOptions は1ページの取得条件を表す。ゼロ値は英語・先頭・20件となる。
 type PageOptions struct {
@@ -45,8 +52,15 @@ type Client struct {
 
 // NewClient は外から渡された HTTP クライアントと接続先を使う。空の接続先は公式 API となる。
 func NewClient(httpClient *http.Client, endpoint string) (*Client, error) {
+	if httpClient == nil {
+		return nil, fmt.Errorf("HTTP client is required: %w", ErrInvalidArgument)
+	}
 	if endpoint == "" {
 		endpoint = defaultEndpoint
+	}
+	parsed, err := url.Parse(endpoint)
+	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Hostname() == "" || parsed.User != nil || parsed.RawQuery != "" || parsed.ForceQuery || parsed.Fragment != "" {
+		return nil, fmt.Errorf("invalid Steam review endpoint: %w", ErrInvalidArgument)
 	}
 	return &Client{httpClient: httpClient, endpoint: endpoint}, nil
 }
@@ -61,6 +75,9 @@ func (c *Client) FetchReviewsPage(ctx context.Context, appID uint32, options Pag
 	}
 	if options.PageSize == 0 {
 		options.PageSize = 20
+	}
+	if appID == 0 || options.PageSize < 1 || options.PageSize > 100 || !languagePattern.MatchString(options.Language) || len(options.Cursor) > 4096 {
+		return ReviewPage{}, fmt.Errorf("invalid Steam review page options or AppID: %w", ErrInvalidArgument)
 	}
 	input, err := json.Marshal(struct {
 		AppID          uint32   `json:"appid"`

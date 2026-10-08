@@ -37,6 +37,7 @@ type Collection struct {
 
 // CollectReviews は先頭から上限付きでページを取得する。再試行と保存は行わない。
 // fetcher は有効な取得依存を渡す。入力不正ではゼロ値と ErrInvalidArgument を返す。
+// 取得に失敗した場合は取得済みの部分結果と StopFailed、原因を保持したエラーを返す。
 func CollectReviews(ctx context.Context, fetcher PageFetcher, appID uint32, options CollectionOptions) (Collection, error) {
 	if fetcher == nil || appID == 0 {
 		return Collection{}, fmt.Errorf("page fetcher and positive AppID are required: %w", ErrInvalidArgument)
@@ -52,7 +53,8 @@ func CollectReviews(ctx context.Context, fetcher PageFetcher, appID uint32, opti
 		size := min(options.PageSize, options.MaxReviews-len(result.Reviews))
 		page, err := fetcher.FetchReviewsPage(ctx, appID, PageOptions{Language: options.Language, Cursor: cursor, PageSize: size})
 		if err != nil {
-			return Collection{}, fmt.Errorf("collect Steam review page: %w", err)
+			result.StopReason = StopFailed
+			return result, fmt.Errorf("collect Steam review page %d: %w", result.PagesFetched+1, err)
 		}
 		result.PagesFetched++
 		if len(page.Reviews) == 0 {

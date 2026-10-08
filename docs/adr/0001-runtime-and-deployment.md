@@ -33,8 +33,8 @@ PlayerLens は、レビュー収集・分析・レポート生成の操作を We
 
 - Go 1.27.1 と `golang:1.27.1-bookworm`、`distroless/static-debian12:nonroot` のマルチアーキテクチャ index digest を Dockerfile に固定した。タグは版の説明、digest は取得内容の特定に使う。更新時は Go のパッチ版・go.mod・digest を同じ Issue で変更し、ローカルと CI と本番用イメージを再検証する。
 - 開発用には Go のコンパイラを含め、Compose Watch でソースを同期して再起動する。`go run` の子プロセスへ終了シグナルを伝える問題を避けるため、ビルドしたバイナリを `exec` する。検証用のソース共有は読み取り専用とし、ビルド・モジュールのキャッシュだけを volume へ置く。
-- 外部 Go 依存はまだないため go.sum は生成されない。将来の依存導入時は go.mod・go.sum を管理し、Dockerfile と Watch の対象も更新する。
-- 本番用には実行ファイルと証明書を含む Distroless を使い、非 root で実行する。現在は標準ライブラリだけの構成なので本番ビルドで CGO を無効にする。CGO 依存を導入するときはビルドと実行用ライブラリを見直す。
+- Issue #25 で MCP SDK を導入し、go.mod・go.sum を管理する。Dockerfile は両方をコピーして依存を取得し、Watch はモジュール変更時に再ビルドする。cmd・internal の変更時は同期・再起動する。
+- 本番用には実行ファイルと証明書を含む Distroless を使い、非 root で実行する。現在の MCP SDK を含む依存は CGO 不要なので本番ビルドで CGO を無効にする。CGO 依存を導入するときはビルドと実行用ライブラリを見直す。
 - スモーク検査は一度ビルドした image ID を再利用する。これはローカルのイメージを特定するものであり、registry の manifest digest や配置対象の公開・検証を代用しない。ホストと CI のアーキテクチャは異なる場合があり、ローカル arm64 の成功だけで CI の amd64 を検証済みとは扱わない。
 
 ### Git 情報に依存しない Go 実行（Issue #23）

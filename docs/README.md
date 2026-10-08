@@ -17,6 +17,7 @@
 | [Steam レビューの1ページ取得](specs/steam-review-page.md) | Steam HTTP adapter、取得条件、応答と通信の上限 | Issue #17 で実装した。収集操作の契約は別仕様、保存・MCP への接続は未導入 |
 | [Steam レビューの上限付き収集](specs/collect-reviews.md) | 複数ページ収集、条件・重複・上限・途中失敗 | Issue #21 で実装した。永続保存・再開・Web/MCP 接続は未導入 |
 | [収集 CLI と保存先](specs/review-cli.md) | CLI の入力・終了・JSON・保存先の契約 | Issue #23 でローカル CLI と JSON 保存実装を導入した。永続保存は未導入 |
+| [レビュー収集 MCP](specs/review-mcp.md) | ローカルの MCP 接続、入力・応答・期限・部分失敗 | Issue #25 の契約を定義した。実装・検証の状態は作業記録へ記載する |
 | [ユースケース](use-cases.md) | 操作全体の一覧・責務と adapter・入口の境界 | 収集と収集・保存操作を導入した。CLI を接続した。Web・MCP は未接続 |
 | [ADR-0001：Go・Docker・Render による実行・配置](adr/0001-runtime-and-deployment.md) | 実行環境、開発・検証用 Docker、本番用 CI、Render 配置 | 採用。Compose・本番用イメージと検証 CI の設定を追加した。配置経路は未導入 |
 | [開発手順と規約検査](development.md) | 規約バリデーター、Git フック、Issue・PR の作成手順とテンプレート、CI | ローカル検査と PR・Issue イベントの規約 CI を確認した |
@@ -27,6 +28,7 @@
 | [ADR-0004：Steam の公開レビュー API](adr/0004-steam-review-api.md) | Steam API の選択、引数形式、取得 adapter の上限と再試行の責務 | 採用。実装とローカル検証は Issue #17 の作業記録へ記載する |
 | [ADR-0005：上限付き収集と部分結果](adr/0005-bounded-review-collection.md) | 収集操作の依存・上限・途中失敗・重複の判断 | 採用。実装と検証は Issue #21 の作業記録へ記載する |
 | [ADR-0006：収集結果の保存先](adr/0006-collection-output-boundary.md) | 保存先の注入、JSON の境界、部分結果の保存期限・失敗 | 採用。CLI と JSON adapter を導入した。DB は未導入 |
+| [ADR-0007：ローカルのレビュー収集 MCP](adr/0007-review-mcp.md) | SDK、プロトコル、短時間の取得と分析の担当 | 採用。実装・検証の状態は Issue #25 の作業記録へ記載する |
 
 変更が複数の範囲にまたがる場合は、対応する文書をすべて読む。参照した節と ADR、要件に対応する検証を Issue・PR に記録する。ADR を追加・置換するときは、この一覧と適用範囲を更新する。
 

@@ -24,7 +24,7 @@ var ErrInvalidArgument = errors.New("invalid Steam review argument")
 var ErrInvalidResponse = errors.New("invalid Steam review response")
 
 // ErrResponseTooLarge は応答が2 MiBを超えたことを表す。
-var ErrResponseTooLarge = errors.New("Steam review response exceeds 2 MiB")
+var ErrResponseTooLarge = errors.New("steam review response exceeds 2 MiB")
 
 var languagePattern = regexp.MustCompile(`^[a-z][a-z0-9_-]{0,31}$`)
 

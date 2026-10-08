@@ -16,6 +16,16 @@ func NewHandler(fetcher steam.PageFetcher) (http.Handler, error) {
 	if fetcher == nil {
 		return nil, fmt.Errorf("prepare review MCP handler: %w", steam.ErrInvalidArgument)
 	}
+	return mcp.NewStreamableHTTPHandler(func(request *http.Request) *mcp.Server {
+		return newServer(fetcher, request.Context())
+	}, &mcp.StreamableHTTPOptions{
+		Stateless:                    true,
+		JSONResponse:                 true,
+		PropagateRequestCancellation: true,
+	}), nil
+}
+
+func newServer(fetcher steam.PageFetcher, requestContext context.Context) *mcp.Server {
 	server := mcp.NewServer(&mcp.Implementation{Name: "PlayerLens", Version: "0.1.0"}, &mcp.ServerOptions{
 		SupportedProtocolVersions: []string{"2026-07-28", "2025-11-25", "2025-06-18", "2025-03-26"},
 	})
@@ -26,13 +36,14 @@ func NewHandler(fetcher steam.PageFetcher) (http.Handler, error) {
 		InputSchema:  inputSchema(),
 		OutputSchema: outputSchema(),
 		Annotations:  &mcp.ToolAnnotations{ReadOnlyHint: true, OpenWorldHint: &openWorld},
-	}, func(ctx context.Context, request *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	}, func(sdkContext context.Context, request *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		ctx, cancel := context.WithCancel(requestContext)
+		stop := context.AfterFunc(sdkContext, cancel)
+		defer stop()
+		defer cancel()
 		return collect(ctx, fetcher, request.Params.Arguments)
 	})
-	return mcp.NewStreamableHTTPHandler(func(*http.Request) *mcp.Server { return server }, &mcp.StreamableHTTPOptions{
-		Stateless:    true,
-		JSONResponse: true,
-	}), nil
+	return server
 }
 
 func inputSchema() map[string]any {

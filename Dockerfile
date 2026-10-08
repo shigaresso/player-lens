@@ -3,6 +3,7 @@ WORKDIR /src
 ENV GOTOOLCHAIN=local GOCACHE=/go-cache
 COPY go.mod ./
 COPY cmd ./cmd
+COPY internal ./internal
 CMD ["sh", "-c", "go build -o /tmp/player-lens ./cmd/server && exec /tmp/player-lens"]
 
 FROM golangci/golangci-lint:v2.14.0@sha256:ad862ba6b3798cbe0fd9fd7408d498fd74fbd2623a92406b2fd3898faf0bf98f AS lint-tool

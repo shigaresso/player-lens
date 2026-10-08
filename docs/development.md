@@ -23,6 +23,12 @@ python3 scripts/verify_hooks.py
 
 `check.sh` は規約・開発用ツールの全 Python テスト（0件なら失敗）、未ステージ・ステージ済みの空白、Lefthook 設定、actionlint、シェル構文を確認する。actionlint の ShellCheck 連携は無効にし、シェル構文は `bash -n` で確認する。静的解析による意味の保証とは区別する。
 
+## VS Code のファイルネスティング
+
+リポジトリのルートを VS Code で開くと、`.vscode/settings.json` のワークスペース設定で実装と関連テストをまとめる。通常テストと integration テストは同名の Go 実装の下に、`client.go` の複数の契約テストは同じ親の下に表示する。`go.sum` は存在する場合に `go.mod` の下へまとめる。初期状態は折り畳みとする。
+
+この設定はエクスプローラーの表示を整理する。Go のパッケージ単位のテストと、実装・テストのファイル構成は維持する。関連テストを追加・改名した場合は、必要に応じて `explorer.fileNesting.patterns` を更新する。公式の設定項目は [ファイルネスティング](https://code.visualstudio.com/updates/v1_67#_explorer-file-nesting) を参照する。
+
 ## 各フックの責務
 
 | フック | 検査 |

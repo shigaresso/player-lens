@@ -13,7 +13,7 @@ import (
 
 func TestCLIProcessHelpAndInvalidInput(t *testing.T) {
 	binary := filepath.Join(t.TempDir(), "collect-reviews")
-	build := exec.CommandContext(t.Context(), "go", "build", "-o", binary, ".")
+	build := exec.CommandContext(t.Context(), "go", "build", "-buildvcs=false", "-o", binary, ".")
 	if output, err := build.CombinedOutput(); err != nil {
 		t.Fatalf("CLIビルド: %s err=%v", output, err)
 	}

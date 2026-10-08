@@ -45,3 +45,9 @@ AI のセルフレビューで、操作側の保存契約、入口での依存�
 実 Steam へ追加の手動通信を行っていない。通常テストと CI の対象テストは取得依存・httptest を使い、外部 Steam を呼ばない。実 API の連携は前の Issue #17・#21 の少量確認と区別する。
 
 DB の採用と adapter、永続的な取得時刻・本文版・分析集合、再開・再試行、MCP/Web、coverage・分岐・mutation、Render 配置、人によるレビュー、未送信ブランチの GitHub アプリケーション CI は未導入・未実施とする。最後にコミット範囲、差分と作業ツリーを確認し、Issue の完了条件へ結果を対応させる。
+
+## PR 作成後の CI 修正
+
+2026-10-09 のユーザー指示に従いブランチを push し、[Draft PR #24](https://github.com/shigaresso/player-lens/pull/24) を作成した。上記の push 前の記録は当時の操作範囲を示す。
+
+HEAD `b6868f078e8e45cd486733391b2debfd6e0dbbf1` の [アプリケーション CI](https://github.com/shigaresso/player-lens/actions/runs/37798603664) で CLI プロセステストのビルドが `error obtaining VCS status: exit status 128` により失敗した。検証コンテナの読み取り専用 checkout から Git 情報を取得する環境差を確認し、CLI の検証用・ローカル用のビルドに `-buildvcs=false` を指定した。実プロセステストを省略せず、収集や出力の契約は変更しない。修正後のローカル検証と実 CI の結果を PR と Issue に記録する。

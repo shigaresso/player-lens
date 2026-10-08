@@ -19,7 +19,7 @@ func TestNormalizePageOptions(t *testing.T) {
 		{"指定した件数を保って他の既定値を補完する", steam.PageOptions{PageSize: 1}, steam.PageOptions{Language: "english", Cursor: "*", PageSize: 1}, false},
 		{"指定した言語とカーソルを保って20件へ補完する", steam.PageOptions{Language: "japanese", Cursor: "次+/="}, steam.PageOptions{Language: "japanese", Cursor: "次+/=", PageSize: 20}, false},
 		{"最大件数と言語とカーソルの境界を保持する", steam.PageOptions{Language: strings.Repeat("a", 32), Cursor: strings.Repeat("x", 4096), PageSize: 100}, steam.PageOptions{Language: strings.Repeat("a", 32), Cursor: strings.Repeat("x", 4096), PageSize: 100}, false},
-		{"全言語と最小件数を保持する", steam.PageOptions{Language: "all", Cursor: "*", PageSize: 1}, steam.PageOptions{Language: "all", Cursor: "*", PageSize: 1}, false},
+		{"全言語と最小件数を保持する", steam.PageOptions{Language: "all", Cursor: steam.FirstPageCursor, PageSize: 1}, steam.PageOptions{Language: "all", Cursor: "*", PageSize: 1}, false},
 		{"負の件数を拒否する", steam.PageOptions{PageSize: -1}, steam.PageOptions{}, true},
 		{"101件を拒否する", steam.PageOptions{PageSize: 101}, steam.PageOptions{}, true},
 		{"大文字の言語を拒否する", steam.PageOptions{Language: "English"}, steam.PageOptions{}, true},

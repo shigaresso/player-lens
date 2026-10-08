@@ -19,9 +19,9 @@ func TestFetchReviewsPageValidBoundaries(t *testing.T) {
 		appID   uint32
 		options steam.PageOptions
 	}{
-		{"最小のAppIDと件数を受け付ける", 1, steam.PageOptions{Language: "all", Cursor: "*", PageSize: 1}},
+		{"最小のAppIDと件数を受け付ける", 1, steam.PageOptions{Language: "all", Cursor: steam.FirstPageCursor, PageSize: 1}},
 		{"最大のAppIDと入力長を受け付ける", ^uint32(0), steam.PageOptions{Language: "a" + strings.Repeat("b", 31), Cursor: strings.Repeat("x", 4096), PageSize: 100}},
-		{"言語の数字と区切りを受け付ける", 440, steam.PageOptions{Language: "en_1-test", Cursor: "*", PageSize: 20}},
+		{"言語の数字と区切りを受け付ける", 440, steam.PageOptions{Language: "en_1-test", Cursor: steam.FirstPageCursor, PageSize: 20}},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			calls := 0

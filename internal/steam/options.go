@@ -8,6 +8,9 @@ import (
 // MaxPageSize は Steam GetAppReviews が1ページで返すレビュー件数の上限を表す。
 const MaxPageSize = 100
 
+// FirstPageCursor は Steam GetAppReviews で先頭ページを指定するカーソルを表す。
+const FirstPageCursor = "*"
+
 const defaultPageSize = 20
 const maxCursorBytes = 4096
 
@@ -29,7 +32,7 @@ func NormalizePageOptions(options PageOptions) (PageOptions, error) {
 		options.Language = "english"
 	}
 	if options.Cursor == "" {
-		options.Cursor = "*"
+		options.Cursor = FirstPageCursor
 	}
 	if options.PageSize == 0 {
 		options.PageSize = defaultPageSize

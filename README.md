@@ -2,7 +2,7 @@
 
 プレイヤーのレビューを収集・分析し、ゲーム企画に使える根拠付きレポートを生成するアプリケーションを開発する。
 
-現在は Go の最小 HTTP サーバー、上限付きの Steam レビュー収集と JSON を出力するローカル CLI、Docker Compose の開発・検証環境、Git・GitHub の規約検査を導入した。分析・レポート・DB・MCP は未実装とし、公開デモ URL とサンプルレポートはまだない。
+現在は Go の最小 HTTP サーバー、上限付きの Steam レビュー収集、JSON を出力するローカル CLI、ChatGPT へ収集結果を返す MCP、Docker Compose の開発・検証環境、Git・GitHub の規約検査を導入した。バックエンドの分析・レポート・DB は未実装とし、公開デモ URL とサンプルレポートはまだない。
 
 ## 開発環境
 
@@ -18,7 +18,7 @@ python3 scripts/dev.py
 curl --fail http://localhost:8080/healthz
 ```
 
-`ok` と改行を返す。ログは `docker compose logs --follow app` で確認できる。Compose Watch は `cmd/` と `go.mod` の変更を同期し、ビルド後にサーバーを再起動する。起動コマンドはイメージを1回ビルドし、前回の Watch 終了後の変更も含める。停止は Ctrl+C、コンテナとネットワークの片付けは `docker compose down` とする。Go のキャッシュ volume は保存される。
+`ok` と改行を返す。ログは `docker compose logs --follow app` で確認できる。Compose Watch は `cmd/` と `internal/` の変更を同期してサーバーを再起動し、`go.mod`・`go.sum` の変更では依存を含めて再ビルドする。起動コマンドはイメージを1回ビルドし、前回の Watch 終了後の変更も含める。停止は Ctrl+C、コンテナとネットワークの片付けは `docker compose down` とする。Go のキャッシュ volume は保存される。
 
 `.env.example` の `DEV_PORT` は探索を始めるポート（既定8080）、`PORT` はコンテナ内の待ち受けポートとなる。必要なら `.env` へコピーするか、次のように開始値を指定する。
 
@@ -49,6 +49,12 @@ docker compose run --rm --no-deps -T collect --app-id 440 --language japanese --
 
 収集と保存の操作は保存先の共通契約だけを使用し、起動部分で JSON の実装を注入する。JSON の変換は通信・保存から分離した。[CLI の仕様](docs/specs/review-cli.md) と [ADR-0006](docs/adr/0006-collection-output-boundary.md) を参照する。DB 保存、取得時刻・本文版・分析対象集合の管理、再開・再試行は未導入とする。通常テスト・CI は実 Steam API に接続しない。
 
+## ChatGPT からレビューを取得する
+
+同じサーバーの `/tools` で `collect_reviews` を利用できる。`python3 scripts/dev.py` が表示したポートを使い、ChatGPT デスクトップアプリへ `http://127.0.0.1:<ポート>/tools` を登録する。[MCP デバッグ手順](docs/mcp-debug.md) に設定と3件の手動確認例を記載した。生成 AI の API キーは不要で、分析は ChatGPT が担当する。アプリの実接続・分析はまだ手動確認していない。
+
+取得は既定20件・最大100件、最大5ページ、実行期限8秒とする。途中失敗は部分結果を返し、応答量超過時は件数を減らす案内を返す。レビューはメモリから返し、ファイルや DB へ保存しない。localhost またはループバック IP の Host での接続に限定する。[MCP 仕様](docs/specs/review-mcp.md) と [ADR-0007](docs/adr/0007-review-mcp.md) を参照する。
+
 ## 検証
 
 ```sh
@@ -57,7 +63,7 @@ bash scripts/check-app.sh
 python3 scripts/verify_hooks.py
 ```
 
-アプリケーションの全検査は、Go の整形差分・静的検査・ユニットテスト、結合テストを含む race 検査、本番用イメージのビルド・HTTP・設定・終了確認を行う。Docker の停止や検査失敗は成功扱いにしない。対象を分けて実行する場合は次を使う。
+アプリケーションの全検査は、Go の整形差分・静的検査・ユニットテスト、実 MCP クライアントとの結合テストを含む race 検査、本番用イメージのビルド・HTTP・MCP・設定・終了確認を行う。Docker の停止や検査失敗は成功扱いにしない。対象を分けて実行する場合は次を使う。
 
 ```sh
 bash scripts/check-go.sh unit
@@ -82,6 +88,7 @@ bash scripts/check-go.sh format-fix
 - `internal/steam/`：取得・収集と、保存先を注入する収集・保存操作を管理する。
 - `internal/jsonoutput/`：JSON の純粋変換と writer への保存実装を管理する。
 - `internal/reviewcli/`：CLI の入力検査と共通操作への接続を管理する。
+- `internal/reviewmcp/`：MCP の入力・応答・HTTP の制限と共通収集操作への接続を管理する。
 - `compose.yaml`：開発用サーバーと検証用 Go 環境を管理する。
 - `Dockerfile`：development と production を分け、Go・実行用のベースイメージを digest で固定する。
 - `scripts/`：開発用の起動と共通検査、Issue・PR・Release の作成手順を管理する。

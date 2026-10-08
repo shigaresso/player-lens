@@ -25,7 +25,7 @@ python3 scripts/verify_hooks.py
 
 ## VS Code のファイルネスティング
 
-リポジトリのルートを VS Code で開くと、`.vscode/settings.json` のワークスペース設定で実装と関連テストをまとめる。通常テストと integration テストは同名の Go 実装の下に、`client.go` の複数の契約テストは同じ親の下に表示する。`go.sum` は存在する場合に `go.mod` の下へまとめる。初期状態は折り畳みとする。
+リポジトリのルートを VS Code で開くと、`.vscode/settings.json` のワークスペース設定で実装と関連テストをまとめる。通常テストと integration テストは同名の Go 実装の下に、`client.go` と MCP の `collection.go`・`handler.go` の複数の契約テストは同じ親の下に表示する。`go.sum` は存在する場合に `go.mod` の下へまとめる。初期状態は折り畳みとする。
 
 Python は同じディレクトリの `test_<実装名>.py` を `<実装名>.py` の下へまとめる。たとえば `github.py` の下に `test_github.py` を表示する。`validate.py` は `test_validate.py` と `test_main_range.py` をまとめる。対応する Python の親ファイルがないテストは単独表示とする。
 
@@ -57,8 +57,8 @@ bash scripts/check-app.sh
 
 - `bash scripts/check-go.sh unit`：読み取り専用ソースの Compose サービスで gofmt の差分を検出し、`go vet ./...` と `go test -count=1 ./...` を実行する。自動修正で成功扱いにしない。
 - `bash scripts/check-lint.sh`：読み取り専用ソースの lint サービスで固定版 golangci-lint を実行する。通常のソースと integration タグ付きテストを含める。
-- `bash scripts/check-go.sh integration`：実行対象に結合テストが存在することを確認し、`go test -tags=integration -race -count=1 ./...` を実行する。通常のテストも含む。先に `scripts/verify_go_vcs.sh` で Git の失敗・不在と checkout の不在でも Go の処理と子ビルドが成功することを確認する。テスト一覧の取得失敗はテスト未検出とは区別して中断する。外部ネットワーク・DB・MCP は使わず、HTTP と終了処理を確認する。
-- `python3 scripts/check_image.py`：本番用イメージを一度ビルドし、同じ image ID を使って非 root 設定、ソース共有なし・読み取り専用での起動、HTTP 応答、PORT の変更、不正設定の非0終了、SIGTERM/SIGINT の正常終了を確認する。一時コンテナは削除する。
+- `bash scripts/check-go.sh integration`：実行対象に結合テストが存在することを確認し、`go test -tags=integration -race -count=1 ./...` を実行する。通常のテストも含む。先に `scripts/verify_go_vcs.sh` で Git の失敗・不在と checkout の不在でも Go の処理と子ビルドが成功することを確認する。テスト一覧の取得失敗はテスト未検出とは区別して中断する。外部サービス・DB・実 Steam・実 LLM は使わず、HTTP と終了処理、ローカルの実 SDK クライアントとの MCP 連携を確認する。
+- `python3 scripts/check_image.py`：本番用イメージを一度ビルドし、同じ image ID を使って非 root 設定、ソース共有なし・読み取り専用での起動、HTTP・MCP 応答と外部 Host の拒否、PORT の変更、不正設定の非0終了、SIGTERM/SIGINT の正常終了を確認する。一時コンテナは削除する。
 
 Docker の停止・未導入でこの検査を省略して成功扱いにしない。Go の coverage 閾値・分岐・mutation 検査は別 Issue で導入するため、このコマンドの成功だけで100%と記載しない。
 
@@ -179,3 +179,9 @@ GitHub の PR 画面では PR CI・完了条件・差分を確認して `Merge p
 4. 確認した設定と結果を Issue・PR に記録して導入状態を更新する。
 
 Issue の作成後の検査は、作成そのものを防がない。日本語の自然さ・過去形・Issue の完了・検証結果の真偽・AI が仕様を読んだことは自動保証しない。
+
+## MCP のローカル検証（Issue #25）
+
+公式 Go SDK v1.8.0 を go.mod・go.sum に固定した。Docker は依存取得後にソースをコピーし、Compose Watch はモジュール変更時に再ビルドする。SDK を更新するときは新旧プロトコルの連携、HTTP 制限・キャンセル・終了処理と本番用イメージを再検証する。
+
+通常テストは取得依存を差し替えて入出力と上限を確認する。MCP の接続・一覧・呼び出しは integration タグの実 SDK クライアントとローカル HTTP サーバーで確認する。本番イメージは初期化・一覧・不正入力・外部 Host 拒否を検査し、実 Steam 取得を行わない。ChatGPT のアプリ設定と分析回答の手動確認は [MCP デバッグ](mcp-debug.md) に従い、自動検証と分けて [作業記録](worklogs/25-review-mcp.md) に残す。

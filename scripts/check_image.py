@@ -37,6 +37,52 @@ def request(port, method, path):
         connection.close()
 
 
+def check_mcp(port):
+    """初期化・一覧・不正入力だけを確認し、実 Steam 通信は行わない。"""
+    def call(identifier, method, params):
+        connection = http.client.HTTPConnection("127.0.0.1", port, timeout=3)
+        try:
+            body = json.dumps({"jsonrpc": "2.0", "id": identifier,
+                               "method": method, "params": params})
+            connection.request("POST", "/tools", body, {
+                "Content-Type": "application/json",
+                "Accept": "application/json, text/event-stream",
+                "MCP-Protocol-Version": "2025-11-25",
+            })
+            response = connection.getresponse()
+            payload = json.loads(response.read())
+            if response.status != 200 or payload.get("id") != identifier or "error" in payload:
+                raise RuntimeError(f"MCP {method} の応答が異なる: {payload!r}")
+            return payload["result"]
+        finally:
+            connection.close()
+
+    initialized = call(1, "initialize", {
+        "protocolVersion": "2025-11-25", "capabilities": {},
+        "clientInfo": {"name": "player-lens-image-check", "version": "1"},
+    })
+    if initialized["protocolVersion"] != "2025-11-25":
+        raise RuntimeError("MCP の初期化版が異なる")
+    tools = call(2, "tools/list", {})["tools"]
+    if len(tools) != 1 or tools[0]["name"] != "collect_reviews":
+        raise RuntimeError("MCP のツール一覧が異なる")
+    invalid = call(3, "tools/call", {"name": "collect_reviews", "arguments": {"app_id": 0}})
+    if not invalid.get("isError") or invalid["structuredContent"]["error_code"] != "invalid_input":
+        raise RuntimeError("MCP の不正入力を取得前に拒否しなかった")
+    connection = http.client.HTTPConnection("127.0.0.1", port, timeout=3)
+    try:
+        connection.request("POST", "/tools", "{}", {
+            "Host": "external.example", "Content-Type": "application/json",
+            "Accept": "application/json, text/event-stream",
+        })
+        response = connection.getresponse()
+        response.read()
+        if response.status != 403:
+            raise RuntimeError("Docker 転送経由で外部 Host を拒否しなかった")
+    finally:
+        connection.close()
+
+
 def check_running(image, port, signal, *environment):
     with container(image, "--publish", f"127.0.0.1::{port}", *environment) as identifier:
         state = json.loads(docker("inspect", identifier))[0]
@@ -58,13 +104,16 @@ def check_running(image, port, signal, *environment):
             raise RuntimeError(f"healthz の応答が異なる: {response!r}")
         if request(host_port, "HEAD", "/healthz") != (200, "text/plain; charset=utf-8", b""):
             raise RuntimeError("HEAD の応答が異なる")
-        for method, path, status in (("POST", "/healthz", 405), ("GET", "/", 404)):
+        for method, path, status in (("POST", "/healthz", 405), ("GET", "/", 404),
+                                     ("POST", "/mcp", 404), ("POST", "/tools/", 404),
+                                     ("POST", "/tools/child", 404)):
             if request(host_port, method, path)[0] != status:
                 raise RuntimeError(f"{method} {path} の状態が異なる")
+        check_mcp(host_port)
         docker("kill", "--signal", signal, identifier)
         if docker("wait", identifier, timeout=15) != "0":
             raise RuntimeError("終了シグナルで正常終了しなかった")
-        print(f"PORT={port}: HTTP 応答と {signal} の正常終了を確認した")
+        print(f"PORT={port}: HTTP・MCP 応答と {signal} の正常終了を確認した")
 
 
 def main():

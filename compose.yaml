@@ -22,9 +22,10 @@ services:
         - action: sync+restart
           path: ./cmd
           target: /src/cmd
-        - action: sync+restart
+        - action: rebuild
           path: ./go.mod
-          target: /src/go.mod
+        - action: rebuild
+          path: ./go.sum
         - action: sync+restart
           path: ./internal
           target: /src/internal

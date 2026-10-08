@@ -4,8 +4,8 @@
 
 | 操作 | 目的と責務 | 入力と依存 | 結果と失敗 | 呼び出し元の状態 |
 | --- | --- | --- | --- | --- |
-| `steam.CollectReviews` | レビューを上限付きで収集し、カーソル・重複・終了条件を管理する | context、PageFetcher、App ID、CollectionOptions | Collection と終了理由。不正入力はゼロ値、途中失敗は部分結果と原因を保持したエラー | 収集・保存操作、テストと手動確認から呼び出した |
-| `steam.CollectAndSaveReviews` | 収集と結果保存の順序、部分結果・複合失敗・保存期限を管理する | context、PageFetcher、CollectionSaver、App ID、CollectionOptions | Collection と収集/保存の原因を保持したエラー。保存は一度だけ行う | CLI から接続した。Web・MCP は未接続 |
+| `steam.CollectReviews` | レビューを上限付きで収集し、カーソル・重複・終了条件を管理する | context、PageFetcher、App ID、CollectionOptions | Collection と終了理由。不正入力はゼロ値、途中失敗は部分結果と原因を保持したエラー | 収集・保存操作、MCP、テストと手動確認から呼び出した |
+| `steam.CollectAndSaveReviews` | 収集と結果保存の順序、部分結果・複合失敗・保存期限を管理する | context、PageFetcher、CollectionSaver、App ID、CollectionOptions | Collection と収集/保存の原因を保持したエラー。保存は一度だけ行う | CLI から接続した。MCP は保存しないためこの操作を使わない。Web は未接続 |
 
 [収集仕様](specs/collect-reviews.md) と [ADR-0005](adr/0005-bounded-review-collection.md) に契約と判断を記載する。
 
@@ -18,3 +18,5 @@
 入口側が HTTP クライアントと `Client` を組み立て、同じ `CollectReviews` へ渡す。操作内に具体的な HTTP クライアントや DB を固定せず、同じ Go アプリケーション内の呼び出しに HTTP・MCP 通信を挟まない。
 
 CLI の `reviewcli.Run` は引数の解析と `CollectAndSaveReviews` への接続を担当し、収集や保存の手順を重複させない。main が JSON Saver を渡す。保存先を変更するときは同じ CollectionSaver 契約を実装して組み立て箇所で選び、操作と入力解析を共通で使う。[CLI 仕様](specs/review-cli.md) と [ADR-0006](adr/0006-collection-output-boundary.md) に責務を記載する。
+
+MCP の `reviewmcp.NewHandler` は `collect_reviews` の入力と HTTP 制限、実行期限、Collection の応答変換を担当する。`CollectReviews` を直接呼び、JSON の純粋変換だけを再利用する。保存操作は呼ばない。分析は接続元の ChatGPT が担当し、バックエンドの LLM 呼び出しは未導入とする。[MCP 仕様](specs/review-mcp.md) と [ADR-0007](adr/0007-review-mcp.md) に責務を記載する。

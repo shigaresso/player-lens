@@ -1,4 +1,4 @@
-// Package steam は Steam のレビュー API への HTTP adapter を提供する。
+// Package steam は Steam のレビュー取得と上限付きの収集を提供する。
 package steam
 
 import (

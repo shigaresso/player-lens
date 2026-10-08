@@ -2,7 +2,7 @@
 
 ## 範囲
 
-[Issue #17](https://github.com/shigaresso/player-lens/issues/17) の HTTP adapter の契約を定める。複数ページの収集操作、保存、取得時刻・本文の版、再試行、MCP は対象外とする。操作全体を導入する段階で `docs/use-cases.md` を作る。
+[Issue #17](https://github.com/shigaresso/player-lens/issues/17) の HTTP adapter の契約を定める。複数ページの操作は [収集仕様](collect-reviews.md) と [ユースケース](../use-cases.md) を参照する。この adapter に保存、取得時刻・本文の版、再試行、MCP の責務は追加しない。
 
 ## API と入力
 

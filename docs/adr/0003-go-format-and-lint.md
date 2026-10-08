@@ -14,7 +14,7 @@ gofmt・go vet・テストは導入済みだが、コミット前の Go 整形�
 - 実バイナリは Go 1.27.0 でビルドされた v2.14.0 であることを確認した。同じ minor の Go 1.27.1 ソースの正常な解析と違反検出を実行し、版の数字だけで互換性を保証したと扱わない。更新時は公式の対応情報、版・digest、実際の解析をまとめて確認する。
 - `.golangci.yml` は `errcheck`、`staticcheck`、`ineffassign`、`unused` を明示し、blank identifier に捨てたエラーも確認する。テストと integration タグを含める。既存の go vet は維持する。通過目的の除外や nolint は追加しない。
 - pre-commit は変更された Go の index の内容を一時コピーし、gofmt の差分を拒否する。Go の変更がなければ Docker 検査は省略する。検査で自動修正・再ステージはしない。
-- pre-push と独立した `go-lint` CI は同じ検査スクリプトを使う。解析時だけ `GOFLAGS=-buildvcs=false` で不要な VCS 情報の取得を省略する。ビルド、HTTP サーバーの動作やコミット規約の検査は変更しない。
+- pre-push と独立した `go-lint` CI は同じ検査スクリプトを使う。Issue #23 で `GOFLAGS=-buildvcs=false` を Dockerfile の共通設定へ移し、解析・開発・検証・本番ビルドと子 Go コマンドへ適用する。[ADR-0001 の Git 情報に依存しない Go 実行](0001-runtime-and-deployment.md#git-情報に依存しない-go-実行issue-23) に従い、Git・GitHub の規約検査は維持する。
 - 検査サービスのソースは読み取り専用とし、明示的な `format-fix` だけが修正専用サービスの読み書き可能なソースを使う。キャッシュは volume に置く。
 - 実ツールの検証は一時ソースで正常・違反と入力の保持を確認し、通常の Python テストや隔離した実フック検証とは分ける。CI でも実ツールの検証を行う。
 

@@ -28,6 +28,18 @@ services:
         - action: sync+restart
           path: ./internal
           target: /src/internal
+  collect:
+    profiles: [tools]
+    build:
+      context: .
+      target: development
+    volumes:
+      - .:/src:ro
+      - go-build:/go-cache
+      - go-mod:/go/pkg/mod
+    entrypoint: ["sh", "-c", "go build -o /tmp/collect-reviews ./cmd/collect-reviews && exec /tmp/collect-reviews \"$@\"", "collect-reviews"]
+    command: ["--help"]
+
   verify:
     profiles: [tools]
     build:
@@ -54,7 +66,6 @@ services:
       context: .
       target: lint
     environment:
-      GOFLAGS: -buildvcs=false
       GOLANGCI_LINT_CACHE: /lint-cache
     volumes:
       - .:/src:ro

@@ -2,7 +2,7 @@
 
 プレイヤーのレビューを収集・分析し、ゲーム企画に使える根拠付きレポートを生成するアプリケーションを開発する。
 
-現在は Go の最小 HTTP サーバー、Docker Compose の開発・検証環境、Git・GitHub の規約検査を導入した。レビュー収集・分析・レポート・DB・MCP は未実装とし、公開デモ URL とサンプルレポートはまだない。
+現在は Go の最小 HTTP サーバー、上限付きの Steam レビュー収集と JSON を出力するローカル CLI、Docker Compose の開発・検証環境、Git・GitHub の規約検査を導入した。分析・レポート・DB・MCP は未実装とし、公開デモ URL とサンプルレポートはまだない。
 
 ## 開発環境
 
@@ -27,6 +27,27 @@ DEV_PORT=3000 python3 scripts/dev.py
 ```
 
 選択したポートは `.env` に保存しない。本番の `PORT` は自動変更しない。Docker のポート割り当て失敗だけを再試行し、設定・ビルド・healthcheck などの失敗は原因を表示して終了する。同じ Compose プロジェクトで起動済みの場合は、先の起動を Ctrl+C または `docker compose stop app` で停止してから起動する。`.env` は Git とビルド対象に含めない。
+
+## レビュー収集 CLI
+
+CLI 用イメージをビルドし、使用方法を確認する。
+
+```sh
+docker compose build collect
+docker compose run --rm --no-deps -T collect --help
+```
+
+実 Steam API から収集するときは作品 ID と件数上限を指定する。次のコマンドは App ID 440 の日本語レビューを最大100件取得するため、外部通信が発生する。
+
+```sh
+docker compose run --rm --no-deps -T collect --app-id 440 --language japanese --max-reviews 100
+```
+
+標準出力へ収集条件・レビュー・終了理由を含む単一の JSON と改行を出す。help と診断は標準エラーへ出す。ビルドと実行を分け、JSON にビルドログを混ぜない。既定の取得上限は1000件、1リクエスト最大100件、最大100回・2分とする。件数・通信回数の上限による終了は全件取得を意味しない。
+
+正常終了と help は終了コード0、不正入力は2、収集・出力の失敗は1とする。途中失敗では出力できた部分結果を残す。SIGINT・SIGTERM で収集をキャンセルし、部分結果の保存には独立した5秒の期限を渡す。通常の writer の実行中の書き込みは中断できず、原子的な出力・永続保存は保証しない。
+
+収集と保存の操作は保存先の共通契約だけを使用し、起動部分で JSON の実装を注入する。JSON の変換は通信・保存から分離した。[CLI の仕様](docs/specs/review-cli.md) と [ADR-0006](docs/adr/0006-collection-output-boundary.md) を参照する。DB 保存、取得時刻・本文版・分析対象集合の管理、再開・再試行は未導入とする。通常テスト・CI は実 Steam API に接続しない。
 
 ## 検証
 
@@ -57,6 +78,10 @@ bash scripts/check-go.sh format-fix
 ## 構成と制約
 
 - `cmd/server/`：HTTP 応答、設定、サーバー起動・終了とテストを管理する。
+- `cmd/collect-reviews/`：ローカル CLI の依存と出力・終了コードを組み立てる。
+- `internal/steam/`：取得・収集と、保存先を注入する収集・保存操作を管理する。
+- `internal/jsonoutput/`：JSON の純粋変換と writer への保存実装を管理する。
+- `internal/reviewcli/`：CLI の入力検査と共通操作への接続を管理する。
 - `compose.yaml`：開発用サーバーと検証用 Go 環境を管理する。
 - `Dockerfile`：development と production を分け、Go・実行用のベースイメージを digest で固定する。
 - `scripts/`：開発用の起動と共通検査、Issue・PR・Release の作成手順を管理する。

@@ -57,7 +57,7 @@ bash scripts/check-app.sh
 
 - `bash scripts/check-go.sh unit`：読み取り専用ソースの Compose サービスで gofmt の差分を検出し、`go vet ./...` と `go test -count=1 ./...` を実行する。自動修正で成功扱いにしない。
 - `bash scripts/check-lint.sh`：読み取り専用ソースの lint サービスで固定版 golangci-lint を実行する。通常のソースと integration タグ付きテストを含める。
-- `bash scripts/check-go.sh integration`：実行対象に結合テストが存在することを確認し、`go test -tags=integration -race -count=1 ./...` を実行する。通常のテストも含む。テスト一覧を取得する `go list` は `-buildvcs=false` で不要な Git 情報の取得を省略し、取得失敗をテスト未検出とは区別して中断する。外部ネットワーク・DB・MCP は使わず、HTTP と終了処理を確認する。
+- `bash scripts/check-go.sh integration`：実行対象に結合テストが存在することを確認し、`go test -tags=integration -race -count=1 ./...` を実行する。通常のテストも含む。先に `scripts/verify_go_vcs.sh` で Git の失敗・不在と checkout の不在でも Go の処理と子ビルドが成功することを確認する。テスト一覧の取得失敗はテスト未検出とは区別して中断する。外部ネットワーク・DB・MCP は使わず、HTTP と終了処理を確認する。
 - `python3 scripts/check_image.py`：本番用イメージを一度ビルドし、同じ image ID を使って非 root 設定、ソース共有なし・読み取り専用での起動、HTTP 応答、PORT の変更、不正設定の非0終了、SIGTERM/SIGINT の正常終了を確認する。一時コンテナは削除する。
 
 Docker の停止・未導入でこの検査を省略して成功扱いにしない。Go の coverage 閾値・分岐・mutation 検査は別 Issue で導入するため、このコマンドの成功だけで100%と記載しない。
@@ -68,7 +68,7 @@ Docker の停止・未導入でこの検査を省略して成功扱いにしな�
 
 全体の整形チェックは `bash scripts/check-go.sh format`、明示的な修正は `bash scripts/check-go.sh format-fix` を使う。修正だけが Compose の format サービスを使い、作業ツリーへ書き込む。修正後に差分を確認してステージする。検査用サービスの読み取り専用設定を変更して修正を行わない。
 
-[ADR-0003](adr/0003-go-format-and-lint.md) に従い、golangci-lint v2.14.0 の公式イメージをタグと複数アーキテクチャ用 index digest で固定し、development と同じ Go 1.27.1 の lint ステージへバイナリを取り込む。設定 `.golangci.yml` は errcheck（blank identifier のエラーも含む）、staticcheck、ineffassign、unused を有効にする。検査ツールはアプリケーションの go.mod と本番用イメージへ追加しない。解析時の不要な VCS 情報取得だけを `GOFLAGS=-buildvcs=false` で省略する。go-build・go-mod・go-lint volume は再利用可能なキャッシュで、データ永続化ではない。
+[ADR-0003](adr/0003-go-format-and-lint.md) に従い、golangci-lint v2.14.0 の公式イメージをタグと複数アーキテクチャ用 index digest で固定し、development と同じ Go 1.27.1 の lint ステージへバイナリを取り込む。設定 `.golangci.yml` は errcheck（blank identifier のエラーも含む）、staticcheck、ineffassign、unused を有効にする。検査ツールはアプリケーションの go.mod と本番用イメージへ追加しない。Issue #23 で Dockerfile の development ステージに `GOFLAGS=-buildvcs=false` を共通設定した。開発・検証・解析・本番ビルドと、テスト内で起動する子 Go コマンドがこの設定を引き継ぐ。バイナリの VCS 情報埋め込みは省略し、対象 SHA・成果物の対応は CI と作業記録で管理する。Git・GitHub の規約検査は維持する。Git 非依存の回帰検査は integration の共通コマンドで、pre-push と CI の go-integration から実行する。go-build・go-mod・go-lint volume は再利用可能なキャッシュで、データ永続化ではない。
 
 ツール更新時は版・digest・公式の Go 対応情報を確認し、`python3 scripts/verify_go_tools.py` を実行する。この実 Docker 検証は一時ソースで正常、4種類のリンター違反、integration タグ、部分ステージ、全体の整形検査と修正を確認し、一時ファイル・コンテナを削除する。通常の Python テストと隔離したフック検証には Docker を要求しない。pre-push はアプリケーション全体の検査を行い、ツール自体の違反入力検証は独立した CI と更新時に行う。
 

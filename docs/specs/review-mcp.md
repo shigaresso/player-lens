@@ -2,11 +2,11 @@
 
 ## 目的と状態
 
-[Issue #25](https://github.com/shigaresso/player-lens/issues/25) で `/mcp` を導入する。ChatGPT が分析を担当し、Go は収集結果をメモリから返す。LLM API キー、LLM 呼び出し、レビューのファイル・DB 保存は使用しない。ChatGPT の会話保存は PlayerLens の保存処理と別である。実装・検証の状態は [作業記録](../worklogs/25-review-mcp.md) に残す。
+[Issue #25](https://github.com/shigaresso/player-lens/issues/25) で `/tools` を導入する。ChatGPT が分析を担当し、Go は収集結果をメモリから返す。LLM API キー、LLM 呼び出し、レビューのファイル・DB 保存は使用しない。ChatGPT の会話保存は PlayerLens の保存処理と別である。実装・検証の状態は [作業記録](../worklogs/25-review-mcp.md) に残す。
 
 ## 接続と入力
 
-公式 Go SDK v1.8.0 の Streamable HTTP を使う。stateless・JSON 応答とし、GET の SSE 待機や永続セッションを使わない。SDK の対応版 2026-07-28 の discover と旧版 2025-11-25・2025-06-18・2025-03-26 の initialize を検証する。`/mcp` 以外の子パスは対象にしない。healthz の契約は維持する。
+公式 Go SDK v1.8.0 の Streamable HTTP を使う。stateless・JSON 応答とし、GET の SSE 待機や永続セッションを使わない。SDK の対応版 2026-07-28 の discover と旧版 2025-11-25・2025-06-18・2025-03-26 の initialize を検証する。`/tools` だけを接続先とし、旧 `/mcp`・`/tools/`・`/tools/child` は404で拒否する。healthz の契約は維持する。
 
 ツールは `collect_reviews` の1つとし、読み取り専用・外部通信ありと宣言する。
 

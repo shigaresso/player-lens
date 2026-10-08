@@ -8,7 +8,7 @@ import (
 func newHandler(mcpHandler http.Handler) http.Handler {
 	mux := http.NewServeMux()
 	if mcpHandler != nil {
-		mux.Handle("/mcp", mcpHandler)
+		mux.Handle("/tools", mcpHandler)
 	}
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")

@@ -51,7 +51,7 @@ docker compose run --rm --no-deps -T collect --app-id 440 --language japanese --
 
 ## ChatGPT からレビューを取得する
 
-同じサーバーの `/mcp` で `collect_reviews` を利用できる。`python3 scripts/dev.py` が表示したポートを使い、ChatGPT デスクトップアプリへ `http://127.0.0.1:<ポート>/mcp` を登録する。[MCP デバッグ手順](docs/mcp-debug.md) に設定と3件の手動確認例を記載した。生成 AI の API キーは不要で、分析は ChatGPT が担当する。アプリの実接続・分析はまだ手動確認していない。
+同じサーバーの `/tools` で `collect_reviews` を利用できる。`python3 scripts/dev.py` が表示したポートを使い、ChatGPT デスクトップアプリへ `http://127.0.0.1:<ポート>/tools` を登録する。[MCP デバッグ手順](docs/mcp-debug.md) に設定と3件の手動確認例を記載した。生成 AI の API キーは不要で、分析は ChatGPT が担当する。アプリの実接続・分析はまだ手動確認していない。
 
 取得は既定20件・最大100件、最大5ページ、実行期限8秒とする。途中失敗は部分結果を返し、応答量超過時は件数を減らす案内を返す。レビューはメモリから返し、ファイルや DB へ保存しない。localhost またはループバック IP の Host での接続に限定する。[MCP 仕様](docs/specs/review-mcp.md) と [ADR-0007](docs/adr/0007-review-mcp.md) を参照する。
 

@@ -14,16 +14,18 @@ func TestMCPRoute(t *testing.T) {
 		status int
 		called bool
 	}{
-		{"POSTのMCPを委譲する", "POST", "/mcp", 202, true},
-		{"MCPのメソッド判定を委譲する", "GET", "/mcp", 202, true},
-		{"MCPの子パスを公開しない", "POST", "/mcp/child", 404, false},
+		{"POSTのMCPを委譲する", "POST", "/tools", 202, true},
+		{"MCPのメソッド判定を委譲する", "GET", "/tools", 202, true},
+		{"MCPの子パスを公開しない", "POST", "/tools/child", 404, false},
+		{"末尾のスラッシュを公開しない", "POST", "/tools/", 404, false},
+		{"旧パスを公開しない", "POST", "/mcp", 404, false},
 		{"healthzはMCPに委譲しない", "GET", "/healthz", 200, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			called := false
 			handler := newHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				called = true
-				if r.URL.Path != "/mcp" {
+				if r.URL.Path != "/tools" {
 					t.Fatal(r.URL.Path)
 				}
 				w.WriteHeader(202)

@@ -11,7 +11,8 @@ API キーなしで ChatGPT アプリから収集結果を分析したい。独�
 ## 決定
 
 - [公式 Go SDK v1.8.0](https://github.com/modelcontextprotocol/go-sdk/releases/tag/v1.8.0) を固定した。Go 1.25 以上を要求するため既存の1.27.1で実行できる。go.mod・go.sum、Docker の依存ダウンロード、Compose Watch を管理する。
-- 同じ HTTP サーバーに `/mcp` を追加し、stateless・JSON の Streamable HTTP を使う。永続セッション、サーバーからの sampling・elicitation・roots 要求を使わない。
+- ChatGPT の入力欄の `/mcp` コマンドと区別しやすくするため、URL のパスを `/tools` とする。ツール名とプロトコルは変更せず、旧 `/mcp` は公開しない。
+- 同じ HTTP サーバーに `/tools` を追加し、stateless・JSON の Streamable HTTP を使う。永続セッション、サーバーからの sampling・elicitation・roots 要求を使わない。
 - SDK の新旧プロトコルを利用し、旧版でも HTTP 切断を収集へ伝える。HTTP リクエストごとにサーバーとツールを組み立て、呼び出し context を共有可変状態へ格納しない。
 - `steam.CollectReviews` を直接使い、純粋な `jsonoutput.MarshalCollection` を結果変換へ再利用する。保存ユースケースと CLI 出力は経由しない。
 - 数値上限、8秒の実行期限、部分失敗と応答量超過は [MCP 仕様](../specs/review-mcp.md) に従う。HTTP の10秒の期限は変更しない。

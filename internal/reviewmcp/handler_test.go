@@ -31,7 +31,7 @@ func TestHandlerLimits(t *testing.T) {
 		{"異なるOriginからの呼び出しを拒否する", "https://external.example", true, 403},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			r := httptest.NewRequest(http.MethodPost, "http://127.0.0.1:8080/mcp", strings.NewReader(strings.Repeat("x", 16*1024+1)))
+			r := httptest.NewRequest(http.MethodPost, "http://127.0.0.1:8080/tools", strings.NewReader(strings.Repeat("x", 16*1024+1)))
 			r.Header.Set("Content-Type", "application/json")
 			r.Header.Set("Accept", "application/json, text/event-stream")
 			if !tc.knownLength {
@@ -76,7 +76,7 @@ func TestLocalHost(t *testing.T) {
 		{"コンテナのIPを公開接続として受け付けない", "172.17.0.2:8080", true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			r := httptest.NewRequest("POST", "http://127.0.0.1:8080/mcp", strings.NewReader(`{}`))
+			r := httptest.NewRequest("POST", "http://127.0.0.1:8080/tools", strings.NewReader(`{}`))
 			r.Host = tc.host
 			r.Header.Set("Content-Type", "application/json")
 			r.Header.Set("Accept", "application/json, text/event-stream")

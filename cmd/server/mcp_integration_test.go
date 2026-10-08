@@ -40,7 +40,7 @@ func TestMCPShutdownWaitsForActiveCollection(t *testing.T) {
 	client := mcp.NewClient(&mcp.Implementation{Name: "server-integration", Version: "1"}, nil)
 	ctx, stop := context.WithTimeout(context.Background(), 5*time.Second)
 	defer stop()
-	session, err := client.Connect(ctx, &mcp.StreamableClientTransport{Endpoint: url + "/mcp", HTTPClient: httpClient}, nil)
+	session, err := client.Connect(ctx, &mcp.StreamableClientTransport{Endpoint: url + "/tools", HTTPClient: httpClient}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -64,3 +64,17 @@ Python 標準の HTTP クライアントで MCP 2025-11-25 の initialize・tool
 - ChatGPT アプリへの登録と、アプリからのツール呼び出し・分析回答は引き続き未確認。上記はローカル HTTP クライアントからの実 API 確認である。
 
 サーバーはユーザーが接続を試すため起動を継続した。push・PR 作成・Issue クローズは行っていない。
+
+
+## 接続パスの変更
+
+2026-10-09 JST にユーザーが、URL のパスと ChatGPT の入力欄のコマンドの区別を求めたため、Issue #25 の要件を更新し、接続先を `/mcp` から `/tools` に変更した。上記の `/mcp` の記録は変更前の実行結果である。MCP プロトコルと `collect_reviews` のツール名は維持した。MCP 仕様の接続と入力、HTTP サーバー仕様の HTTP、公開デモ仕様の README 要件、ADR-0007 の決定、開発手順の共通検査を参照した。
+
+- Red：Compose の verify で `go test -count=1 ./cmd/server -run TestMCPRoute` を実行し、`/tools` の POST/GET が404、旧 `/mcp` が handler へ委譲されるため失敗した。子パスと末尾スラッシュは既に404だった。
+- Green：ルート登録を `/tools` に変更し、同じコマンドが成功した。healthz は200、旧 `/mcp`・`/tools/`・`/tools/child` は404となった。関連するテスト URL・本番イメージの検査・README・仕様・ADR・登録手順を同じ変更単位で更新した。
+- `bash scripts/check-app.sh`：整形・vet・通常テスト、lint（0 issues）、Git 非依存の3状況、全6パッケージの integration/race、本番イメージ検証が成功した。通常テストも含み、実 Steam・実 LLM は呼び出していない。
+- 本番 image ID は `sha256:b9055930371d8c082f463ad9385e4be7fd747fbef79a410b0044e46af11e4ce5`。同じイメージで8080/10000の `/tools` の初期化・一覧・不正入力、外部 Host の403、旧・子パスの404、healthz、SIGTERM/SIGINT と不正 PORT を確認した。
+- Watch で更新した起動中の `http://127.0.0.1:8080/tools` でも、MCP 2025-11-25 の初期化・`collect_reviews` の一覧・`app_id=0` の `invalid_input`、healthz の200と旧・子パスの404を確認した。実 Steam 通信は行っていない。
+- AI によるセルフレビューで URL の置換漏れと文書リンク、旧パス拒否と境界の検査を確認した。実フックの実装は変更していないため、上記の成功済みの実フック検証を繰り返さず、今回のコミットでは必須 pre-commit と commit-msg を実行する。
+
+ChatGPT アプリの設定は変更していない。登録済みなら接続 URL を `/tools` へ更新する。アプリからの実ツール呼び出しは引き続き未確認である。push・PR 作成・Issue クローズは行わない。

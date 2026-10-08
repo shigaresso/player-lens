@@ -3,10 +3,12 @@
 ## 起動と登録
 
 1. Docker Desktop を起動し、リポジトリで `python3 scripts/dev.py` を実行する。表示されたホストポートを使う。8080が使用中なら入口が次の空きポートを選ぶ。
-2. ChatGPT デスクトップアプリの Settings → MCP servers → Add server で、名前を `PlayerLens`、種類を Streamable HTTP、URL を `http://127.0.0.1:<表示されたポート>/mcp` にして保存し、アプリを再起動する。
+2. ChatGPT デスクトップアプリの Settings → MCP servers → Add server で、名前を `PlayerLens`、種類を Streamable HTTP、URL を `http://127.0.0.1:<表示されたポート>/tools` にして保存し、アプリを再起動する。
 3. 入力欄で `/mcp` から PlayerLens の利用を確認する。設定項目が見つからない場合は [公式のデスクトップ MCP 手順](https://learn.chatgpt.com/docs/extend/mcp) と使用しているアプリの対応機能を確認する。
 
 生成 AI の API キーは PlayerLens に設定しない。ChatGPT のモデルがツール結果を受け取って分析する。アプリ設定は自動変更しない。ローカルアプリと同じマシンの localhost を使う手順であり、クラウド側から localhost へは接続できない。[クラウド接続の公式手順](https://developers.openai.com/api/docs/guides/custom-mcp-server) による HTTPS・トンネル・公開認証は今回の実装範囲に含めない。
+
+接続 URL の `/tools` は Go サーバーのパスであり、入力欄の `/mcp` は ChatGPT アプリ内のコマンドである。例えばホストポート8080なら `http://127.0.0.1:8080/tools` を登録する。旧 URL の `/mcp` は404を返すため、以前登録した場合は URL を更新する。`collect_reviews` のツール名は変更していない。
 
 ## 少量の手動確認
 

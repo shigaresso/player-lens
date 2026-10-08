@@ -44,7 +44,7 @@ def check_mcp(port):
         try:
             body = json.dumps({"jsonrpc": "2.0", "id": identifier,
                                "method": method, "params": params})
-            connection.request("POST", "/mcp", body, {
+            connection.request("POST", "/tools", body, {
                 "Content-Type": "application/json",
                 "Accept": "application/json, text/event-stream",
                 "MCP-Protocol-Version": "2025-11-25",
@@ -71,7 +71,7 @@ def check_mcp(port):
         raise RuntimeError("MCP の不正入力を取得前に拒否しなかった")
     connection = http.client.HTTPConnection("127.0.0.1", port, timeout=3)
     try:
-        connection.request("POST", "/mcp", "{}", {
+        connection.request("POST", "/tools", "{}", {
             "Host": "external.example", "Content-Type": "application/json",
             "Accept": "application/json, text/event-stream",
         })
@@ -104,7 +104,9 @@ def check_running(image, port, signal, *environment):
             raise RuntimeError(f"healthz の応答が異なる: {response!r}")
         if request(host_port, "HEAD", "/healthz") != (200, "text/plain; charset=utf-8", b""):
             raise RuntimeError("HEAD の応答が異なる")
-        for method, path, status in (("POST", "/healthz", 405), ("GET", "/", 404)):
+        for method, path, status in (("POST", "/healthz", 405), ("GET", "/", 404),
+                                     ("POST", "/mcp", 404), ("POST", "/tools/", 404),
+                                     ("POST", "/tools/child", 404)):
             if request(host_port, method, path)[0] != status:
                 raise RuntimeError(f"{method} {path} の状態が異なる")
         check_mcp(host_port)

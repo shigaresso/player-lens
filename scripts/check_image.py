@@ -134,6 +134,13 @@ def main():
                 if "PORT" not in docker("logs", identifier):
                     raise RuntimeError("不正な PORT の原因を報告しなかった")
             print("不正な PORT の非0終了を確認した")
+            for key in ("MCP_REQUESTS_PER_MINUTE", "MCP_REQUESTS_PER_DAY", "MCP_MAX_CONCURRENT"):
+                with container(image, "--env", f"{key}=invalid") as identifier:
+                    if docker("wait", identifier, timeout=15) == "0":
+                        raise RuntimeError(f"不正な {key} で正常終了した")
+                    if key not in docker("logs", identifier):
+                        raise RuntimeError(f"不正な {key} の原因を報告しなかった")
+                print(f"不正な {key} の非0終了を確認した")
     except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
         print(f"本番用イメージ検証が失敗した: {error}", file=sys.stderr)
         if isinstance(error, subprocess.CalledProcessError):

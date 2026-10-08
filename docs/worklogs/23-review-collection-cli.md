@@ -22,11 +22,15 @@
 
 実 Client と JSON Saver の httptest 連携、別実装のメモリ Saver、実 CLI プロセスの help・不正入力は初回から Green だった。回帰テストだけの 1c3b76d にまとめ、人工的な Red は作らなかった。重複した保存先ラベルの検査を整理し、JSON 変換の入力保持はコピーと比較した。
 
+最終確認で閉じた stderr の pipe を実プロセスへ渡すテストを追加したところ、`signal: broken pipe` で終了し、終了コード1を返さない Red を確認した。CLI の起動時に SIGPIPE を無視して書き込み失敗を通常のエラーとして扱う修正だけを加え、同じテストが Green となった。SIGINT・SIGTERM のキャンセル処理は維持した。
+
 ## 全体検証
 
 `bash scripts/check-app.sh` が終了コード0で完了した。整形・vet・通常テストは cmd/collect-reviews・cmd/server・jsonoutput・reviewcli・steam の5パッケージで成功し、golangci-lint は0件だった。通常テストを含む `go test -tags=integration -race -count=1 ./...` も同じ5パッケージで成功した。CLI のプロセステストはコンテナ内でバイナリをビルドして実行した。
 
 本番用イメージ ID `sha256:74fc2ec8fcaeee2f910e45035718303e606aa16a6b3ab924a45781c29665e3d5` で PORT 8080・10000、HTTP、SIGTERM・SIGINT の正常終了、不正 PORT の非0終了を確認した。本番は既存 HTTP サーバーのみをビルドするため、今回のローカル CLI はそのイメージに含まれない。
+
+SIGPIPE 修正後は `scripts/check-go.sh unit`、`scripts/check-lint.sh`、`scripts/check-go.sh integration` を再実行し、5パッケージの通常テスト・vet・整形、lint 0件、通常テストを含む integration/race の成功を確認した。本番サーバーの入力は変更しておらず、成功済みのイメージ検査は重ねなかった。
 
 README と同じ `docker compose build collect` を実行し、`docker compose run --rm --no-deps -T collect --help` は終了コード0、`--app-id 0` は2と確認した。どちらも stdout は0バイトで stderr に使用方法・診断を出し、CLI まで引数が届いた。これらは実 Steam に接続しない。
 

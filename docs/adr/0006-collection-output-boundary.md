@@ -29,8 +29,11 @@ JSON の純粋変換と writer の adapter は `jsonoutput` に置く。CLI の�
 
 部分結果の保存に最大5秒の追加時間を割り当てる。保存依存が context を尊重する契約に依存する。通常の io.Writer の実行中の書き込みは中断できず、厳密な期限や原子的な出力を保証しない。失敗時の一部出力を再試行で重複させない。CLI はローカル用とし、サーバーの本番イメージや公開デモを変更しない。
 
+CLI は閉じた stdout/stderr の pipe も出力エラーとして扱い、終了コード1を返す。起動時に SIGPIPE を無視し、書き込みエラーを通常の終了処理へ渡す。SIGINT・SIGTERM は収集のキャンセルに用いる。
+
 ## 参照
 
 - [ADR-0005](0005-bounded-review-collection.md) と [データ・調査仕様](../specs/data-and-research.md)
 - [Go context.WithoutCancel](https://pkg.go.dev/context#WithoutCancel)
 - [Go io.Writer](https://pkg.go.dev/io#Writer)
+- [Go os/signal の SIGPIPE](https://pkg.go.dev/os/signal#hdr-SIGPIPE)

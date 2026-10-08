@@ -5,6 +5,7 @@ package main
 import (
 	"bytes"
 	"errors"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
@@ -43,4 +44,25 @@ func TestCLIProcessHelpAndInvalidInput(t *testing.T) {
 			}
 		})
 	}
+	t.Run("診断先の閉じたpipeも終了コード1で報告する", func(t *testing.T) {
+		reader, writer, err := os.Pipe()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := reader.Close(); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() {
+			if err := writer.Close(); err != nil {
+				t.Error(err)
+			}
+		})
+		command := exec.CommandContext(t.Context(), binary, "--help")
+		command.Stderr = writer
+		err = command.Run()
+		var exit *exec.ExitError
+		if !errors.As(err, &exit) || exit.ExitCode() != 1 {
+			t.Fatalf("出力失敗の終了コード: %v", err)
+		}
+	})
 }

@@ -27,7 +27,7 @@ func TestHealthHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			response := httptest.NewRecorder()
-			newHandler().ServeHTTP(response, httptest.NewRequest(tt.method, tt.path, nil))
+			newHandler(nil).ServeHTTP(response, httptest.NewRequest(tt.method, tt.path, nil))
 			if response.Code != tt.status {
 				t.Fatalf("status=%d; want=%d", response.Code, tt.status)
 			}
@@ -57,7 +57,7 @@ func TestHealthWriteFailure(t *testing.T) {
 	previous := log.Writer()
 	log.SetOutput(&output)
 	t.Cleanup(func() { log.SetOutput(previous) })
-	newHandler().ServeHTTP(failedResponse{header: make(http.Header)},
+	newHandler(nil).ServeHTTP(failedResponse{header: make(http.Header)},
 		httptest.NewRequest(http.MethodGet, "/healthz", nil))
 	if got := output.String(); !strings.Contains(got, "ヘルスチェック応答") || !strings.Contains(got, "接続切断") {
 		t.Fatalf("書き込み失敗の操作と原因が報告されなかった: %q", got)

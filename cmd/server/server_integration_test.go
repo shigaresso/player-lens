@@ -117,7 +117,7 @@ func startTestServer(t *testing.T, handler http.Handler, timeout time.Duration) 
 }
 
 func TestServerHealthAndShutdown(t *testing.T) {
-	url, client, cancel, done, _ := startTestServer(t, newHandler(), time.Second)
+	url, client, cancel, done, _ := startTestServer(t, newHandler(nil), time.Second)
 	response, err := client.Get(url + "/healthz")
 	if err != nil {
 		t.Fatal(err)

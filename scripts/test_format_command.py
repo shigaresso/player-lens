@@ -42,16 +42,15 @@ if [[ "${UNFORMATTED:-0}" == 1 && "$1" == -l ]]; then echo 'source with spaces.g
                 if unformatted == "1":
                     self.assertIn("source with spaces.go", result.stderr)
 
-    def test_only_explicit_fix_mounts_writable_source(self):
+    def test_only_explicit_fix_uses_writable_service(self):
         for mode in ("format", "format-fix"):
             with self.subTest(mode):
                 result = self.run_check("check-go.sh", mode)
                 self.assertEqual(0, result.returncode, result.stderr)
                 args = (self.root / "calls.txt").read_text().splitlines()
                 self.assertEqual(mode, args[-1])
-                self.assertEqual(mode == "format-fix", "--volume" in args)
-                if mode == "format-fix":
-                    self.assertIn(f"{self.root}:/src:rw", args)
+                self.assertEqual("format" if mode == "format-fix" else "verify",
+                                 args[args.index("bash") - 1])
 
     def test_fix_runs_gofmt_write_and_preserves_failure(self):
         for tool_exit in (0, 17):

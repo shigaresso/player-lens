@@ -6,8 +6,8 @@ case "$mode" in
   format|format-fix|unit|integration) ;;
   *) echo '対象は format、format-fix、unit、integration を指定する' >&2; exit 1 ;;
 esac
-mount_args=()
+service=verify
 if [[ "$mode" == format-fix ]]; then
-  mount_args=(--volume "$PWD:/src:rw")
+  service=format
 fi
-docker compose run --rm --no-deps --build -T "${mount_args[@]}" verify bash scripts/go-check.sh "$mode"
+docker compose run --rm --no-deps --build -T "$service" bash scripts/go-check.sh "$mode"

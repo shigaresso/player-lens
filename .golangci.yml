@@ -1,0 +1,23 @@
+version: "2"
+
+run:
+  go: "1.27.1"
+  timeout: 5m
+  tests: true
+  build-tags: [integration]
+  modules-download-mode: readonly
+
+linters:
+  default: none
+  enable:
+    - errcheck
+    - ineffassign
+    - staticcheck
+    - unused
+  settings:
+    errcheck:
+      check-blank: true
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

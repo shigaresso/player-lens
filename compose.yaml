@@ -36,6 +36,31 @@ services:
       - go-mod:/go/pkg/mod
     command: ["go", "test", "-count=1", "./..."]
 
+  format:
+    profiles: [tools]
+    build:
+      context: .
+      target: development
+    volumes:
+      - .:/src:rw
+    command: ["bash", "scripts/go-check.sh", "format-fix"]
+
+  lint:
+    profiles: [tools]
+    build:
+      context: .
+      target: lint
+    environment:
+      GOFLAGS: -buildvcs=false
+      GOLANGCI_LINT_CACHE: /lint-cache
+    volumes:
+      - .:/src:ro
+      - go-build:/go-cache
+      - go-mod:/go/pkg/mod
+      - go-lint:/lint-cache
+    command: ["golangci-lint", "run", "--config", ".golangci.yml", "./..."]
+
 volumes:
   go-build:
   go-mod:
+  go-lint:

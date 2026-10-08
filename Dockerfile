@@ -5,6 +5,11 @@ COPY go.mod ./
 COPY cmd ./cmd
 CMD ["sh", "-c", "go build -o /tmp/player-lens ./cmd/server && exec /tmp/player-lens"]
 
+FROM golangci/golangci-lint:v2.14.0@sha256:ad862ba6b3798cbe0fd9fd7408d498fd74fbd2623a92406b2fd3898faf0bf98f AS lint-tool
+
+FROM development AS lint
+COPY --from=lint-tool /usr/bin/golangci-lint /usr/local/bin/golangci-lint
+
 FROM development AS build
 # 現在は標準ライブラリだけを使う。CGO 依存を導入するときはこの設定を見直す。
 RUN --mount=type=cache,target=/go-cache CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/player-lens ./cmd/server

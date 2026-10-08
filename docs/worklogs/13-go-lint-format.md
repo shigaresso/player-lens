@@ -14,3 +14,8 @@
 ## 検証結果と状態
 
 `python3 -m unittest discover -s scripts -p test_staged_format.py` の6テストが成功した。Docker による実際の整形検査、リンター、フック・CI の検証結果は確認後に追記する。
+
+- golangci-lint v2.14.0 の公式イメージの index digest と、実バイナリが Go 1.27.0 でビルドされたことを確認した。Go 1.27.1 のソースを実際に解析し、既存の結合テストにある5箇所の errcheck 違反で Red、エラー確認を修正して0件の Green を確認した。`bash scripts/check-go.sh integration` の race を含むテストも成功した。
+- `python3 scripts/verify_go_tools.py` で正常・4種類のリンター違反・integration タグ、空白付きパスの部分ステージと入力の保持、全体の整形検査・明示修正を確認した。最初の実検証では mount の `:rw` 上書きでも読み取り専用が残って修正に失敗した。修正専用サービスを選ぶ回帰テストで Red、サービス導入後に Green を確認し、実 Docker でも修正できた。
+- `bash scripts/check-go.sh unit` の整形・vet・通常テストが成功した。整形コマンドの3テストと、既存の integration 実行スクリプトの4テストも成功した。
+- 実フックのステージ済み Go の拒否は、フック未接続でコミットされて Red、接続後の結果は以下の最終検証へ記録する。

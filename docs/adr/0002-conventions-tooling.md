@@ -26,6 +26,7 @@
 - `pre-push` は stdin を受け取る script 方式で接続する。コマンド方式の暗黙のファイル差分判定によって、空コミットのメッセージ検査が省略されることを避ける。
 - CI の Action はコミット SHA で固定し、権限は読み取りに限定する。
 - [Issue #15](https://github.com/shigaresso/player-lens/issues/15) で PR の現在の本文・ラベル・全コミット・関連 Issue の確認を `PR 規約検査 / metadata` へ分ける。本文・タイトルだけの編集とラベル変更は共通テスト・実フック検証を再実行しない。統合先変更や不明な編集は規約の全検査へ戻す。コード検査の `規約検査 / verify` と concurrency・ジョブ名を分け、メタデータ更新によるキャンセルや成功の上書きを避ける。条件で同じ verify ジョブのテストだけを省略する方式は採用しない。
+- [Issue #18](https://github.com/shigaresso/player-lens/issues/18) で、Draft PR 中に全検査の成功を確認してからレビュー準備へ進む運用に合わせる。`ready_for_review` はメタデータ検査だけとし、コード検査の起動条件から外す。Draft PR を含む作成・コミット追加・再開、main 更新・手動実行のコード検査は維持する。同じ SHA の全検査をレビュー準備の変更だけで重ねず、統合後の SHA の検査は main で実行する。
 - [Issue #9](https://github.com/shigaresso/player-lens/issues/9) で通常マージを基本とし、main 更新専用の `main-range` を追加する。作業コミットと PR・ローカルフックの検査は維持し、親が2つのコミットと同一リポジトリの main 向けマージ済み PR の統合 SHA・head を照合できた場合だけ、自動生成の統合メッセージを免除する。単にマージコミットを一律除外する方式は、未確認の統合を免除するため採用しない。
 
 ## 利点と制約

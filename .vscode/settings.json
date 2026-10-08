@@ -1,0 +1,11 @@
+{
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": {
+    "*.go": "${capture}_test.go, ${capture}_integration_test.go",
+    "client.go": "client_test.go, context_test.go, http_test.go, response_test.go, resources_test.go, validation_test.go, regression_test.go",
+    "*.py": "test_${capture}.py",
+    "validate.py": "test_validate.py, test_main_range.py",
+    "go.mod": "go.sum"
+  }
+}

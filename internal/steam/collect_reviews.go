@@ -2,8 +2,12 @@ package steam
 
 import (
 	"context"
+	"errors"
 	"fmt"
 )
+
+// ErrCursorCycle は収集中に取得済みのカーソルへの循環を検出したことを表す。
+var ErrCursorCycle = errors.New("steam review cursor cycle")
 
 // PageFetcher は1ページ取得の依存を表す。Client と同じ入力・応答の契約に従う。
 // 通信と応答 Body の解放は実装側、接続プールの終了は組み立てた呼び出し側が担当する。
@@ -48,6 +52,7 @@ func CollectReviews(ctx context.Context, fetcher PageFetcher, appID uint32, opti
 	}
 	result := Collection{AppID: appID, Options: options, Reviews: []Review{}}
 	seenIDs := make(map[string]bool)
+	seenCursors := map[string]bool{FirstPageCursor: true}
 	cursor := FirstPageCursor
 	for result.PagesFetched < options.MaxPages {
 		size := min(options.PageSize, options.MaxReviews-len(result.Reviews))
@@ -71,6 +76,11 @@ func CollectReviews(ctx context.Context, fetcher PageFetcher, appID uint32, opti
 			result.StopReason = StopReviewLimit
 			return result, nil
 		}
+		if seenCursors[page.NextCursor] {
+			result.StopReason = StopFailed
+			return result, fmt.Errorf("collect Steam reviews after page %d: %w", result.PagesFetched, ErrCursorCycle)
+		}
+		seenCursors[page.NextCursor] = true
 		cursor = page.NextCursor
 	}
 	result.StopReason = StopPageLimit

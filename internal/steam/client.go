@@ -127,7 +127,7 @@ func (c *Client) FetchReviewsPage(ctx context.Context, appID uint32, options Pag
 	defer func() {
 		if closeErr := response.Body.Close(); closeErr != nil {
 			page = ReviewPage{}
-			err = fmt.Errorf("close Steam review response: %w", closeErr)
+			err = errors.Join(err, fmt.Errorf("close Steam review response: %w", closeErr))
 		}
 	}()
 	if response.StatusCode != http.StatusOK {

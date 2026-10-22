@@ -15,6 +15,8 @@
 
 Issue #38 で adapter 内のリクエスト変換を分離した。`steamReviewTypeCode`、`newReviewPageRequest`、`encodeReviewPageQuery` は、正規化済みの条件を Steam API の入力とクエリへ変換する通信なしの処理であり、新しいユースケースではない。
 
+Issue #39 で応答解釈も分離した。`decodeReviewPage` は本文と取得条件からページを作り、`validReviewID` は ID の構文と範囲を検査する。Body の読み取り・サイズ制限・解放は `FetchReviewsPage` に残す。
+
 `NormalizePageOptions` と `NormalizeCollectionOptions` は通信しない取得条件の正規化と検査を担当する。`jsonoutput.MarshalCollection` は通信しない JSON 変換、`jsonoutput.Saver` は writer への出力を担当する。DB の永続保存・分析・レポート生成は未導入とする。
 
 入口側が HTTP クライアントと `Client` を組み立て、同じ `CollectReviews` へ渡す。操作内に具体的な HTTP クライアントや DB を固定せず、同じ Go アプリケーション内の呼び出しに HTTP・MCP 通信を挟まない。

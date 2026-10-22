@@ -1,9 +1,11 @@
 """同じ検証済みイメージを使う配置準備を管理する。"""
 
+import ipaddress
 import json
 import re
 import tempfile
 from pathlib import Path
+from urllib.parse import urlsplit
 
 
 def validate_target(repo, target):
@@ -87,3 +89,47 @@ def publish(repo, target, *, api, run, verify):
         if not isinstance(config, dict) or config.get('digest') != image_id:
             raise ValueError('送信した manifest と検証済み image ID が一致しない')
         return {'target': target, 'image_id': image_id, 'image': image, 'platform': 'linux/amd64'}
+
+
+def validate_public_url(value):
+    """validate_public_url は資格情報のない HTTPS /tools URL を検査する。"""
+    try:
+        url = urlsplit(value)
+        if (url.scheme != 'https' or not url.hostname or url.username is not None or url.password is not None
+                or url.path != '/tools' or '?' in value or '#' in value
+                or any(ord(char) <= 32 or ord(char) == 127 for char in value)
+                or url.netloc.endswith(':') or url.port == 0):
+            raise ValueError('公開 URL は資格情報のない HTTPS の /tools を指定する')
+        host = url.hostname
+        if '%' in host:
+            raise ValueError('公開 Host が不正')
+        try:
+            ipaddress.ip_address(host)
+        except ValueError:
+            if len(host) > 253 or any(not re.fullmatch(r'[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?', label)
+                                      for label in host.split('.')):
+                raise ValueError('公開 Host が不正') from None
+    except (ValueError, TypeError) as error:
+        raise ValueError('公開 URL の形式が不正') from error
+
+
+def blueprint(repo, image, public_url='', credential='', name='player-lens'):
+    """blueprint は実 digest の Free 単一サービスを JSON 互換の YAML として構成する。"""
+    if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]*/[A-Za-z0-9][A-Za-z0-9_.-]*', repo):
+        raise ValueError('リポジトリの形式が不正')
+    if not re.fullmatch(re.escape(f'ghcr.io/{repo.lower()}@sha256:')+r'[0-9a-f]{64}', image):
+        raise ValueError('このリポジトリの GHCR manifest digest が必要')
+    if public_url:
+        validate_public_url(public_url)
+    if not re.fullmatch(r'[a-z][a-z0-9-]{0,62}', name):
+        raise ValueError('サービス名の形式が不正')
+    if len(credential) > 128 or any(ord(char) < 32 or ord(char) == 127 for char in credential):
+        raise ValueError('registry 資格情報名の形式が不正')
+    config = {'url': image}
+    if credential:
+        config['creds'] = {'fromRegistryCreds': {'name': credential}}
+    values = {'PORT': '10000', 'MCP_PUBLIC_URL': public_url,
+              'MCP_REQUESTS_PER_MINUTE': '6', 'MCP_REQUESTS_PER_DAY': '100', 'MCP_MAX_CONCURRENT': '2'}
+    return {'services': [{'type': 'web', 'name': name, 'runtime': 'image', 'plan': 'free',
+                          'region': 'oregon', 'numInstances': 1, 'healthCheckPath': '/healthz',
+                          'image': config, 'envVars': [{'key': key, 'value': value} for key, value in values.items()]}]}

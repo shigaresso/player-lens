@@ -157,3 +157,42 @@ class PublishTests(unittest.TestCase):
                 with self.assertRaises((ValueError, OSError)):
                     publish()
                 self.assertEqual(sum(op[:2] == ['docker', 'push'] for op in operations), 1)
+
+
+class BlueprintTests(unittest.TestCase):
+    image = f'ghcr.io/{REPO}@sha256:'+'2'*64
+
+    def test_digest_free_single_service_and_explicit_public_url(self):
+        data = deploy.blueprint(REPO, self.image, 'https://player-lens.onrender.com/tools', 'ghcr-reader')
+        self.assertEqual(len(data['services']), 1)
+        service = data['services'][0]
+        self.assertEqual((service['runtime'], service['plan'], service['numInstances']), ('image', 'free', 1))
+        self.assertEqual(service['healthCheckPath'], '/healthz')
+        self.assertEqual(service['image'], {'url': self.image, 'creds': {'fromRegistryCreds': {'name': 'ghcr-reader'}}})
+        env = {entry['key']: entry['value'] for entry in service['envVars']}
+        self.assertEqual(env['MCP_PUBLIC_URL'], 'https://player-lens.onrender.com/tools')
+        self.assertEqual(env['PORT'], '10000')
+        self.assertEqual(env['MCP_MAX_CONCURRENT'], '2')
+        self.assertNotIn('databases', data)
+        self.assertNotIn('dockerfilePath', service)
+        self.assertNotIn('disk', service)
+
+    def test_bootstrap_remains_local_and_no_credential_is_invented(self):
+        service = deploy.blueprint(REPO, self.image)['services'][0]
+        env = {entry['key']: entry['value'] for entry in service['envVars']}
+        self.assertEqual(env['MCP_PUBLIC_URL'], '')
+        self.assertNotIn('creds', service['image'])
+
+    def test_mutable_wrong_registry_and_wrong_repo_are_rejected(self):
+        for image in ['ghcr.io/'+REPO+':latest', 'docker.io/'+REPO+'@sha256:'+'2'*64,
+                      'ghcr.io/other/repo@sha256:'+'2'*64, self.image+'\n']:
+            with self.subTest(image=image), self.assertRaises(ValueError):
+                deploy.blueprint(REPO, image)
+
+    def test_invalid_public_url_cannot_generate_broken_or_unsafe_config(self):
+        for url in ['http://example.test/tools', 'https://example.test/healthz', 'https://u:p@example.test/tools',
+                    'https://example.test/tools?', 'https://example.test/tools#', 'https://example.test/%74ools',
+                    'https://example.test:0/tools', 'https://example.test:65536/tools', 'https://example.test:/tools',
+                    'https://-bad.test/tools', 'https://example..test/tools', 'https://example.test/tools\n']:
+            with self.subTest(url=url), self.assertRaises(ValueError):
+                deploy.blueprint(REPO, self.image, url)

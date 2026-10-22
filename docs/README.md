@@ -20,6 +20,7 @@
 | [レビュー収集 MCP](specs/review-mcp.md) | ローカルの MCP 接続、入力・応答・期限・部分失敗 | Issue #25 でローカル MCP を導入した。SDK と ChatGPT の確認を区別して記録する |
 | [MCP 利用制限](specs/mcp-usage-limits.md) | MCP の開始回数・固定窓・同時実行数・設定・拒否 | Issue #27 で1プロセスの制限を導入した。共有予算・認証・公開配置は未導入 |
 | [認証なしの公開 MCP](specs/mcp-public-access.md) | 公開 URL、許可 Host、匿名公開 | Issue #29 で URL と Host 保護を導入した。配置・公開実接続は未確認 |
+| [Render 配置基盤](specs/render-deployment.md) | イメージ公開・digest・Render 設定・公開接続検査 | Issue #31 で準備する。実配置は未実施 |
 | [ユースケース](use-cases.md) | 操作全体の一覧・責務と adapter・入口の境界 | 収集と収集・保存操作を導入した。CLI と MCP を接続した。Web は未接続 |
 | [ADR-0001：Go・Docker・Render による実行・配置](adr/0001-runtime-and-deployment.md) | 実行環境、開発・検証用 Docker、本番用 CI、Render 配置 | 採用。Compose・本番用イメージと検証 CI の設定を追加した。配置経路は未導入 |
 | [開発手順と規約検査](development.md) | 規約バリデーター、Git フック、Issue・PR の作成手順とテンプレート、CI | ローカル検査と PR・Issue イベントの規約 CI を確認した |
@@ -33,6 +34,7 @@
 | [ADR-0007：ローカルのレビュー収集 MCP](adr/0007-review-mcp.md) | SDK、プロトコル、短時間の取得と分析の担当 | 採用。実装・検証の状態は Issue #25 の作業記録へ記載する |
 | [ADR-0008：MCP 利用制限](adr/0008-mcp-usage-limits.md) | 制限の状態所有・受付・返却・固定窓と保証範囲 | 採用。1プロセスで管理する。再起動・複数台の予算保証は持たない |
 | [ADR-0009：認証なしの公開 MCP](adr/0009-public-mcp-access.md) | 公開設定と Host 保護、OAuth を導入しない理由 | 採用。配置と実接続は未確認 |
+| [ADR-0010：Render 配置基盤](adr/0010-render-deployment.md) | 手動の GHCR 公開・Free・資格情報と配置準備の範囲 | 採用。実 CI・registry・配置は未実施 |
 
 変更が複数の範囲にまたがる場合は、対応する文書をすべて読む。参照した節と ADR、要件に対応する検証を Issue・PR に記録する。ADR を追加・置換するときは、この一覧と適用範囲を更新する。
 

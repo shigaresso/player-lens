@@ -6,7 +6,9 @@
 
 ## API と入力
 
-[ADR-0004](../adr/0004-steam-review-api.md) の公開 API を GET で呼ぶ。キーは使わず、`format=json` と URL エンコードした `input_json` を送る。`appid` は正の uint32、`filter=1`（Recent）、`review_type=0`（All）、`purchase_type=1`（All）、`filter_offtopic_activity=true` とする。
+[ADR-0004](../adr/0004-steam-review-api.md) の公開 API を GET で呼ぶ。キーは使わず、`format=json` と URL エンコードした `input_json` を送る。`appid` は正の uint32、`filter=1`（Recent）、`review_type` は条件に従い0（All）・1（Positive）・2（Negative）、`purchase_type=1`（All）、`filter_offtopic_activity=true` とする。
+
+Issue #33 で `ReviewType` を追加した。空は `all` に正規化し、`all`・`positive`・`negative` のみを受け付ける。大文字・空白・未知値は通信前に拒否する。API の数値への変換は HTTP adapter が担当し、取得後のローカルな間引きで代用しない。
 
 `PageOptions` の言語は既定 `english`、カーソルは `*`、件数は20とする。件数は1〜100、言語は小文字の英字で始まる英小文字・数字・ハイフン・アンダースコア32文字以内、カーソルは4096バイト以内とする。言語コードの対応は Steam 側に依存し、この構文検査だけで対応言語を保証しない。不正入力は通信前に拒否する。
 

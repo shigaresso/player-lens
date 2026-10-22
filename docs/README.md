@@ -55,4 +55,6 @@ Issue #29 で [認証なしの公開 MCP](specs/mcp-public-access.md) を追加�
 
 Issue #31 で配置準備を追加した。ユーザー配置の公開 URL で基本通信を確認し、実 registry 送信・digest 配置・実 ChatGPT 接続は未確認とする。[作業記録](worklogs/31-render-deployment.md) に区別して記録する。
 
+Issue #33 で評価種別の指定を追加した。Go・CLI・MCP で共通の条件を使い、全評価の省略互換性を維持する。[作業記録](worklogs/33-review-type.md) にローカル検証と未配置の範囲を記録する。
+
 導入が進んだら、対応 PR でこの状態を更新する。`docs/use-cases.md` は操作の追加・変更時に更新する。自動生成の仕様目次は別 Issue で形式と検査を決定してから導入する。

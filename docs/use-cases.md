@@ -24,3 +24,7 @@ MCP の `reviewmcp.NewHandler` は `collect_reviews` の入力と HTTP 制限、
 MCP の開始回数と同時数は handler が所有する入口の制限とし、収集操作・CLI へ混ぜない。[利用制限仕様](specs/mcp-usage-limits.md) と [ADR-0008](adr/0008-mcp-usage-limits.md) に従う。
 
 公開 MCP の `mcpaccess.Access` は公開 URL の検査と HTTP の許可 Host・cross-origin 保護だけを担当する。main が組み立て、`reviewmcp.NewHandler` へ渡す。未指定はローカル専用、指定時は匿名公開とし、認証・JWT・OAuth metadata は提供しない。収集ユースケース・CLI へ公開設定を混ぜない。[公開 MCP 仕様](specs/mcp-public-access.md) と [ADR-0009](adr/0009-public-mcp-access.md) に従う。
+
+## 評価種別（Issue #33）
+
+`PageOptions` と `CollectionOptions` の `ReviewType` は all / positive / negative を表し、空は all へ正規化する。検査は steam の共通正規化、API の数値変換は HTTP adapter が担当する。収集は全ページへ条件を渡し、Collection と JSON の options.review_type に保持する。CLI の --review-type と MCP の review_type は同じ操作へ接続し、独自のページングや取得後の間引きを追加しない。保存先の interface とバックエンド分析の未導入状態は維持する。

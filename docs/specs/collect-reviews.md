@@ -14,6 +14,7 @@
 
 | 項目 | 既定値 | 有効範囲 |
 | --- | --- | --- |
+| ReviewType | all | all・positive・negative（空は all） |
 | Language | english | `NormalizePageOptions` と同じ API コード構文 |
 | PageSize | 100 | 1〜`MaxPageSize`（100） |
 | MaxReviews | 1000 | 1〜`MaxCollectionReviews`（10000） |
@@ -38,7 +39,7 @@
 | 次のカーソルが取得済みのカーソルに戻った | StopFailed | 取得済み結果と ErrCursorCycle |
 | ページ取得・context が失敗した | StopFailed | 取得済み結果と原因を保持したエラー |
 
-空ページを観測したことと、更新中の Steam レビューを同一時点のスナップショットとして取得できたことは区別する。言語・ソート・off-topic の条件は1ページ adapter の仕様に従う。部分結果に永続化・再開の保証は付けない。ページ取得 adapter は失敗時にゼロ値を返し、収集操作がそれ以前の成功結果を保持する。
+空ページを観測したことと、更新中の Steam レビューを同一時点のスナップショットとして取得できたことは区別する。評価種別は共通のページ正規化で検査し、正規化した条件を Collection と各ページ要求へ保持する。部分失敗でも条件を失わせない。言語・ソート・off-topic の条件は1ページ adapter の仕様に従う。部分結果に永続化・再開の保証は付けない。ページ取得 adapter は失敗時にゼロ値を返し、収集操作がそれ以前の成功結果を保持する。
 
 ## 期限と失敗
 

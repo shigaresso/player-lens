@@ -11,6 +11,7 @@
 | 引数 | 契約 |
 | --- | --- |
 | --app-id | 必須。十進数の正の uint32 |
+| --review-type | 既定 all。all・positive・negative。空も all |
 | --language | 既定 english。言語コードの構文は収集の共通検査に従う |
 | --page-size | 1〜100。0・省略は100 |
 | --max-reviews | 1〜10000。0・省略は1000 |
@@ -37,10 +38,12 @@
 | --- | --- |
 | schema_version | 1。JSON の形式を識別する |
 | app_id | 作品 ID |
-| options | language・page_size・max_reviews・max_pages |
+| options | review_type・language・page_size・max_reviews・max_pages |
 | reviews | id・text・language・recommended・created_at・updated_at を取得順で保持する配列 |
 | pages_fetched | 空ページを含む成功した取得回数 |
 | stop_reason | exhausted・review_limit・page_limit・failed |
+
+Issue #33 の `options.review_type` は schema_version=1 への追加項目とする。旧出力で欠落している場合は従来の全評価を意味し、既存項目の意味を変えない。通常の収集結果は正規化済みの条件を出力し、純粋な変換で条件の検査・変更を重複させない。
 
 レビュー ID は文字列を保持し、元データの時刻は UNIX 秒とする。空のレビューは `[]` とし、本文を JSON の文字列として扱う。本文の指示を実行しない。入力を変更しない。
 

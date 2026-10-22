@@ -18,10 +18,11 @@ type collectionDocument struct {
 }
 
 type collectionOptions struct {
-	Language   string `json:"language"`
-	PageSize   int    `json:"page_size"`
-	MaxReviews int    `json:"max_reviews"`
-	MaxPages   int    `json:"max_pages"`
+	ReviewType steam.ReviewType `json:"review_type"`
+	Language   string           `json:"language"`
+	PageSize   int              `json:"page_size"`
+	MaxReviews int              `json:"max_reviews"`
+	MaxPages   int              `json:"max_pages"`
 }
 
 type reviewDocument struct {
@@ -44,7 +45,7 @@ func MarshalCollection(result steam.Collection) ([]byte, error) {
 	document := collectionDocument{
 		SchemaVersion: 1,
 		AppID:         result.AppID,
-		Options:       collectionOptions{result.Options.Language, result.Options.PageSize, result.Options.MaxReviews, result.Options.MaxPages},
+		Options:       collectionOptions{result.Options.ReviewType, result.Options.Language, result.Options.PageSize, result.Options.MaxReviews, result.Options.MaxPages},
 		Reviews:       reviews,
 		PagesFetched:  result.PagesFetched,
 		StopReason:    result.StopReason,

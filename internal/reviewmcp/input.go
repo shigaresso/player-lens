@@ -18,11 +18,12 @@ const (
 )
 
 type toolInput struct {
-	AppID      uint32 `json:"app_id"`
-	Language   string `json:"language"`
-	PageSize   int    `json:"page_size"`
-	MaxReviews int    `json:"max_reviews"`
-	MaxPages   int    `json:"max_pages"`
+	ReviewType steam.ReviewType `json:"review_type"`
+	AppID      uint32           `json:"app_id"`
+	Language   string           `json:"language"`
+	PageSize   int              `json:"page_size"`
+	MaxReviews int              `json:"max_reviews"`
+	MaxPages   int              `json:"max_pages"`
 }
 
 func parseInput(data []byte) (uint32, steam.CollectionOptions, error) {
@@ -35,7 +36,7 @@ func parseInput(data []byte) (uint32, steam.CollectionOptions, error) {
 	}
 	for name, value := range fields {
 		switch name {
-		case "app_id", "language", "page_size", "max_reviews", "max_pages":
+		case "app_id", "review_type", "language", "page_size", "max_reviews", "max_pages":
 		default:
 			return invalid()
 		}
@@ -62,7 +63,7 @@ func parseInput(data []byte) (uint32, steam.CollectionOptions, error) {
 		input.MaxPages = defaultPages
 	}
 	options, err := steam.NormalizeCollectionOptions(steam.CollectionOptions{
-		Language: input.Language, PageSize: input.PageSize, MaxReviews: input.MaxReviews, MaxPages: input.MaxPages,
+		ReviewType: input.ReviewType, Language: input.Language, PageSize: input.PageSize, MaxReviews: input.MaxReviews, MaxPages: input.MaxPages,
 	})
 	if err != nil {
 		return invalid()

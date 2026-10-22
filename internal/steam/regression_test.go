@@ -24,6 +24,7 @@ func TestFetchReviewsPageValidBoundaries(t *testing.T) {
 		{"言語の数字と区切りを受け付ける", 440, steam.PageOptions{Language: "en_1-test", Cursor: steam.FirstPageCursor, PageSize: 20}},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
+			tt.options.ReviewType = steam.ReviewTypeAll
 			calls := 0
 			client, err := steam.NewClient(&http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
 				calls++

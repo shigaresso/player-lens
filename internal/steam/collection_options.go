@@ -8,8 +8,9 @@ const MaxCollectionReviews = 10000
 // MaxCollectionPages は1回の収集で取得するページ数のアプリケーション側の上限を表す。
 const MaxCollectionPages = 100
 
-// CollectionOptions は収集条件を表す。ゼロ値は英語・100件/ページ・1000件・100ページとなる。
+// CollectionOptions は収集条件を表す。ゼロ値は全評価・英語・100件/ページ・1000件・100ページとなる。
 type CollectionOptions struct {
+	ReviewType ReviewType
 	Language   string
 	PageSize   int
 	MaxReviews int
@@ -18,16 +19,17 @@ type CollectionOptions struct {
 
 // NormalizeCollectionOptions は通信せずに収集条件の既定値を適用し、上限を検査する。
 // 入力を変更せず、不正な場合はゼロ値と ErrInvalidArgument を返す。
-// 言語とページ件数には NormalizePageOptions の規則を使う。
+// 評価種別・言語・ページ件数には NormalizePageOptions の規則を使う。
 func NormalizeCollectionOptions(options CollectionOptions) (CollectionOptions, error) {
 	if options.PageSize == 0 {
 		options.PageSize = MaxPageSize
 	}
-	page, err := NormalizePageOptions(PageOptions{Language: options.Language, PageSize: options.PageSize})
+	page, err := NormalizePageOptions(PageOptions{ReviewType: options.ReviewType, Language: options.Language, PageSize: options.PageSize})
 	if err != nil {
 		return CollectionOptions{}, fmt.Errorf("prepare collection page options: %w", err)
 	}
 	options.Language = page.Language
+	options.ReviewType = page.ReviewType
 	if options.MaxReviews == 0 {
 		options.MaxReviews = 1000
 	}

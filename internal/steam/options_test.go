@@ -31,6 +31,9 @@ func TestNormalizePageOptions(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if !tt.invalid {
+				tt.want.ReviewType = steam.ReviewTypeAll
+			}
 			before := tt.input
 			got, err := steam.NormalizePageOptions(tt.input)
 			if tt.invalid {

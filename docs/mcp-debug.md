@@ -45,3 +45,18 @@ max_reviews=3、max_pages=1 で呼び出してください。
 Compose の app にも設定を渡す。ローカル専用のデバッグでは空のままにし、変更時は app を再作成する。公開設定は公開 URL・TLS・トンネルを作成しない。Issue #31 でユーザー配置の HTTPS の匿名初期化・一覧・不正入力の拒否を確認した。検証済み digest の実配置と実 HTTPS 上の ChatGPT 接続は未確認であり、ローカル SDK と本番イメージの結果だけで確認済みとは扱わない。公開配置時に実 URL と匿名クライアントからの接続・収集・制限を確認する。
 
 [公開 MCP 仕様](specs/mcp-public-access.md) と [作業記録](worklogs/29-public-mcp-access.md) を参照する。バックエンドが LLM を実行する Web 機能、利用コード・残り回数、MCP/Web 共通の収集枠は未導入とする。
+
+## 評価種別の指定（Issue #33）
+
+次の依頼で非おすすめだけを最大3件取得できる。公開配置がこの変更を含むことを確認してから使う。ローカルでの検証と、Render / ChatGPT の登録ツール経由の実行を混同しない。
+
+```text
+PlayerLens の collect_reviews を app_id=4867330、language=all、
+review_type=negative、page_size=3、max_reviews=3、max_pages=1 で呼び出してください。
+取得条件・件数・レビュー ID を示し、不満点を根拠の ID と対応させて分析してください。
+非おすすめだけを取得したサンプルなので、全体の好評率は算出しないでください。
+```
+
+`positive` はおすすめ、`all` は全評価を表す。省略・空は `all` となる。不正な評価種別・null・文字列以外は `invalid_input` とし、Steam 通信と利用回数の消費より前に拒否する。正常・部分失敗・利用制限の応答の `collection.options.review_type` で条件を確認する。並び順は従来の Recent のままで、今回変更していない。
+
+実装・SDK 4版・実 Steam の少量確認の状態は [作業記録](worklogs/33-review-type.md) に記録する。ChatGPT アプリの登録設定は今回変更していない。

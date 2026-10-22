@@ -41,6 +41,9 @@ func TestCollectReviewsPages(t *testing.T) {
 	}
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
+			for i := range tt.requests {
+				tt.requests[i].ReviewType = steam.ReviewTypeAll
+			}
 			var requests []steam.PageOptions
 			fetcher := pageFetcherFunc(func(_ context.Context, appID uint32, options steam.PageOptions) (steam.ReviewPage, error) {
 				if appID != 440 || len(requests) >= len(tt.pages) {

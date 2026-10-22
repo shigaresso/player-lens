@@ -43,6 +43,14 @@ docker compose run --rm --no-deps -T collect --help
 docker compose run --rm --no-deps -T collect --app-id 440 --language japanese --max-reviews 100
 ```
 
+`--review-type all`（全評価）・`positive`（おすすめ）・`negative`（非おすすめ）を指定できる。省略・空は従来どおり `all` で、不正値は通信・保存前に拒否する。例えば非おすすめを最大3件取得する場合は次を使う。このコマンドは実 Steam へ接続する。
+
+```sh
+docker compose run --rm --no-deps -T collect --app-id 4867330 --language all --review-type negative --page-size 3 --max-reviews 3 --max-pages 1
+```
+
+JSON の `options.review_type` に正規化した評価種別を記録する。取得条件によって選んだサンプルの比率を、ゲーム全体の好評率として扱わない。
+
 標準出力へ収集条件・レビュー・終了理由を含む単一の JSON と改行を出す。help と診断は標準エラーへ出す。ビルドと実行を分け、JSON にビルドログを混ぜない。既定の取得上限は1000件、1リクエスト最大100件、最大100回・2分とする。件数・通信回数の上限による終了は全件取得を意味しない。
 
 正常終了と help は終了コード0、不正入力は2、収集・出力の失敗は1とする。途中失敗では出力できた部分結果を残す。SIGINT・SIGTERM で収集をキャンセルし、部分結果の保存には独立した5秒の期限を渡す。通常の writer の実行中の書き込みは中断できず、原子的な出力・永続保存は保証しない。
@@ -52,6 +60,8 @@ docker compose run --rm --no-deps -T collect --app-id 440 --language japanese --
 ## ChatGPT からレビューを取得する
 
 同じサーバーの `/tools` で `collect_reviews` を利用できる。`python3 scripts/dev.py` が表示したポートを使い、ChatGPT デスクトップアプリへ `http://127.0.0.1:<ポート>/tools` を登録する。[MCP デバッグ手順](docs/mcp-debug.md) に設定と3件の手動確認例を記載した。生成 AI の API キーは不要で、分析は ChatGPT が担当する。登録済み MCP ツールをこの会話から呼び出し、App ID 4800590 の全言語3件を取得して、レビュー ID と分析の引用の対応を確認した。[実接続の記録](docs/worklogs/27-mcp-usage-limits.md) を参照する。
+
+MCP の `collect_reviews` でも任意の `review_type` に `all`・`positive`・`negative` を指定できる。省略・空は `all` となり、Steam 側の条件で絞り込む。選択肢はツール一覧の入力 schema に掲載する。評価を分析対象へ分ける指定であり、LLM API キーやバックエンド AI は不要である。
 
 取得は既定20件・最大100件、最大5ページ、実行期限8秒とする。途中失敗は部分結果を返し、応答量超過時は件数を減らす案内を返す。レビューはメモリから返し、ファイルや DB へ保存しない。既定は localhost またはループバック IP の Host に限定する。`MCP_PUBLIC_URL` に HTTPS の `/tools` URL を指定すると、その公開 Host からも認証なしで利用できる。許可 Host と cross-origin 保護を維持し、OAuth は導入しない。[公開 MCP 仕様](docs/specs/mcp-public-access.md) と [ADR-0009](docs/adr/0009-public-mcp-access.md) を参照する。[MCP 仕様](docs/specs/review-mcp.md) と [ADR-0007](docs/adr/0007-review-mcp.md) を参照する。
 

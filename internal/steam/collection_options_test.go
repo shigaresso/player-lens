@@ -28,6 +28,9 @@ func TestNormalizeCollectionOptions(t *testing.T) {
 	}
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
+			if !tt.invalid {
+				tt.want.ReviewType = steam.ReviewTypeAll
+			}
 			input := tt.input
 			got, err := steam.NormalizeCollectionOptions(input)
 			if !reflect.DeepEqual(got, tt.want) || errors.Is(err, steam.ErrInvalidArgument) != tt.invalid || (err != nil) != tt.invalid {

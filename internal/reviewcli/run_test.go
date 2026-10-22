@@ -70,6 +70,7 @@ func TestRunWithInjectedSaver(t *testing.T) {
 		{"途中失敗も保存して原因を返す", []string{"--app-id=440"}, 440, steam.CollectionOptions{Language: "english", PageSize: 100, MaxReviews: 1000, MaxPages: 100}, io.ErrUnexpectedEOF, io.ErrClosedPipe},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			test.options.ReviewType = steam.ReviewTypeAll
 			calls, saves := 0, 0
 			fetcher := fetcherFunc(func(_ context.Context, id uint32, options steam.PageOptions) (steam.ReviewPage, error) {
 				calls++

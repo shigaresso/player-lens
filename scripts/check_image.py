@@ -1,8 +1,10 @@
 """本番用イメージを一度ビルドし、同じ image ID の実動作を検証する。"""
 
+import argparse
 import contextlib
 import http.client
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -137,12 +139,20 @@ def check_running(image, port, signal, *environment, public_host=None):
         print(f"PORT={port}: HTTP・MCP 応答と {signal} の正常終了を確認した")
 
 
-def main():
+def main(argv=None):
+    parser = argparse.ArgumentParser(description="同じ本番用イメージで HTTP/MCP と終了を検証する")
+    parser.add_argument("--image", help="ビルド済みの sha256 image ID。指定時は再ビルドしない")
+    args = parser.parse_args(argv)
     try:
+        if args.image is not None and not re.fullmatch(r"sha256:[0-9a-f]{64}", args.image):
+            raise ValueError("既存イメージは完全な sha256 image ID で指定する")
         with tempfile.TemporaryDirectory(prefix="player-lens-image-") as directory:
             iid = Path(directory) / "image-id"
-            docker("build", "--target", "production", "--iidfile", str(iid), ".", timeout=600)
-            image = iid.read_text(encoding="utf-8").strip()
+            if args.image is None:
+                docker("build", "--target", "production", "--iidfile", str(iid), ".", timeout=600)
+                image = iid.read_text(encoding="utf-8").strip()
+            else:
+                image = args.image
             config = json.loads(docker("image", "inspect", "--format", "{{json .Config}}", image))
             if config["User"] != "65532:65532":
                 raise RuntimeError("本番用イメージが非 root の設定ではない")

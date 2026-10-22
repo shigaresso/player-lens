@@ -2,7 +2,7 @@
 
 プレイヤーのレビューを収集・分析し、ゲーム企画に使える根拠付きレポートを生成するアプリケーションを開発する。
 
-現在は Go の最小 HTTP サーバー、上限付きの Steam レビュー収集、JSON を出力するローカル CLI、ChatGPT へ収集結果を返す MCP、Docker Compose の開発・検証環境、Git・GitHub の規約検査を導入した。バックエンドの分析・レポート・DB は未実装とし、公開デモ URL とサンプルレポートはまだない。
+現在は Go の最小 HTTP サーバー、上限付きの Steam レビュー収集、JSON を出力するローカル CLI、ChatGPT へ収集結果を返す MCP、Docker Compose の開発・検証環境、Git・GitHub の規約検査を導入した。バックエンドの分析・レポート・DB は未実装とし、Web UI の公開デモとサンプルレポートはまだない。公開 MCP の基本接続先は [https://player-lens.onrender.com/tools](https://player-lens.onrender.com/tools) で、HTTP の初期化・一覧・不正入力の拒否を確認した。検証済み digest を配置する経路と実 ChatGPT 接続は未確認とする。
 
 ## 開発環境
 
@@ -100,6 +100,14 @@ bash scripts/check-go.sh format-fix
 
 `/healthz` は HTTP サーバーの応答を確認する。外部サービスや調査の成功を保証しない。[HTTP の仕様](docs/specs/http-server.md) に従い、PORT と終了時の期限を扱う。
 
-本番用イメージの検査はソース共有やホストの Go に依存せず、一度ビルドした同じ image ID を使う。これはローカル・PR の動作検証であり、マージ後のリリース対象や Render に配置した成果物の検証とは区別する。イメージの公開と同じ digest の配置、Render のサービス構成は今後導入する。
+本番用イメージの検査はソース共有やホストの Go に依存せず、一度ビルドした同じ image ID を使う。これはローカル・PR の動作検証であり、マージ後のリリース対象や Render に配置した成果物の検証とは区別する。Issue #31 で、main の CI 確認後に同じ image ID を検証して GHCR へ送る手動ワークフローと、digest 指定の Render Free 設定生成を追加した。この経路での実 registry 送信・配置は未実行である。[配置手順](docs/deployment.md) に従う。
 
 Go の coverage 閾値・分岐網羅・mutation 検査は未導入とする。GitHub の新しいアプリケーション CI は push 後に対象 SHA の実行結果を確認する。ブランチ保護の制約は [開発手順](docs/development.md#必須チェック設定と残る限界) を参照する。
+
+## 公開 MCP の接続確認
+
+```sh
+python3 scripts/check_public_mcp.py https://player-lens.onrender.com/tools
+```
+
+既定では実 Steam に接続せず、healthz と匿名 MCP の初期化・一覧・不正入力の拒否を確認する。ブラウザの GET `/tools` は405となる。実レビュー取得は明示オプションだけで行い、Free の停止・起動待ち、利用枠、実 ChatGPT 接続の確認は [配置手順](docs/deployment.md) を参照する。

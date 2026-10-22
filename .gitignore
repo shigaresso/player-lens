@@ -36,3 +36,7 @@ __pycache__/
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# 配置時に実 digest から生成する記録と Blueprint
+/publication.json
+/render.generated.yaml

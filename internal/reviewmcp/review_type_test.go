@@ -1,9 +1,12 @@
 package reviewmcp
 
 import (
+	"context"
 	"encoding/json"
+	"io"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/shigaresso/player-lens/internal/steam"
 )
@@ -61,5 +64,27 @@ func TestInputSchemaReviewType(t *testing.T) {
 	field := schema.Properties["review_type"]
 	if field.Type != "string" || field.Default != "all" || field.Description == "" || !reflect.DeepEqual(field.Enum, []string{"", "all", "positive", "negative"}) || !reflect.DeepEqual(schema.Required, []string{"app_id"}) {
 		t.Fatalf("schema=%s", data)
+	}
+}
+
+func TestCollectionReviewTypePartialFailure(t *testing.T) {
+	calls := 0
+	fetcher := fetchFunc(func(_ context.Context, _ uint32, options steam.PageOptions) (steam.ReviewPage, error) {
+		calls++
+		if options.ReviewType != steam.ReviewTypeNegative {
+			t.Fatalf("options=%+v", options)
+		}
+		if calls == 2 {
+			return steam.ReviewPage{}, io.ErrUnexpectedEOF
+		}
+		return steam.ReviewPage{Reviews: []steam.Review{{ID: "1", Text: "取得済み"}}, NextCursor: "next"}, nil
+	})
+	result, err := collect(t.Context(), fetcher, json.RawMessage(`{"app_id":440,"review_type":"negative","page_size":1,"max_reviews":2,"max_pages":2}`), newLimiter(DefaultLimits(), time.Now))
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := decodeOutput(t, result)
+	if !result.IsError || out.ErrorCode != "fetch_failed" || out.ReturnedCount != 1 || out.Collection.Options.ReviewType != "negative" || out.Collection.PagesFetched != 1 || out.Collection.StopReason != steam.StopFailed || calls != 2 {
+		t.Fatalf("out=%+v calls=%d", out, calls)
 	}
 }

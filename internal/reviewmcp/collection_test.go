@@ -22,6 +22,7 @@ type decodedOutput struct {
 		SchemaVersion int    `json:"schema_version"`
 		AppID         uint32 `json:"app_id"`
 		Options       struct {
+			ReviewType string `json:"review_type"`
 			Language   string `json:"language"`
 			PageSize   int    `json:"page_size"`
 			MaxReviews int    `json:"max_reviews"`

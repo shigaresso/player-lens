@@ -23,6 +23,7 @@ func TestCLIProcessHelpAndInvalidInput(t *testing.T) {
 		code int
 	}{
 		{"helpはプロセスも正常終了する", []string{"--help"}, 0},
+		{"不正な評価種別はプロセスから2を返す", []string{"--app-id=440", "--review-type=mixed"}, 2},
 		{"不正入力はプロセスから2を返す", []string{"--app-id=0"}, 2},
 	} {
 		t.Run(test.name, func(t *testing.T) {

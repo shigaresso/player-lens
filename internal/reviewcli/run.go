@@ -19,6 +19,7 @@ var ErrUsage = errors.New("invalid review CLI usage")
 const Usage = `使用方法: collect-reviews --app-id <作品ID> [オプション]
   --app-id       正の Steam App ID（必須、uint32）
   --language     レビューの言語（既定 english）
+  --review-type  all・positive・negative（既定 all、空も all）
   --page-size    1リクエストの要求件数（1〜100、0は100）
   --max-reviews  収集する件数の上限（1〜10000、0は1000）
   --max-pages    ページ取得回数の上限（1〜100、0は100）
@@ -32,6 +33,7 @@ func Run(ctx context.Context, args []string, fetcher steam.PageFetcher, saver st
 	flags := flag.NewFlagSet("collect-reviews", flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
 	appID := flags.String("app-id", "", "Steam App ID")
+	reviewType := flags.String("review-type", "", "レビューの評価種別")
 	options := steam.CollectionOptions{}
 	flags.StringVar(&options.Language, "language", "", "レビューの言語")
 	flags.IntVar(&options.PageSize, "page-size", 0, "要求件数")
@@ -47,6 +49,7 @@ func Run(ctx context.Context, args []string, fetcher steam.PageFetcher, saver st
 	if err != nil || id == 0 || flags.NArg() != 0 {
 		return fmt.Errorf("positive uint32 --app-id and no positional arguments are required: %w", ErrUsage)
 	}
+	options.ReviewType = steam.ReviewType(*reviewType)
 	options, err = steam.NormalizeCollectionOptions(options)
 	if err != nil {
 		return fmt.Errorf("prepare review collection arguments: %w", errors.Join(ErrUsage, err))

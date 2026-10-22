@@ -50,3 +50,19 @@ API の JSON キー、パラメーターの順序と値、10秒の期限、非�
 ファイルが扱う対象を名前から読めるよう、`request.go` を `review_page_request.go` へ改名し、仕様・作業記録・PR 本文案の参照を更新した。Git の改名検出と内容のバイト比較で、Go の実装内容に変更がないことを確認した。
 
 改名後に `bash scripts/check-go.sh unit`（整形・vet・全7パッケージの通常テスト）と `bash scripts/check-lint.sh`（integration タグを含む lint）が成功した。振る舞いを変えない機械的な改名のため、新たなテストや形式上の Red は追加しなかった。結合テストと本番イメージは前記の検証結果と区別し、今回の改名では再実行していない。
+
+## 変換処理を直接検証するユニットテスト
+
+Client 経由の既存テストに加え、切り出した処理の契約を通信なしで理解・検証できるよう、`review_page_request_test.go` を追加した。非公開関数を直接呼ぶため `package steam` とし、プロダクションコードや公開 API は変更していない。
+
+次の契約を一つずつ追加し、Compose の verify で各 Test 名を `-run` に指定して `go test -count=1 ./internal/steam` を実行した。すべて既存実装で Green だったため、形式上の Red は作らず、テストだけを追加した。
+
+| テスト | 直接確認した契約 |
+| --- | --- |
+| `TestSteamReviewTypeCode` | all・positive・negative が0・1・2になり、未正規化の空文字と未知値は ErrInvalidArgument になる |
+| `TestNewReviewPageRequest` | App ID・言語・カーソル・件数を保持し、API の固定条件を設定する。不正な評価種別ではゼロ値と原因を返す |
+| `TestEncodeReviewPageQuery` | format と input_json を生成し、JSON の項目名・数値・言語・特殊文字を含むカーソルを維持する。JSON の項目順には依存しない |
+
+評価種別の期待値は API の0・1・2を直接指定し、検証対象の定数を期待値として再利用していない。空文字の既定値適用は既存の NormalizePageOptions の契約とし、ここでは正規化前の値を変換関数が拒否することを確認した。
+
+追加後に `bash scripts/check-go.sh unit`（整形・vet・全7パッケージの通常テスト）と `bash scripts/check-lint.sh`（integration タグを含む lint）が成功した。結合テスト・本番イメージの結果は上記の実装時点と区別し、今回の通信なしのユニットテスト追加では再実行していない。

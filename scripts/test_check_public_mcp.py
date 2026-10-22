@@ -136,3 +136,10 @@ class TransportTests(unittest.TestCase):
                 contextlib.redirect_stderr(io.StringIO()):
             self.assertEqual(check_public_mcp.main([ENDPOINT]),1)
             check.assert_called_once()
+
+
+class HeaderTests(unittest.TestCase):
+    def test_header_names_are_case_insensitive(self):
+        queue=responses()
+        queue[0]=(200,{'content-type':'text/plain; charset=utf-8'},b'ok\n')
+        self.assertFalse(check_public_mcp.check(ENDPOINT,request=requester(queue,[]))['steam_requested'])

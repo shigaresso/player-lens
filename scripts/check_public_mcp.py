@@ -19,7 +19,8 @@ def check(endpoint, *, request, app_id=None):
     if app_id is not None and (type(app_id) is not int or not 1 <= app_id <= 4294967295):
         raise ValueError('App ID は1〜4294967295の整数で指定する')
     status, headers, body = request(endpoint[:-6]+'/healthz', 'GET', None)
-    if status != 200 or body != b'ok\n' or not headers.get('Content-Type', '').startswith('text/plain'):
+    content_type = next((value for key, value in headers.items() if key.lower() == 'content-type'), '')
+    if status != 200 or body != b'ok\n' or not content_type.startswith('text/plain'):
         raise ValueError('healthz の応答が異なる')
 
     def rpc(identifier, method, params):

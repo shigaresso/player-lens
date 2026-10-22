@@ -7,8 +7,14 @@ import (
 )
 
 const (
-	reviewFilterRecent    = 1
-	reviewPurchaseTypeAll = 1
+	// Steam API の公式列挙名を保持し、アプリケーションの取得条件と区別する。
+	// https://partner.steamgames.com/doc/webapi/IUserReviewsService#Enums
+	k_EUserReviewsAppReviewsFilter_Recent = 1
+	k_EUserReviewsPurchaseType_All        = 1
+
+	k_EUserReviewsReviewType_All      = 0
+	k_EUserReviewsReviewType_Positive = 1
+	k_EUserReviewsReviewType_Negative = 2
 )
 
 type reviewPageRequest struct {
@@ -26,11 +32,11 @@ type reviewPageRequest struct {
 func steamReviewTypeCode(reviewType ReviewType) (int, error) {
 	switch reviewType {
 	case ReviewTypeAll:
-		return 0, nil
+		return k_EUserReviewsReviewType_All, nil
 	case ReviewTypePositive:
-		return 1, nil
+		return k_EUserReviewsReviewType_Positive, nil
 	case ReviewTypeNegative:
-		return 2, nil
+		return k_EUserReviewsReviewType_Negative, nil
 	default:
 		return 0, fmt.Errorf("invalid Steam review type: %w", ErrInvalidArgument)
 	}
@@ -44,12 +50,12 @@ func newReviewPageRequest(appID uint32, options PageOptions) (reviewPageRequest,
 	}
 	return reviewPageRequest{
 		AppID:          appID,
-		Filter:         reviewFilterRecent,
+		Filter:         k_EUserReviewsAppReviewsFilter_Recent,
 		Languages:      []string{options.Language},
 		Cursor:         options.Cursor,
 		PageSize:       options.PageSize,
 		ReviewType:     reviewType,
-		PurchaseType:   reviewPurchaseTypeAll,
+		PurchaseType:   k_EUserReviewsPurchaseType_All,
 		FilterOfftopic: true,
 	}, nil
 }

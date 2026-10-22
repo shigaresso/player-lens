@@ -36,3 +36,11 @@ upstream は未設定のままとし、push・PR 作成・Issue のクローズ�
 ## セルフレビュー
 
 API の JSON キー、パラメーターの順序と値、10秒の期限、非再試行、Body の Close と原因保持の差分を確認した。新しいパッケージ・interface・依存は追加していない。人によるレビューは未実施とする。
+
+## Steam 公式の列挙名への対応
+
+ユーザーの指摘を受け、[Steam 公式の列挙定義](https://partner.steamgames.com/doc/webapi/IUserReviewsService#Enums) を確認した。評価種別の0・1・2に `k_EUserReviewsReviewType_All`・`k_EUserReviewsReviewType_Positive`・`k_EUserReviewsReviewType_Negative` を定義し、変換関数から返した。既存のソートと購入種別の定数名も、それぞれ `k_EUserReviewsAppReviewsFilter_Recent`・`k_EUserReviewsPurchaseType_All` へ合わせた。指示に従って公式識別子を保持し、非公開の定数とした。値は明示的に定義し、送信内容を維持した。
+
+- `bash scripts/check-go.sh unit`：整形・vet・全7パッケージの通常テストが成功した。評価種別 HTTP テストの期待値0・1・2は既存のままとした。
+- `bash scripts/check-lint.sh`：integration タグを含む既存の lint 検査が `0 issues` だった。
+- 同じ数値を名前付き定数へ置換する Refactor のため、形式上の Red や新たなテストは追加しなかった。結合テスト・本番イメージについては上記の単独ブランチ検証結果と区別し、今回の命名変更では再実行していない。

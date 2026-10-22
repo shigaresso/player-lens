@@ -24,6 +24,8 @@ HTTP クライアントと接続先は外から渡す。空の接続先は公式
 
 `request.go` の `steamReviewTypeCode` が評価種別を API の数値へ変換し、未知値を `ErrInvalidArgument` で拒否する。`newReviewPageRequest` は正規化済みの条件を名前付きの API 入力型へ変換し、`encodeReviewPageQuery` は JSON とクエリへ変換する。これらは通信・時刻・保存に依存しない。既定値と入力検査は `NormalizePageOptions`、期限・通信・応答 Body の解放は `FetchReviewsPage` が担当する。
 
+API 側の数値定数は [公式の列挙名](https://partner.steamgames.com/doc/webapi/IUserReviewsService#Enums) と同じ `k_EUserReviewsReviewType_All`・`k_EUserReviewsReviewType_Positive`・`k_EUserReviewsReviewType_Negative`、`k_EUserReviewsAppReviewsFilter_Recent`、`k_EUserReviewsPurchaseType_All` を使う。これらは非公開とし、API へ送る値を明示的な数値で定義する。
+
 ## 結果と失敗
 
 成功時は AppID、既定値適用後の条件、レビュー配列、次のカーソルを返す。ID は正の uint64 を表す文字列のまま保持し、本文、言語、推薦、作成・更新の UNIX 秒を返す。未知のフィールドは無視する。空配列は成功で、空ページのカーソルは省略可能とする。

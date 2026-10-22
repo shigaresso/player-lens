@@ -42,6 +42,6 @@ max_reviews=3、max_pages=1 で呼び出してください。
 
 `MCP_PUBLIC_URL` に実際に配置する HTTPS の `/tools` URL を設定する。未指定なら従来のローカル専用とする。指定時は設定した公開 Host と localhost/loopback から認証なしで接続でき、OAuth、API キー、issuer、JWKS の設定は不要である。異なる Host・Origin は拒否し、全利用者は既存の実行枠を共有する。Host 検査は本人確認ではない。
 
-Compose の app にも設定を渡す。ローカル専用のデバッグでは空のままにし、変更時は app を再作成する。公開設定は公開 URL・TLS・トンネルを作成しない。Render と実 HTTPS 上の ChatGPT 接続は未確認であり、ローカル SDK と本番イメージの結果だけで確認済みとは扱わない。公開配置時に実 URL と匿名クライアントからの接続・収集・制限を確認する。
+Compose の app にも設定を渡す。ローカル専用のデバッグでは空のままにし、変更時は app を再作成する。公開設定は公開 URL・TLS・トンネルを作成しない。Issue #31 でユーザー配置の HTTPS の匿名初期化・一覧・不正入力の拒否を確認した。検証済み digest の実配置と実 HTTPS 上の ChatGPT 接続は未確認であり、ローカル SDK と本番イメージの結果だけで確認済みとは扱わない。公開配置時に実 URL と匿名クライアントからの接続・収集・制限を確認する。
 
 [公開 MCP 仕様](specs/mcp-public-access.md) と [作業記録](worklogs/29-public-mcp-access.md) を参照する。バックエンドが LLM を実行する Web 機能、利用コード・残り回数、MCP/Web 共通の収集枠は未導入とする。

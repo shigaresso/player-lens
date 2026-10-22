@@ -2,7 +2,7 @@
 
 ## 目的と状態
 
-Issue #29 で、公開 MCP を OAuth なしで提供する。Go はレビュー収集を担当し、分析は接続元のクライアントが行う。LLM API キー・バックエンドの分析・利用コード・DB は導入しない。公開 HTTPS・Render 配置・実 ChatGPT の公開接続は未確認とする。実装と検証は [作業記録](../worklogs/29-public-mcp-access.md) に残す。
+Issue #29 で、公開 MCP を OAuth なしで提供する。Go はレビュー収集を担当し、分析は接続元のクライアントが行う。LLM API キー・バックエンドの分析・利用コード・DB は導入しない。Issue #31 の作業中にユーザー配置の公開 HTTPS で匿名初期化・一覧・不正入力の拒否を確認した。検証済み digest の配置と実 ChatGPT の公開接続は未確認とする。実装と検証は [作業記録](../worklogs/29-public-mcp-access.md) に残す。
 
 ## 起動設定
 

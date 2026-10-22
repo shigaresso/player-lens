@@ -2,7 +2,7 @@
 
 ## 目的と状態
 
-Issue #31 で配置準備を実装する。Render の Web Service は未作成であり、今回のローカル作業では Git/registry への push・公開リソース作成・実配置を行わない。実 CI・registry への送信・Render/ChatGPT の実接続・負荷実測はマージ後の確認事項である。
+Issue #31 で配置準備を実装する。当初は Render サービス未作成との回答を受けたが、作業中にユーザーが作成した。今回のローカル作業では Git/registry への push・公開リソース作成・実配置を行わない。実 CI・registry への送信・検証済み digest の実配置・ChatGPT 接続・負荷実測はマージ後の確認事項である。ユーザー配置の `https://player-lens.onrender.com/tools` では HTTP の匿名初期化・一覧・不正入力の拒否を確認した。
 
 ## 配布対象と事前検査
 

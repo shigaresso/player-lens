@@ -185,3 +185,11 @@ Issue の作成後の検査は、作成そのものを防がない。日本語�
 公式 Go SDK v1.8.0 を go.mod・go.sum に固定した。Docker は依存取得後にソースをコピーし、Compose Watch はモジュール変更時に再ビルドする。SDK を更新するときは新旧プロトコルの連携、HTTP 制限・キャンセル・終了処理と本番用イメージを再検証する。
 
 通常テストは取得依存を差し替えて入出力と上限を確認する。MCP の接続・一覧・呼び出しは integration タグの実 SDK クライアントとローカル HTTP サーバーで確認する。本番イメージは初期化・一覧・不正入力・外部 Host 拒否を検査し、実 Steam 取得を行わない。ChatGPT のアプリ設定と分析回答の手動確認は [MCP デバッグ](mcp-debug.md) に従い、自動検証と分けて [作業記録](worklogs/25-review-mcp.md) に残す。
+
+## 配置用ツールとワークフロー（Issue #31）
+
+`deploy.py` は main と成功済み CI の検査、一度ビルドした同じ image ID の検証・送信・manifest 照合、digest 固定の Blueprint 生成を分ける。`check_image.py --image` は再ビルドしない。通常テストは API・subprocess・HTTP を差し替え、実 registry・Render・Steam・LLM を呼ばない。新しい Python テストも `check.sh` と必須フックで自動収集する。
+
+`publish-image.yml` は main からの手動起動だけとし、そのジョブだけ packages:write を持つ。既存 CI と Release は読み取り権限を維持する。CI の必要ジョブの成功がない場合に公開を許可する例外は追加しない。外部の状態を変える実行と、ローカル検証・公開 URL の読み取り確認を区別して記録する。
+
+`check_public_mcp.py` の既定は実 Steam を呼ばない。`--collect-app-id` は実取得を行う明示操作であり通常 CI に入れない。[配置手順](deployment.md) と [ADR-0010](adr/0010-render-deployment.md) を参照する。

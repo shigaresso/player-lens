@@ -19,6 +19,8 @@ func TestMCPRoute(t *testing.T) {
 		{"MCPの子パスを公開しない", "POST", "/tools/child", 404, false},
 		{"末尾のスラッシュを公開しない", "POST", "/tools/", 404, false},
 		{"旧パスを公開しない", "POST", "/mcp", 404, false},
+		{"OAuthのmetadataを公開しない", "GET", "/.well-known/oauth-protected-resource/tools", 404, false},
+		{"OAuthのmetadataへPOSTできない", "POST", "/.well-known/oauth-protected-resource/tools", 404, false},
 		{"healthzはMCPに委譲しない", "GET", "/healthz", 200, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

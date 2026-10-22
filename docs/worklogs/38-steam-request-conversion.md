@@ -15,7 +15,23 @@
 - 変更前: `bash scripts/check-go.sh unit` が全7パッケージで成功した。整形と vet も成功した。
 - 変更後: `docker compose run --rm --no-deps -T verify go test -count=1 ./internal/steam ./internal/reviewcli ./internal/jsonoutput` が3パッケージで成功した。
 - 既存の送信内容・評価種別・入力拒否・資源解放のテストを維持した。振る舞いを保つ Refactor のため、形式上の Red や実装をなぞるテストは追加しなかった。
-- 最終の共通検査とローカル引き渡しの結果は、後続の Issue #40 の作業記録にまとめる。実 CI の実行結果と区別する。
+
+## 単独ブランチでの引き渡し
+
+`codex/38-steam-request-conversion` を引き渡し対象とし、origin/main との差分をリクエスト変換の分離と、その仕様・検証記録に限定した。実装コミットは `71ca615`。応答解析の分離や MCP の変更は含めていない。既存コミットの書き換えは行わず、このブランチに単独の検証記録と [PR 本文案](38-pr.md) を追加した。
+
+upstream は未設定のままとし、push・PR 作成・Issue のクローズは行っていない。PR の関連 Issue は `Closes #38` のみとする。GitHub の送信済み head/base を使う作成前検査とコード CI は、push・PR 作成をしないため未実施とする。
+
+`bash scripts/check-app.sh` をこの単独ブランチの実装 `71ca615` で実行し、次がすべて成功した。
+
+- Go の整形差分なし、vet、全7パッケージの通常テスト。
+- integration タグを含む golangci-lint の `0 issues`。
+- Git 失敗・不在・checkout 不在の Go 検査と、通常テストも含む全7パッケージの `go test -tags=integration -race -count=1 ./...`。
+- ソース共有なしの本番イメージでの HTTP・MCP・公開設定・不正設定・PORT・SIGTERM/SIGINT の検査。image ID は `sha256:ab6a59e047f9f9317388b079b0fdf492d013a7e517dba296b9128b4d8a5ea413`。
+
+`python3 scripts/validate.py pr --title 'Steam API のリクエスト変換を通信処理から分離した' --body-file docs/worklogs/38-pr.md --label enhancement` で、単独の PR 本文案の形式を確認した。コミットでは必須フックの `bash scripts/check.sh`（Python 177テストと静的検査）を通し、最終のコミット範囲も `python3 scripts/validate.py range origin/main HEAD` で確認する。
+
+実フック8テストと実 Go ツールの検証は、前回の成功結果を再利用する。`git diff 2d4d4c3 HEAD -- scripts .github Dockerfile compose.yaml lefthook.yml .lefthook go.mod go.sum .golangci.yml` で検査コード・設定・依存に差分がないことを確認し、これらの独立した検証を手動で繰り返していない。必須の pre-commit と commit-msg は今回のコミットでも実行する。coverage 閾値・分岐・mutation は未導入とし、Stryker は実行していない。
 
 ## セルフレビュー
 

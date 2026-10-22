@@ -16,11 +16,25 @@ const maxCursorBytes = 4096
 
 var languagePattern = regexp.MustCompile(`^[a-z][a-z0-9_-]{0,31}$`)
 
-// PageOptions は1ページの取得条件を表す。ゼロ値は英語・先頭・20件となる。
+// ReviewType は全評価・おすすめ・非おすすめの取得条件を表す。
+// ゼロ値は正規化時に ReviewTypeAll となる。通常の文字列型なので検査は必要である。
+type ReviewType string
+
+const (
+	// ReviewTypeAll はおすすめ・非おすすめの両方を取得する。
+	ReviewTypeAll ReviewType = "all"
+	// ReviewTypePositive はおすすめのレビューだけを取得する。
+	ReviewTypePositive ReviewType = "positive"
+	// ReviewTypeNegative は非おすすめのレビューだけを取得する。
+	ReviewTypeNegative ReviewType = "negative"
+)
+
+// PageOptions は1ページの取得条件を表す。ゼロ値は全評価・英語・先頭・20件となる。
 type PageOptions struct {
-	Language string
-	Cursor   string
-	PageSize int
+	ReviewType ReviewType
+	Language   string
+	Cursor     string
+	PageSize   int
 }
 
 // NormalizePageOptions は通信せずに既定値を補完し、取得条件を検査する。
@@ -28,6 +42,14 @@ type PageOptions struct {
 // 入力を変更せず、不正な場合はゼロ値と ErrInvalidArgument を返す。
 // 戻り値の書き換え後の有効性や Steam 側の対応言語は保証しない。
 func NormalizePageOptions(options PageOptions) (PageOptions, error) {
+	if options.ReviewType == "" {
+		options.ReviewType = ReviewTypeAll
+	}
+	switch options.ReviewType {
+	case ReviewTypeAll, ReviewTypePositive, ReviewTypeNegative:
+	default:
+		return PageOptions{}, fmt.Errorf("invalid Steam review type: %w", ErrInvalidArgument)
+	}
 	if options.Language == "" {
 		options.Language = "english"
 	}

@@ -19,6 +19,7 @@ func TestParseInput(t *testing.T) {
 		{"最小の取得条件を受け付ける", `{"app_id":1,"language":"all","page_size":1,"max_reviews":1,"max_pages":1}`, 1, steam.CollectionOptions{Language: "all", PageSize: 1, MaxReviews: 1, MaxPages: 1}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			tc.options.ReviewType = steam.ReviewTypeAll
 			appID, options, err := parseInput([]byte(tc.input))
 			if err != nil || appID != tc.appID || options != tc.options {
 				t.Fatalf("parseInput = %d, %+v, %v", appID, options, err)

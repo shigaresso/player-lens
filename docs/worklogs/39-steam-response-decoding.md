@@ -7,7 +7,7 @@
 
 ## 変更と参照
 
-`response.go` の `decodeReviewPage` へ JSON 解析・wrapper・件数・カーソルの検査と結果生成を分離した。レビュー ID の数字構文・正数・uint64 範囲は `validReviewID` にまとめた。HTTP ステータス、Body の読み取り・2 MiB 制限・解放、Close との複合エラーは `FetchReviewsPage` に維持した。
+`review_page_response.go` の `decodeReviewPage` へ JSON 解析・wrapper・件数・カーソルの検査と結果生成を分離した。レビュー ID の数字構文・正数・uint64 範囲は `validReviewID` にまとめた。HTTP ステータス、Body の読み取り・2 MiB 制限・解放、Close との複合エラーは `FetchReviewsPage` に維持した。
 
 参照した仕様は `docs/specs/steam-review-page.md` の「結果と失敗」「検証」、データ・調査仕様の「レビューと収集条件」、ADR-0004、ユースケースの「パーツとの境界」。検証環境は開発手順と ADR-0001・0002・0003 に従った。
 
@@ -25,3 +25,7 @@
 ## セルフレビュー
 
 検査の順序・未知フィールドの許容・空配列の扱い・失敗時のゼロ値と原因保持が既存のままであることを確認した。新しいパッケージ・interface・依存は追加していない。人によるレビューは未実施とする。
+
+## ファイル名の明確化
+
+`response.go` を `review_page_response.go` に改名し、`review_page_request.go` と対象を揃えた。実装内容は変更せず、仕様の参照を更新した。`docker compose run --rm --no-deps -T verify go test -count=1 ./internal/steam` が成功した。振る舞いを変えない改名のため、形式上の Red は作らなかった。

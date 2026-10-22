@@ -36,7 +36,7 @@ HTTP 200 以外はステータスを持つエラーとし、リダイレクト�
 
 ### 応答解釈の境界（Issue #39）
 
-`response.go` の `decodeReviewPage` が本文の JSON 解析、wrapper・件数・カーソルの検査、空配列の正規化とページ生成を担当する。ID は `validReviewID` で正の uint64 を表す数字列か検査する。これらは通信しない。`FetchReviewsPage` は HTTP ステータス、Body の読み取り・2 MiB 制限・Close と複合エラーを管理し、解釈へ有効な取得条件と本文を渡す。失敗時のゼロ値と原因保持を維持する。
+`review_page_response.go` の `decodeReviewPage` が本文の JSON 解析、wrapper・件数・カーソルの検査、空配列の正規化とページ生成を担当する。ID は `validReviewID` で正の uint64 を表す数字列か検査する。これらは通信しない。`FetchReviewsPage` は HTTP ステータス、Body の読み取り・2 MiB 制限・Close と複合エラーを管理し、解釈へ有効な取得条件と本文を渡す。失敗時のゼロ値と原因保持を維持する。
 
 ## 検証
 

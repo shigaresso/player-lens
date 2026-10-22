@@ -32,7 +32,7 @@ func TestMCPShutdownWaitsForActiveCollection(t *testing.T) {
 	fetcher := requestFetcher{started: make(chan struct{}), release: make(chan struct{})}
 	release := sync.OnceFunc(func() { close(fetcher.release) })
 	t.Cleanup(release)
-	mcpHandler, err := reviewmcp.NewHandler(fetcher, reviewmcp.DefaultLimits())
+	mcpHandler, err := reviewmcp.NewHandler(fetcher, reviewmcp.DefaultLimits(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}

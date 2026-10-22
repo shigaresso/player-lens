@@ -22,7 +22,7 @@ func TestHTTPRequestCancellation(t *testing.T) {
 				<-ctx.Done()
 				finished <- ctx.Err()
 				return steam.ReviewPage{}, ctx.Err()
-			}), DefaultLimits())
+			}), DefaultLimits(), nil)
 			if err != nil {
 				t.Fatal(err)
 			}

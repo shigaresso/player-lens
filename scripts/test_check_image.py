@@ -2,12 +2,78 @@
 
 import contextlib
 import io
+import json
+import tempfile
 import unittest
-from unittest.mock import patch
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
 
 import check_image
 
 IMAGE = 'sha256:' + 'a' * 64
+
+
+class MCPGuideTests(unittest.TestCase):
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory(prefix='player-lens-guide-test-')
+        self.addCleanup(temporary.cleanup)
+        root = Path(temporary.name)
+        source = root / 'internal/reviewmcp/analysis_guide.md'
+        source.parent.mkdir(parents=True)
+        self.instructions = '検査用の分析ガイド。根拠のレビュー ID を示してください。'
+        source.write_text(self.instructions, encoding='utf-8')
+        root_patch = patch.object(check_image, 'ROOT', root)
+        root_patch.start()
+        self.addCleanup(root_patch.stop)
+
+    def guide(self):
+        return {'version': '1', 'instructions': self.instructions}
+
+    def check_result(self, output, *, text_output=None):
+        if text_output is None:
+            text_output = output
+        results = [
+            {'protocolVersion': '2025-11-25'},
+            {'tools': [{'name': 'collect_reviews'}]},
+            {'isError': True, 'structuredContent': output,
+             'content': [{'type': 'text', 'text': json.dumps(text_output)}]},
+        ]
+        responses = [SimpleNamespace(status=200, read=lambda index=i, value=value:
+                     json.dumps({'id': index, 'result': value}).encode())
+                     for i, value in enumerate(results, 1)]
+        responses.extend(SimpleNamespace(status=status, read=lambda: b'', getheader=lambda name: None)
+                         for status in [403, 403, 404, 404])
+        connection = MagicMock()
+        connection.getresponse.side_effect = responses
+        with patch.object(check_image.http.client, 'HTTPConnection', return_value=connection):
+            check_image.check_mcp(8080)
+        return connection
+
+    def test_embedded_guide_is_checked_without_valid_steam_input(self):
+        output = {'error_code': 'invalid_input', 'analysis_guide': self.guide()}
+        connection = self.check_result(output)
+        calls = connection.request.call_args_list
+        tool_calls = [json.loads(call.args[2]) for call in calls
+                      if len(call.args) > 2 and call.args[2] != '{}']
+        self.assertEqual(tool_calls[-1]['params']['arguments'], {'app_id': 0})
+        self.assertEqual(len(tool_calls), 3)
+        self.assertEqual(connection.close.call_count, 7)
+
+    def test_missing_changed_or_invalid_guide_is_rejected(self):
+        for name, guide in [
+            ('ガイドなし', None),
+            ('版が異なる', {**self.guide(), 'version': '2'}),
+            ('本文が異なる', {**self.guide(), 'instructions': '古いガイド'}),
+            ('本文が文字列でない', {**self.guide(), 'instructions': 1}),
+        ]:
+            with self.subTest(name=name), self.assertRaises(RuntimeError):
+                self.check_result({'error_code': 'invalid_input', 'analysis_guide': guide})
+
+    def test_text_and_structured_guide_must_match(self):
+        output = {'error_code': 'invalid_input', 'analysis_guide': self.guide()}
+        with self.assertRaises(RuntimeError):
+            self.check_result(output, text_output={'error_code': 'invalid_input'})
 
 
 class ExistingImageTests(unittest.TestCase):

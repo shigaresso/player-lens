@@ -18,6 +18,7 @@ type toolOutput struct {
 	OmittedReviews int             `json:"omitted_reviews"`
 	ErrorCode      string          `json:"error_code"`
 	Message        string          `json:"message"`
+	AnalysisGuide  analysisGuide   `json:"analysis_guide"`
 }
 
 const maxResultBytes = 128 * 1024
@@ -70,7 +71,11 @@ func encodeResult(collection steam.Collection, code, message string, omitted int
 	if err != nil {
 		return nil, fmt.Errorf("convert MCP collection: %w", err)
 	}
-	out := toolOutput{Collection: data, ReturnedCount: len(collection.Reviews), OmittedReviews: omitted, ErrorCode: code, Message: message}
+	out := toolOutput{
+		Collection: data, ReturnedCount: len(collection.Reviews), OmittedReviews: omitted,
+		ErrorCode: code, Message: message,
+		AnalysisGuide: analysisGuide{Version: analysisGuideVersion, Instructions: analysisGuideInstructions},
+	}
 	content, err := json.Marshal(out)
 	if err != nil {
 		return nil, fmt.Errorf("encode MCP result: %w", err)

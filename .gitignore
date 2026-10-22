@@ -28,6 +28,9 @@ go.work.sum
 # env file
 .env
 
+# macOS が各ディレクトリへ生成するメタデータ
+.DS_Store
+
 # Python の規約検査で生成するキャッシュ
 __pycache__/
 *.py[cod]

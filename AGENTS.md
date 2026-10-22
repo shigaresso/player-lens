@@ -12,6 +12,7 @@
 
 - 仕様検討・実装・レビューの前に [文書一覧](docs/README.md) を読み、変更対象に対応する仕様書と、適用される採用済み ADR を読む。リンクの存在だけで本文を読んだと扱わない。
 - データ保存、レビュー収集、分析、レポート、ジョブの変更では [データ・調査仕様](docs/specs/data-and-research.md) を読む。公開 UI、認証、利用期限、実行制限、README の変更では [公開デモ仕様](docs/specs/public-demo.md) を読む。
+- クライアント AI 向けの分析ガイド・依頼例・分析例の変更では [レビュー分析仕様](docs/specs/review-analysis.md) と [ADR-0011](docs/adr/0011-client-review-analysis-guide.md) を読む。
 - 実行環境、Docker、CI の検証環境、Render 配置の変更では [実行・配置方針の ADR](docs/adr/0001-runtime-and-deployment.md) を読む。追加の ADR は文書一覧の適用範囲と状態を確認する。
 - registry へのイメージ公開・Render 設定・公開接続検査の変更では [配置仕様](docs/specs/render-deployment.md) と [ADR-0010](docs/adr/0010-render-deployment.md) を読む。
 - MCP の公開 URL、許可 Host、匿名公開の変更では [公開 MCP 仕様](docs/specs/mcp-public-access.md) と [ADR-0009](docs/adr/0009-public-mcp-access.md) を読む。

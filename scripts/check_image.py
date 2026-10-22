@@ -74,6 +74,18 @@ def check_mcp(port, public_host=None):
     invalid = call(3, "tools/call", {"name": "collect_reviews", "arguments": {"app_id": 0}})
     if not invalid.get("isError") or invalid["structuredContent"]["error_code"] != "invalid_input":
         raise RuntimeError("MCP の不正入力を取得前に拒否しなかった")
+    expected_guide = {
+        "version": "1",
+        "instructions": (ROOT / "internal/reviewmcp/analysis_guide.md").read_text(encoding="utf-8"),
+    }
+    try:
+        content = invalid["content"]
+        text_matches = (len(content) == 1 and content[0]["type"] == "text"
+                        and json.loads(content[0]["text"]) == invalid["structuredContent"])
+    except (KeyError, IndexError, TypeError, ValueError):
+        text_matches = False
+    if invalid["structuredContent"].get("analysis_guide") != expected_guide or not text_matches:
+        raise RuntimeError("埋め込んだ分析ガイドと構造化結果・JSON テキストが一致しない")
     connection = http.client.HTTPConnection("127.0.0.1", port, timeout=3)
     try:
         connection.request("POST", "/tools", "{}", {

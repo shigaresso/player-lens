@@ -15,6 +15,7 @@ func TestResponseSize(t *testing.T) {
 		code   string
 	}{
 		{"十分に小さい本文は全体を返す", 60000, ""},
+		{"ガイド込みで上限を超える本文は省略する", 63000, "response_too_large"},
 		{"上限を超える本文は切り詰めず省略を明示する", 70000, "response_too_large"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

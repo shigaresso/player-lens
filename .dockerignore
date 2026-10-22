@@ -5,3 +5,7 @@
 !cmd/**
 !internal/
 !internal/**
+
+# 許可したソース配下にも macOS のメタデータを含めない
+.DS_Store
+**/.DS_Store

@@ -6,6 +6,8 @@ import (
 	"context"
 	"encoding/json"
 	"net/http/httptest"
+	"slices"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -54,6 +56,35 @@ func TestMCPProtocol(t *testing.T) {
 			tool := tools.Tools[0]
 			if tool.InputSchema == nil || tool.OutputSchema == nil || tool.Annotations == nil || !tool.Annotations.ReadOnlyHint || tool.Annotations.OpenWorldHint == nil || !*tool.Annotations.OpenWorldHint {
 				t.Fatal("ツール契約が公開されていない")
+			}
+			if !strings.Contains(tool.Description, "analysis_guide") {
+				t.Fatal("分析ガイドの存在を説明していない")
+			}
+			schemaData, err := json.Marshal(tool.OutputSchema)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var schema struct {
+				Required   []string `json:"required"`
+				Properties struct {
+					Guide struct {
+						Type                 string   `json:"type"`
+						AdditionalProperties bool     `json:"additionalProperties"`
+						Required             []string `json:"required"`
+						Properties           map[string]struct {
+							Type      string `json:"type"`
+							Const     string `json:"const"`
+							MinLength int    `json:"minLength"`
+						} `json:"properties"`
+					} `json:"analysis_guide"`
+				} `json:"properties"`
+			}
+			if err := json.Unmarshal(schemaData, &schema); err != nil {
+				t.Fatal(err)
+			}
+			guide := schema.Properties.Guide
+			if !slices.Contains(schema.Required, "analysis_guide") || guide.Type != "object" || guide.AdditionalProperties || !slices.Contains(guide.Required, "version") || !slices.Contains(guide.Required, "instructions") || guide.Properties["version"].Type != "string" || guide.Properties["version"].Const != "1" || guide.Properties["instructions"].Type != "string" || guide.Properties["instructions"].MinLength != 1 {
+				t.Fatal("版付き分析ガイドの出力契約を公開していない")
 			}
 			result, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "collect_reviews", Arguments: map[string]any{"app_id": 440, "max_reviews": 1}})
 			if err != nil || result.IsError {

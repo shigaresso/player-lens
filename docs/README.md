@@ -18,6 +18,8 @@
 | [Steam レビューの上限付き収集](specs/collect-reviews.md) | 複数ページ収集、条件・重複・上限・途中失敗 | Issue #21 で実装した。MCP 接続を導入した。永続保存・再開・Web 接続は未導入 |
 | [収集 CLI と保存先](specs/review-cli.md) | CLI の入力・終了・JSON・保存先の契約 | Issue #23 でローカル CLI と JSON 保存実装を導入した。永続保存は未導入 |
 | [レビュー収集 MCP](specs/review-mcp.md) | ローカルの MCP 接続、入力・応答・期限・部分失敗 | Issue #25 でローカル MCP を導入した。SDK と ChatGPT の確認を区別して記録する |
+| [レビュー分析仕様](specs/review-analysis.md) | クライアント AI 向けガイドの提供・内容・出力と保証範囲 | Issue #35 で版付きの案内を導入した。分析生成・意味検証はバックエンドに導入しない |
+| [分析の利用手順](review-analysis.md) | 依頼テンプレート・深掘り・結果の確認 | [架空データの例](examples/review-analysis.md) を併記した。実 AI の動作検証とは区別する |
 | [MCP 利用制限](specs/mcp-usage-limits.md) | MCP の開始回数・固定窓・同時実行数・設定・拒否 | Issue #27 で1プロセスの制限を導入した。共有予算・認証は未導入。公開配置の基本通信は確認済み |
 | [認証なしの公開 MCP](specs/mcp-public-access.md) | 公開 URL、許可 Host、匿名公開 | Issue #29 で URL と Host 保護を導入した。ユーザー配置の基本 HTTP 通信は成功、実 ChatGPT 接続は未確認 |
 | [Render 配置基盤](specs/render-deployment.md) | イメージ公開・digest・Render 設定・公開接続検査 | Issue #31 で配置準備を導入した。ユーザー配置の基本通信は成功、digest 経路の実配置は未実施 |
@@ -36,6 +38,7 @@
 | [ADR-0008：MCP 利用制限](adr/0008-mcp-usage-limits.md) | 制限の状態所有・受付・返却・固定窓と保証範囲 | 採用。1プロセスで管理する。再起動・複数台の予算保証は持たない |
 | [ADR-0009：認証なしの公開 MCP](adr/0009-public-mcp-access.md) | 公開設定と Host 保護、OAuth を導入しない理由 | 採用。配置と実接続は未確認 |
 | [ADR-0010：Render 配置基盤](adr/0010-render-deployment.md) | 手動の GHCR 公開・Free・資格情報と配置準備の範囲 | 採用。実 CI・registry・配置は未実施 |
+| [ADR-0011：クライアント向け分析ガイド](adr/0011-client-review-analysis-guide.md) | MCP 結果へのガイド添付と分析の担当・制約 | 採用。版付きの本文を埋め込み、クライアントの最終回答は強制しない |
 
 変更が複数の範囲にまたがる場合は、対応する文書をすべて読む。参照した節と ADR、要件に対応する検証を Issue・PR に記録する。ADR を追加・置換するときは、この一覧と適用範囲を更新する。
 
@@ -56,5 +59,7 @@ Issue #29 で [認証なしの公開 MCP](specs/mcp-public-access.md) を追加�
 Issue #31 で配置準備を追加した。ユーザー配置の公開 URL で基本通信を確認し、実 registry 送信・digest 配置・実 ChatGPT 接続は未確認とする。[作業記録](worklogs/31-render-deployment.md) に区別して記録する。
 
 Issue #33 で評価種別の指定を追加した。Go・CLI・MCP で共通の条件を使い、全評価の省略互換性を維持する。[作業記録](worklogs/33-review-type.md) にローカル検証と未配置の範囲を記録する。
+
+Issue #35 でレビュー収集結果へ版付きの分析ガイドを添付した。[利用手順](review-analysis.md) と架空レビューの説明例を追加し、バックエンドの分析生成・意味検証とは区別する。[作業記録](worklogs/35-review-analysis-guide.md) に確認した契約と未確認の範囲を記録する。
 
 導入が進んだら、対応 PR でこの状態を更新する。`docs/use-cases.md` は操作の追加・変更時に更新する。自動生成の仕様目次は別 Issue で形式と検査を決定してから導入する。

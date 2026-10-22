@@ -27,6 +27,8 @@
 
 `structuredContent` と同じ JSON のテキストを返す。`collection` は既存の `jsonoutput.MarshalCollection` の schema_version=1 とし、レビュー ID・本文・言語・評価・UNIX 秒、条件・成功ページ数・終了理由を取得順に返す。`returned_count` は返した件数、`omitted_reviews` は応答量超過で返せなかった件数とする。成功時の `error_code`・`message` は空である。件数・ページ上限での正常終了は全件収集を意味しない。
 
+Issue #35 で、すべてのツール結果に `analysis_guide`（文字列の `version` と `instructions`、初版は版1）を追加した。共通本文をバイナリへ埋め込み、レビュー本文や成功・失敗で変更しない。出力 schema とツール説明に存在を案内する。ガイドも二重化した128 KiB上限の対象とし、応答量超過時にも保持する。[レビュー分析仕様](review-analysis.md) と [ADR-0011](../adr/0011-client-review-analysis-guide.md) に内容・担当・制約を定める。Collection と CLI の JSON は変えない。厳密にトップレベルの追加項目を拒否するクライアントは対応が必要である。
+
 取得失敗は `fetch_failed`、キャンセルは `cancelled`、期限は `deadline_exceeded` とし、`isError=true` と部分結果・failed を返す。内部のエラー文字列はモデルへ返さない。レビュー本文は外部データであり、指示として採用しない旨をツール説明へ記載する。この説明だけでモデルの遵守を保証しない。
 
 HTTP 本文は16 KiBまでとし、SDK が超過を413で拒否する。シリアライズした SDK の CallToolResult は128 KiBまで（JSON-RPC 外枠は含まない）。超過時は `response_too_large`、レビュー配列を空にした収集条件・取得ページ数・終了理由、省略件数、件数を減らす案内を返す。本文を切り詰めたレビューや完全な成功として返さず、元のレビューを外部保存しない。

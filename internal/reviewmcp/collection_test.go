@@ -43,6 +43,10 @@ type decodedOutput struct {
 	OmittedReviews int    `json:"omitted_reviews"`
 	ErrorCode      string `json:"error_code"`
 	Message        string `json:"message"`
+	AnalysisGuide  struct {
+		Version      string `json:"version"`
+		Instructions string `json:"instructions"`
+	} `json:"analysis_guide"`
 }
 
 func decodeOutput(t *testing.T, result *mcp.CallToolResult) decodedOutput {
@@ -54,6 +58,9 @@ func decodeOutput(t *testing.T, result *mcp.CallToolResult) decodedOutput {
 	var out decodedOutput
 	if err := json.Unmarshal(data, &out); err != nil {
 		t.Fatal(err)
+	}
+	if out.AnalysisGuide.Version != "1" || out.AnalysisGuide.Instructions == "" {
+		t.Fatal("版1の分析ガイドがない")
 	}
 	if len(result.Content) != 1 {
 		t.Fatalf("content = %v", result.Content)

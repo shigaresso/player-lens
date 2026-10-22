@@ -72,3 +72,88 @@ class PreflightTests(unittest.TestCase):
             raise OSError('通信失敗')
         with self.assertRaises(OSError):
             deploy.preflight(REPO, TARGET, api)
+
+
+class PublishTests(unittest.TestCase):
+    def exercise(self, fault=None):
+        import json
+        from pathlib import Path
+
+        operations = []
+        data = ci_fixture()
+        main_reads = 0
+        image_id = 'sha256:'+'1'*64
+        digest = 'sha256:'+'2'*64
+
+        def api(path):
+            nonlocal main_reads
+            if path.endswith('/git/ref/heads/main'):
+                main_reads += 1
+                if fault == 'main_changed' and main_reads > 1:
+                    return {'object': {'sha': 'b'*40}}
+            if fault == 'ci_failure' and '/jobs?' in path:
+                raise OSError('API失敗')
+            return copy.deepcopy(data[path])
+
+        def run(args, **kwargs):
+            operations.append(args)
+            if args[:3] == ['git', 'rev-parse', 'HEAD']:
+                return 'b'*40 if fault == 'head' else TARGET
+            if args[:2] == ['git', 'status']:
+                return ' M cmd/server/main.go' if fault == 'dirty' else ''
+            if args[:2] == ['docker', 'build']:
+                if fault == 'build':
+                    raise OSError('ビルド失敗')
+                Path(args[args.index('--iidfile')+1]).write_text('invalid' if fault == 'image_id' else image_id)
+                return ''
+            if args[:3] == ['docker', 'image', 'inspect']:
+                return json.dumps({'Os': 'linux', 'Architecture': 'arm64' if fault == 'platform' else 'amd64'})
+            if args[:2] == ['docker', 'tag']:
+                self.assertEqual(args[2], image_id)
+                return ''
+            if args[:2] == ['docker', 'push']:
+                if fault == 'push':
+                    raise OSError('送信失敗')
+                return '不明な出力' if fault == 'digest' else 'sha: digest: '+digest+' size: 1234'
+            if args[:4] == ['docker', 'buildx', 'imagetools', 'inspect']:
+                self.assertEqual(args[-1], f'ghcr.io/{REPO}@{digest}')
+                if fault == 'manifest':
+                    return '{}'
+                return json.dumps({'config': {'digest': 'sha256:'+'3'*64 if fault == 'mismatch' else image_id}})
+            self.fail(f'予期しないコマンド: {args}')
+
+        def verify(image):
+            operations.append(['verify', image])
+            self.assertEqual(image, image_id)
+            return 1 if fault == 'verify' else 0
+
+        return operations, lambda: deploy.publish(REPO, TARGET, api=api, run=run, verify=verify)
+
+    def test_build_once_verify_before_push_and_return_matching_digest(self):
+        operations, publish = self.exercise()
+        result = publish()
+        self.assertEqual(result['image'], f'ghcr.io/{REPO}@sha256:'+ '2'*64)
+        self.assertEqual(result['target'], TARGET)
+        self.assertEqual(result['platform'], 'linux/amd64')
+        self.assertEqual(sum(op[:2] == ['docker', 'build'] for op in operations), 1)
+        build = next(op for op in operations if op[:2] == ['docker', 'build'])
+        self.assertEqual(build[build.index('--platform')+1], 'linux/amd64')
+        verify_index = next(i for i, op in enumerate(operations) if op[0] == 'verify')
+        push_index = next(i for i, op in enumerate(operations) if op[:2] == ['docker', 'push'])
+        self.assertLess(verify_index, push_index)
+
+    def test_failure_before_push_does_not_write(self):
+        for fault in ['ci_failure', 'head', 'dirty', 'build', 'image_id', 'platform', 'verify', 'main_changed']:
+            with self.subTest(fault=fault):
+                operations, publish = self.exercise(fault)
+                with self.assertRaises((ValueError, OSError)):
+                    publish()
+                self.assertFalse(any(op[:2] == ['docker', 'push'] for op in operations))
+
+    def test_write_or_postwrite_failure_is_not_retried(self):
+        for fault in ['push', 'digest', 'manifest', 'mismatch']:
+            with self.subTest(fault=fault):
+                operations, publish = self.exercise(fault)
+                with self.assertRaises((ValueError, OSError)):
+                    publish()
+                self.assertEqual(sum(op[:2] == ['docker', 'push'] for op in operations), 1)

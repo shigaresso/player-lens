@@ -6,7 +6,7 @@
 2. ChatGPT デスクトップアプリの Settings → MCP servers → Add server で、名前を `PlayerLens`、種類を Streamable HTTP、URL を `http://127.0.0.1:<表示されたポート>/tools` にして保存し、アプリを再起動する。
 3. 入力欄で `/mcp` から PlayerLens の利用を確認する。設定項目が見つからない場合は [公式のデスクトップ MCP 手順](https://learn.chatgpt.com/docs/extend/mcp) と使用しているアプリの対応機能を確認する。
 
-生成 AI の API キーは PlayerLens に設定しない。ChatGPT のモデルがツール結果を受け取って分析する。アプリ設定は自動変更しない。ローカルアプリと同じマシンの localhost を使う手順であり、クラウド側から localhost へは接続できない。[クラウド接続の公式手順](https://developers.openai.com/api/docs/guides/custom-mcp-server) による HTTPS・トンネル・公開認証は今回の実装範囲に含めない。
+生成 AI の API キーは PlayerLens に設定しない。ChatGPT のモデルがツール結果を受け取って分析する。アプリ設定は自動変更しない。ローカルアプリと同じマシンの localhost を使う手順であり、クラウド側から localhost へは接続できない。[クラウド接続の公式手順](https://developers.openai.com/api/docs/guides/custom-mcp-server) による HTTPS の公開配置・トンネルの作成は今回の実装範囲に含めない。
 
 接続 URL の `/tools` は Go サーバーのパスであり、入力欄の `/mcp` は ChatGPT アプリ内のコマンドである。例えばホストポート8080なら `http://127.0.0.1:8080/tools` を登録する。旧 URL の `/mcp` は404を返すため、以前登録した場合は URL を更新する。`collect_reviews` のツール名は変更していない。
 
@@ -30,10 +30,18 @@ max_reviews=3、max_pages=1 で呼び出してください。
 
 既定では1分6回・24時間100回・同時2件の収集を受け付ける。`rate_limited` は分次、`daily_limit_reached` は24時間、`busy` は同時数の拒否を表す。拒否は取得件数0・取得ページ数0の MCP エラー結果となり、Steam を呼ばない。上限に達したら繰り返し試さず、対応する枠が戻るまで待つ。サーバー側の自動待機・再試行は追加していない。
 
-`.env.example` の3つの `MCP_*` を必要に応じて設定し、Compose の app を再作成して反映する。0などの不正値では起動しない。全セッションの合計で数え、再起動で回数が消える。この制約と固定窓の境界は [利用制限仕様](specs/mcp-usage-limits.md) を参照する。
+`.env.example` の3つの実行制限用 `MCP_*` を必要に応じて設定し、Compose の app を再作成して反映する。0などの不正値では起動しない。全セッションの合計で数え、再起動で回数が消える。この制約と固定窓の境界は [利用制限仕様](specs/mcp-usage-limits.md) を参照する。
 
 2026-10-09 JST に登録済み MCP ツールをこの会話から呼び出し、App ID 4800590・全言語3件・1ページを取得して引用 ID と分析の対応を確認した。[記録](worklogs/27-mcp-usage-limits.md) に条件と結果を残す。自動テストの SDK 呼び出しとも、以前の Python HTTP クライアントによる実接続とも区別する。
 
 ## 自動確認との区別
 
 `bash scripts/check-app.sh` の通常テスト・integration/race・本番イメージ検証は実 Steam・実 LLM を呼ばない。実 SDK クライアントの接続確認と、ChatGPT アプリでの取得・分析確認を分ける。後者が未実施なら対応アプリ・設定が必要であることを記録し、分析済みと記載しない。
+
+## 認証なしの公開設定（Issue #29）
+
+`MCP_PUBLIC_URL` に実際に配置する HTTPS の `/tools` URL を設定する。未指定なら従来のローカル専用とする。指定時は設定した公開 Host と localhost/loopback から認証なしで接続でき、OAuth、API キー、issuer、JWKS の設定は不要である。異なる Host・Origin は拒否し、全利用者は既存の実行枠を共有する。Host 検査は本人確認ではない。
+
+Compose の app にも設定を渡す。ローカル専用のデバッグでは空のままにし、変更時は app を再作成する。公開設定は公開 URL・TLS・トンネルを作成しない。Render と実 HTTPS 上の ChatGPT 接続は未確認であり、ローカル SDK と本番イメージの結果だけで確認済みとは扱わない。公開配置時に実 URL と匿名クライアントからの接続・収集・制限を確認する。
+
+[公開 MCP 仕様](specs/mcp-public-access.md) と [作業記録](worklogs/29-public-mcp-access.md) を参照する。バックエンドが LLM を実行する Web 機能、利用コード・残り回数、MCP/Web 共通の収集枠は未導入とする。

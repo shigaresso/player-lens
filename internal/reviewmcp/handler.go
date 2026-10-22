@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/shigaresso/player-lens/internal/mcpaccess"
 	"github.com/shigaresso/player-lens/internal/steam"
 )
 
@@ -17,7 +18,8 @@ import (
 // limits は正の整数で指定し、このハンドラーの全呼び出しで共有する。
 // 利用回数はメモリ内に保持し、ハンドラーの作り直しでは引き継がない。
 // HTTP クライアントと接続プールの終了は呼び出し側が担当する。
-func NewHandler(fetcher steam.PageFetcher, limits Limits) (http.Handler, error) {
+// access が nil ならローカル専用、指定時は許可 Host から認証なしで受け付ける。
+func NewHandler(fetcher steam.PageFetcher, limits Limits, access *mcpaccess.Access) (http.Handler, error) {
 	if fetcher == nil {
 		return nil, fmt.Errorf("prepare review MCP handler: %w", steam.ErrInvalidArgument)
 	}
@@ -32,7 +34,11 @@ func NewHandler(fetcher steam.PageFetcher, limits Limits) (http.Handler, error) 
 		JSONResponse:                 true,
 		PropagateRequestCancellation: true,
 		MaxRequestBodyBytes:          16 * 1024,
+		DisableLocalhostProtection:   access != nil,
 	})
+	if access != nil {
+		return access.Protect(handler)
+	}
 	protected := http.NewCrossOriginProtection().Handler(handler)
 	return http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
 		if !localHost(request.Host) {

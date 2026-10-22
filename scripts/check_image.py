@@ -27,28 +27,31 @@ def container(image, *options):
         docker("rm", "--force", identifier)
 
 
-def request(port, method, path):
+def request(port, method, path, headers=None):
     connection = http.client.HTTPConnection("127.0.0.1", port, timeout=1)
     try:
-        connection.request(method, path)
+        connection.request(method, path, headers=headers or {})
         response = connection.getresponse()
         return response.status, response.getheader("Content-Type"), response.read()
     finally:
         connection.close()
 
 
-def check_mcp(port):
+def check_mcp(port, public_host=None):
     """初期化・一覧・不正入力だけを確認し、実 Steam 通信は行わない。"""
     def call(identifier, method, params):
         connection = http.client.HTTPConnection("127.0.0.1", port, timeout=3)
         try:
             body = json.dumps({"jsonrpc": "2.0", "id": identifier,
                                "method": method, "params": params})
-            connection.request("POST", "/tools", body, {
+            headers = {
                 "Content-Type": "application/json",
                 "Accept": "application/json, text/event-stream",
                 "MCP-Protocol-Version": "2025-11-25",
-            })
+            }
+            if public_host:
+                headers["Host"] = public_host
+            connection.request("POST", "/tools", body, headers)
             response = connection.getresponse()
             payload = json.loads(response.read())
             if response.status != 200 or payload.get("id") != identifier or "error" in payload:
@@ -82,8 +85,26 @@ def check_mcp(port):
     finally:
         connection.close()
 
+    connection = http.client.HTTPConnection("127.0.0.1", port, timeout=3)
+    try:
+        connection.request("POST", "/tools", "{}", {
+            "Host": public_host or f"127.0.0.1:{port}",
+            "Origin": "https://evil.example", "Content-Type": "application/json",
+            "Accept": "application/json, text/event-stream",
+        })
+        response = connection.getresponse()
+        response.read()
+        if response.status != 403:
+            raise RuntimeError("異なる Origin を拒否しなかった")
+    finally:
+        connection.close()
+    for method in ("GET", "POST"):
+        headers = {"Host": public_host} if public_host else {}
+        if request(port, method, "/.well-known/oauth-protected-resource/tools", headers)[0] != 404:
+            raise RuntimeError("OAuth metadata を公開した")
 
-def check_running(image, port, signal, *environment):
+
+def check_running(image, port, signal, *environment, public_host=None):
     with container(image, "--publish", f"127.0.0.1::{port}", *environment) as identifier:
         state = json.loads(docker("inspect", identifier))[0]
         if state["Image"] != image or state["Mounts"]:
@@ -109,7 +130,7 @@ def check_running(image, port, signal, *environment):
                                      ("POST", "/tools/child", 404)):
             if request(host_port, method, path)[0] != status:
                 raise RuntimeError(f"{method} {path} の状態が異なる")
-        check_mcp(host_port)
+        check_mcp(host_port, public_host)
         docker("kill", "--signal", signal, identifier)
         if docker("wait", identifier, timeout=15) != "0":
             raise RuntimeError("終了シグナルで正常終了しなかった")
@@ -128,6 +149,15 @@ def main():
             print(f"検証対象の image ID: {image}", flush=True)
             check_running(image, 8080, "SIGTERM")
             check_running(image, 10000, "SIGINT", "--env", "PORT=10000")
+            check_running(image, 8080, "SIGTERM", "--env",
+                          "MCP_PUBLIC_URL=https://reviews.example/tools", public_host="reviews.example")
+            with container(image, "--env", "MCP_PUBLIC_URL=http://secret.example/tools") as identifier:
+                if docker("wait", identifier, timeout=15) == "0":
+                    raise RuntimeError("不正な公開 URL で正常終了した")
+                logs = docker("logs", identifier)
+                if "MCP_PUBLIC_URL" not in logs or "secret.example" in logs:
+                    raise RuntimeError("不正な公開 URL の診断が異なる")
+            print("公開 URL の不正設定の非0終了と診断の非公開を確認した")
             with container(image, "--env", "PORT=invalid") as identifier:
                 if docker("wait", identifier, timeout=15) == "0":
                     raise RuntimeError("不正な PORT で正常終了した")

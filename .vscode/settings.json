@@ -10,6 +10,6 @@
     "collect_and_save_reviews.go": "collect_and_save_reviews_test.go, collection_save_failure_test.go, collection_save_context_test.go",
     "run.go": "run_test.go, http_test.go",
     "collection.go": "collection_test.go, failure_test.go, size_test.go, context_test.go, result_integration_test.go",
-    "handler.go": "handler_test.go, handler_integration_test.go, cancellation_integration_test.go, mcp_handler_test.go, mcp_integration_test.go"
+    "handler.go": "handler_test.go, handler_integration_test.go, cancellation_integration_test.go, mcp_handler_test.go, mcp_integration_test.go, public_access_test.go, public_access_integration_test.go"
   }
 }

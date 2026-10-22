@@ -22,3 +22,5 @@ CLI の `reviewcli.Run` は引数の解析と `CollectAndSaveReviews` への接�
 MCP の `reviewmcp.NewHandler` は `collect_reviews` の入力と HTTP 制限、実行期限、Collection の応答変換を担当する。`CollectReviews` を直接呼び、JSON の純粋変換だけを再利用する。保存操作は呼ばない。分析は接続元の ChatGPT が担当し、バックエンドの LLM 呼び出しは未導入とする。[MCP 仕様](specs/review-mcp.md) と [ADR-0007](adr/0007-review-mcp.md) に責務を記載する。
 
 MCP の開始回数と同時数は handler が所有する入口の制限とし、収集操作・CLI へ混ぜない。[利用制限仕様](specs/mcp-usage-limits.md) と [ADR-0008](adr/0008-mcp-usage-limits.md) に従う。
+
+公開 MCP の `mcpaccess.Access` は公開 URL の検査と HTTP の許可 Host・cross-origin 保護だけを担当する。main が組み立て、`reviewmcp.NewHandler` へ渡す。未指定はローカル専用、指定時は匿名公開とし、認証・JWT・OAuth metadata は提供しない。収集ユースケース・CLI へ公開設定を混ぜない。[公開 MCP 仕様](specs/mcp-public-access.md) と [ADR-0009](adr/0009-public-mcp-access.md) に従う。

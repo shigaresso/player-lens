@@ -44,7 +44,7 @@ func TestLimits(t *testing.T) {
 }
 
 func TestNewHandlerRejectsInvalidLimits(t *testing.T) {
-	handler, err := NewHandler(fetchFunc(nil), Limits{})
+	handler, err := NewHandler(fetchFunc(nil), Limits{}, nil)
 	if handler != nil || !errors.Is(err, steam.ErrInvalidArgument) {
 		t.Fatalf("handler=%v err=%v", handler, err)
 	}

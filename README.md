@@ -53,11 +53,11 @@ docker compose run --rm --no-deps -T collect --app-id 440 --language japanese --
 
 同じサーバーの `/tools` で `collect_reviews` を利用できる。`python3 scripts/dev.py` が表示したポートを使い、ChatGPT デスクトップアプリへ `http://127.0.0.1:<ポート>/tools` を登録する。[MCP デバッグ手順](docs/mcp-debug.md) に設定と3件の手動確認例を記載した。生成 AI の API キーは不要で、分析は ChatGPT が担当する。登録済み MCP ツールをこの会話から呼び出し、App ID 4800590 の全言語3件を取得して、レビュー ID と分析の引用の対応を確認した。[実接続の記録](docs/worklogs/27-mcp-usage-limits.md) を参照する。
 
-取得は既定20件・最大100件、最大5ページ、実行期限8秒とする。途中失敗は部分結果を返し、応答量超過時は件数を減らす案内を返す。レビューはメモリから返し、ファイルや DB へ保存しない。localhost またはループバック IP の Host での接続に限定する。[MCP 仕様](docs/specs/review-mcp.md) と [ADR-0007](docs/adr/0007-review-mcp.md) を参照する。
+取得は既定20件・最大100件、最大5ページ、実行期限8秒とする。途中失敗は部分結果を返し、応答量超過時は件数を減らす案内を返す。レビューはメモリから返し、ファイルや DB へ保存しない。既定は localhost またはループバック IP の Host に限定する。`MCP_PUBLIC_URL` に HTTPS の `/tools` URL を指定すると、その公開 Host からも認証なしで利用できる。許可 Host と cross-origin 保護を維持し、OAuth は導入しない。[公開 MCP 仕様](docs/specs/mcp-public-access.md) と [ADR-0009](docs/adr/0009-public-mcp-access.md) を参照する。[MCP 仕様](docs/specs/review-mcp.md) と [ADR-0007](docs/adr/0007-review-mcp.md) を参照する。
 
 収集開始を1分6回・24時間100回、同時2件まで受け付ける。`.env.example` の `MCP_REQUESTS_PER_MINUTE`・`MCP_REQUESTS_PER_DAY`・`MCP_MAX_CONCURRENT` で正の整数へ変更でき、不正な設定では起動を失敗させる。制限時は Steam へ接続せず MCP のエラー結果を返す。[利用制限仕様](docs/specs/mcp-usage-limits.md) と [ADR-0008](docs/adr/0008-mcp-usage-limits.md) を参照する。
 
-枠は1プロセスのメモリ内で全利用者が共有する。再起動で回数が消え、複数台では各台に枠が存在する。固定窓の境界付近には受付が集中し得る。クラウドの請求額の上限は保証せず、公開前の認証・共有予算・使用量管理は別途決める。
+枠は1プロセスのメモリ内で全利用者が共有する。再起動で回数が消え、複数台では各台に枠が存在する。固定窓の境界付近には受付が集中し得る。クラウドの請求額の上限は保証せず、公開構成の共有予算・使用量管理は別途決める。バックエンドで LLM を実行する分析機能と利用コード・残り回数の管理は未導入で、今回の MCP には含めない。
 
 ## 検証
 

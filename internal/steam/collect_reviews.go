@@ -65,7 +65,7 @@ func CollectReviews(ctx context.Context, fetcher PageFetcher, appID uint32, opti
 			return result, fmt.Errorf("collect Steam reviews before page %d: %w", result.PagesFetched+1, err)
 		}
 		size := min(options.PageSize, options.MaxReviews-len(result.Reviews))
-		page, err := fetcher.FetchReviewsPage(ctx, appID, PageOptions{Language: options.Language, Cursor: cursor, PageSize: size})
+		page, err := fetcher.FetchReviewsPage(ctx, appID, PageOptions{ReviewType: options.ReviewType, Language: options.Language, Cursor: cursor, PageSize: size})
 		if err != nil {
 			result.StopReason = StopFailed
 			return result, fmt.Errorf("collect Steam review page %d: %w", result.PagesFetched+1, err)

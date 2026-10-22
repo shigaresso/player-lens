@@ -3,7 +3,9 @@
 import contextlib
 import io
 import json
+import tempfile
 import unittest
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -13,10 +15,20 @@ IMAGE = 'sha256:' + 'a' * 64
 
 
 class MCPGuideTests(unittest.TestCase):
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory(prefix='player-lens-guide-test-')
+        self.addCleanup(temporary.cleanup)
+        root = Path(temporary.name)
+        source = root / 'internal/reviewmcp/analysis_guide.md'
+        source.parent.mkdir(parents=True)
+        self.instructions = '検査用の分析ガイド。根拠のレビュー ID を示してください。'
+        source.write_text(self.instructions, encoding='utf-8')
+        root_patch = patch.object(check_image, 'ROOT', root)
+        root_patch.start()
+        self.addCleanup(root_patch.stop)
+
     def guide(self):
-        return {'version': '1', 'instructions': (
-            check_image.ROOT / 'internal/reviewmcp/analysis_guide.md'
-        ).read_text(encoding='utf-8')}
+        return {'version': '1', 'instructions': self.instructions}
 
     def check_result(self, output, *, text_output=None):
         if text_output is None:

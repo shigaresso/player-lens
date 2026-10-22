@@ -143,3 +143,27 @@ class HeaderTests(unittest.TestCase):
         queue=responses()
         queue[0]=(200,{'content-type':'text/plain; charset=utf-8'},b'ok\n')
         self.assertFalse(check_public_mcp.check(ENDPOINT,request=requester(queue,[]))['steam_requested'])
+
+
+class CollectionFailureTests(unittest.TestCase):
+    def test_empty_limited_or_wrong_collection_is_not_reported_as_success(self):
+        base = {'structuredContent': {'error_code': '', 'returned_count': 1,
+                'collection': {'app_id': 4800590, 'pages_fetched': 1, 'reviews': [{'id': 'review-1'}]}}}
+        cases = [
+            ('利用枠の拒否', lambda result: result.update(isError=True)),
+            ('空の結果', lambda result: result['structuredContent'].update(returned_count=0)),
+            ('別の作品', lambda result: result['structuredContent']['collection'].update(app_id=440)),
+            ('ページ数超過', lambda result: result['structuredContent']['collection'].update(pages_fetched=2)),
+            ('件数超過', lambda result: result['structuredContent']['collection']['reviews'].append({'id': 'review-2'})),
+            ('IDなし', lambda result: result['structuredContent']['collection']['reviews'][0].update(id='')),
+        ]
+        for name, mutate in cases:
+            with self.subTest(name=name):
+                result = copy.deepcopy(base)
+                mutate(result)
+                queue = responses()
+                queue.append((200, {}, json.dumps({'jsonrpc': '2.0', 'id': 4, 'result': result}).encode()))
+                calls = []
+                with self.assertRaises(ValueError):
+                    check_public_mcp.check(ENDPOINT, request=requester(queue, calls), app_id=4800590)
+                self.assertEqual(len(calls), 5)

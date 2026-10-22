@@ -1,11 +1,17 @@
 """同じ検証済みイメージを使う配置準備を管理する。"""
 
+import argparse
 import ipaddress
 import json
 import re
+import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from urllib.parse import urlsplit
+
+import check_image
+from validate import github_api
 
 
 def validate_target(repo, target):
@@ -133,3 +139,67 @@ def blueprint(repo, image, public_url='', credential='', name='player-lens'):
     return {'services': [{'type': 'web', 'name': name, 'runtime': 'image', 'plan': 'free',
                           'region': 'oregon', 'numInstances': 1, 'healthCheckPath': '/healthz',
                           'image': config, 'envVars': [{'key': key, 'value': value} for key, value in values.items()]}]}
+
+
+def command(args, timeout=60):
+    """command は配置用の固定引数をリポジトリ内で実行する。"""
+    return subprocess.run(args, cwd=Path(__file__).resolve().parents[1], check=True,
+                          text=True, capture_output=True, timeout=timeout).stdout.strip()
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description='CI と検証済みイメージを使う Render 配置準備')
+    commands = parser.add_subparsers(dest='mode', required=True)
+    for mode in ['preflight', 'publish', 'blueprint']:
+        child = commands.add_parser(mode)
+        child.add_argument('--repo', required=True)
+        if mode in ['preflight', 'publish']:
+            child.add_argument('--target', required=True)
+        if mode == 'publish':
+            child.add_argument('--receipt', required=True)
+        if mode == 'blueprint':
+            source = child.add_mutually_exclusive_group(required=True)
+            source.add_argument('--image')
+            source.add_argument('--receipt')
+            child.add_argument('--public-url', default='')
+            child.add_argument('--credential', default='')
+            child.add_argument('--name', default='player-lens')
+            child.add_argument('--output', required=True)
+    args = parser.parse_args(argv)
+    created = None
+    try:
+        if args.mode == 'preflight':
+            preflight(args.repo, args.target, github_api)
+            result = {'target':args.target,'ci':'success'}
+        elif args.mode == 'publish':
+            output = Path(args.receipt)
+            with output.open('x', encoding='utf-8') as stream:
+                created = output
+                result = publish(args.repo, args.target, api=github_api, run=command,
+                                 verify=lambda image: check_image.main(['--image',image]))
+                stream.write(json.dumps(result, ensure_ascii=False, indent=2)+'\n')
+        else:
+            image = args.image
+            if args.receipt:
+                receipt = Path(args.receipt)
+                if receipt.stat().st_size > 64*1024:
+                    raise ValueError('receipt が大きすぎる')
+                image = json.loads(receipt.read_text(encoding='utf-8'))['image']
+            result = blueprint(args.repo, image, args.public_url, args.credential, args.name)
+            output = Path(args.output)
+            with output.open('x', encoding='utf-8') as stream:
+                created = output
+                stream.write(json.dumps(result, ensure_ascii=False, indent=2)+'\n')
+    except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as error:
+        if created is not None:
+            created.unlink(missing_ok=True)
+        print(f'配置準備に失敗した: {error}', file=sys.stderr)
+        if args.mode == 'publish':
+            print('送信済みの可能性があるため registry の状態を確認する。自動再試行しない。',file=sys.stderr)
+        return 1
+    print(json.dumps(result, ensure_ascii=False))
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

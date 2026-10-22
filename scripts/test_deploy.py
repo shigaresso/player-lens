@@ -196,3 +196,61 @@ class BlueprintTests(unittest.TestCase):
                     'https://-bad.test/tools', 'https://example..test/tools', 'https://example.test/tools\n']:
             with self.subTest(url=url), self.assertRaises(ValueError):
                 deploy.blueprint(REPO, self.image, url)
+
+
+class CliTests(unittest.TestCase):
+    def test_preflight_cli_only_reads_ci(self):
+        import contextlib
+        import io
+        from unittest.mock import patch
+        data=ci_fixture()
+        with patch.object(deploy,'github_api',side_effect=lambda path:copy.deepcopy(data[path])), \
+                patch.object(deploy,'publish') as publish, contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(deploy.main(['preflight','--repo',REPO,'--target',TARGET]),0)
+            publish.assert_not_called()
+
+    def test_publish_receipt_is_written_without_changing_returned_digest(self):
+        import contextlib
+        import io
+        import json
+        import tempfile
+        from pathlib import Path
+        from unittest.mock import patch
+        result={'target':TARGET,'image_id':'sha256:'+'1'*64,'image':f'ghcr.io/{REPO}@sha256:'+'2'*64,'platform':'linux/amd64'}
+        with tempfile.TemporaryDirectory() as directory:
+            receipt=Path(directory)/'receipt.json'
+            with patch.object(deploy,'publish',return_value=result), contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(deploy.main(['publish','--repo',REPO,'--target',TARGET,'--receipt',str(receipt)]),0)
+            self.assertEqual(json.loads(receipt.read_text()),result)
+            with patch.object(deploy,'publish') as publish, contextlib.redirect_stderr(io.StringIO()):
+                self.assertEqual(deploy.main(['publish','--repo',REPO,'--target',TARGET,'--receipt',str(receipt)]),1)
+                publish.assert_not_called()
+
+    def test_blueprint_from_receipt_is_created_without_network(self):
+        import contextlib
+        import io
+        import json
+        import tempfile
+        from pathlib import Path
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as directory:
+            receipt=Path(directory)/'receipt.json'
+            receipt.write_text(json.dumps({'image':f'ghcr.io/{REPO}@sha256:'+'2'*64}))
+            output=Path(directory)/'render.yaml'
+            with patch.object(deploy,'github_api') as api, contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(deploy.main(['blueprint','--repo',REPO,'--receipt',str(receipt),'--output',str(output)]),0)
+                api.assert_not_called()
+            self.assertEqual(json.loads(output.read_text())['services'][0]['plan'],'free')
+
+    def test_publish_error_is_not_retried_and_partial_receipt_is_removed(self):
+        import contextlib
+        import io
+        import tempfile
+        from pathlib import Path
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as directory:
+            receipt=Path(directory)/'receipt.json'
+            with patch.object(deploy,'publish',side_effect=ValueError('照合失敗')) as publish, contextlib.redirect_stderr(io.StringIO()):
+                self.assertEqual(deploy.main(['publish','--repo',REPO,'--target',TARGET,'--receipt',str(receipt)]),1)
+                publish.assert_called_once()
+            self.assertFalse(receipt.exists())

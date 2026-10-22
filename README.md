@@ -2,7 +2,7 @@
 
 プレイヤーのレビューを収集・分析し、ゲーム企画に使える根拠付きレポートを生成するアプリケーションを開発する。
 
-現在は Go の最小 HTTP サーバー、上限付きの Steam レビュー収集、JSON を出力するローカル CLI、ChatGPT へ収集結果を返す MCP、Docker Compose の開発・検証環境、Git・GitHub の規約検査を導入した。バックエンドの分析・レポート・DB は未実装とし、Web UI の公開デモとサンプルレポートはまだない。公開 MCP の基本接続先は [https://player-lens.onrender.com/tools](https://player-lens.onrender.com/tools) で、HTTP の初期化・一覧・不正入力の拒否を確認した。検証済み digest を配置する経路と実 ChatGPT 接続は未確認とする。
+現在は Go の最小 HTTP サーバー、上限付きの Steam レビュー収集、JSON を出力するローカル CLI、ChatGPT へ収集結果を返す MCP、Docker Compose の開発・検証環境、Git・GitHub の規約検査を導入した。バックエンドの分析・レポート・DB は未実装とし、Web UI の公開デモと実データのサンプルレポートはまだない。[分析の依頼例](docs/review-analysis.md) と [架空レビューの分析例](docs/examples/review-analysis.md) を掲載した。公開 MCP の基本接続先は [https://player-lens.onrender.com/tools](https://player-lens.onrender.com/tools) で、HTTP の初期化・一覧・不正入力の拒否を確認した。検証済み digest を配置する経路と実 ChatGPT 接続は未確認とする。
 
 ## 開発環境
 
@@ -62,6 +62,8 @@ JSON の `options.review_type` に正規化した評価種別を記録する。�
 同じサーバーの `/tools` で `collect_reviews` を利用できる。`python3 scripts/dev.py` が表示したポートを使い、ChatGPT デスクトップアプリへ `http://127.0.0.1:<ポート>/tools` を登録する。[MCP デバッグ手順](docs/mcp-debug.md) に設定と3件の手動確認例を記載した。生成 AI の API キーは不要で、分析は ChatGPT が担当する。登録済み MCP ツールをこの会話から呼び出し、App ID 4800590 の全言語3件を取得して、レビュー ID と分析の引用の対応を確認した。[実接続の記録](docs/worklogs/27-mcp-usage-limits.md) を参照する。
 
 MCP の `collect_reviews` でも任意の `review_type` に `all`・`positive`・`negative` を指定できる。省略・空は `all` となり、Steam 側の条件で絞り込む。選択肢はツール一覧の入力 schema に掲載する。評価を分析対象へ分ける指定であり、LLM API キーやバックエンド AI は不要である。
+
+結果の `analysis_guide` は、取得した本文から評価対象を見つけ、似た意見をまとめ、条件による賛否と設計上の選択・影響を根拠付きで整理するための版付き案内である。採否は人間に残す。単なる良い点・悪い点の列挙から深掘りする依頼方法は [分析の利用手順](docs/review-analysis.md) を参照する。ガイドは最終回答の強制・意味検証ではなく、現在の公開サーバーへの反映は配置後に別途確認する。
 
 取得は既定20件・最大100件、最大5ページ、実行期限8秒とする。途中失敗は部分結果を返し、応答量超過時は件数を減らす案内を返す。レビューはメモリから返し、ファイルや DB へ保存しない。既定は localhost またはループバック IP の Host に限定する。`MCP_PUBLIC_URL` に HTTPS の `/tools` URL を指定すると、その公開 Host からも認証なしで利用できる。許可 Host と cross-origin 保護を維持し、OAuth は導入しない。[公開 MCP 仕様](docs/specs/mcp-public-access.md) と [ADR-0009](docs/adr/0009-public-mcp-access.md) を参照する。[MCP 仕様](docs/specs/review-mcp.md) と [ADR-0007](docs/adr/0007-review-mcp.md) を参照する。
 

@@ -60,3 +60,9 @@ review_type=negative、page_size=3、max_reviews=3、max_pages=1 で呼び出し
 `positive` はおすすめ、`all` は全評価を表す。省略・空は `all` となる。不正な評価種別・null・文字列以外は `invalid_input` とし、Steam 通信と利用回数の消費より前に拒否する。正常・部分失敗・利用制限の応答の `collection.options.review_type` で条件を確認する。並び順は従来の Recent のままで、今回変更していない。
 
 実装・SDK 4版・実 Steam の少量確認の状態は [作業記録](worklogs/33-review-type.md) に記録する。ChatGPT アプリの登録設定は今回変更していない。
+
+## 分析ガイドの利用（Issue #35）
+
+`collect_reviews` は `analysis_guide.version` と `analysis_guide.instructions` をレビューと同時に返す。追加ツールの登録や取得は不要で、正常・空・入力不正・部分失敗・利用制限でも同じガイドを返す。ツール一覧と応答の両方に追加があるため、実行するサーバーが更新済みであることを確認し、必要ならクライアントの接続・ツール一覧を更新する。
+
+[分析の依頼テンプレート](review-analysis.md) と [架空レビューの分析例](examples/review-analysis.md) を使い、条件による賛否と設計上の影響まで整理する。ガイドを返せることと、AI がその通りに分析することは別である。実クライアントを確認する際は、取得条件・ガイド版・根拠 ID・分析の対応を手動で確認し、自動テストの結果と分けて記録する。

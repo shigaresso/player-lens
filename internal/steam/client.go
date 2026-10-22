@@ -88,6 +88,13 @@ func (c *Client) FetchReviewsPage(ctx context.Context, appID uint32, options Pag
 	}
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
+	reviewType := 0 // Steam EUserReviewsReviewType_All
+	switch options.ReviewType {
+	case ReviewTypePositive:
+		reviewType = 1 // Steam EUserReviewsReviewType_Positive
+	case ReviewTypeNegative:
+		reviewType = 2 // Steam EUserReviewsReviewType_Negative
+	}
 	input, err := json.Marshal(struct {
 		AppID          uint32   `json:"appid"`
 		Filter         int      `json:"filter"`
@@ -97,7 +104,7 @@ func (c *Client) FetchReviewsPage(ctx context.Context, appID uint32, options Pag
 		ReviewType     int      `json:"review_type"`
 		PurchaseType   int      `json:"purchase_type"`
 		FilterOfftopic bool     `json:"filter_offtopic_activity"`
-	}{appID, 1, []string{options.Language}, options.Cursor, options.PageSize, 0, 1, true})
+	}{appID, 1, []string{options.Language}, options.Cursor, options.PageSize, reviewType, 1, true})
 	if err != nil {
 		return ReviewPage{}, fmt.Errorf("encode Steam review request: %w", err)
 	}

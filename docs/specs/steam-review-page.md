@@ -28,7 +28,7 @@ API 側の数値定数は [公式の列挙名](https://partner.steamgames.com/do
 
 ## 結果と失敗
 
-成功時は AppID、既定値適用後の条件、レビュー配列、次のカーソルを返す。ID は正の uint64 を表す文字列のまま保持し、本文、言語、推薦、作成・更新の UNIX 秒を返す。未知のフィールドは無視する。空配列は成功で、空ページのカーソルは省略可能とする。
+成功時は AppID、既定値適用後の条件、レビュー配列、次のカーソルを返す。recommendationid は0を含む uint64 に基づく `RecommendationID` として保持し、本文、言語、推薦、作成・更新の UNIX 秒を返す。未知のフィールドは無視する。空配列は成功で、空ページのカーソルは省略可能とする。
 
 HTTP 200 以外はステータスを持つエラーとし、リダイレクトを追わず、再試行しない。JSON 不正、`response` 欠落、不正な ID、要求件数を超える配列、非空配列でのカーソル欠落は不正応答とする。失敗時は部分結果を返さずゼロ値のページを返す。
 
@@ -36,10 +36,14 @@ HTTP 200 以外はステータスを持つエラーとし、リダイレクト�
 
 ### 応答解釈の境界（Issue #39）
 
-`review_page_response.go` の `decodeReviewPage` が本文の JSON 解析、wrapper・件数・カーソルの検査、空配列の正規化とページ生成を担当する。ID は `validReviewID` で正の uint64 を表す数字列か検査する。これらは通信しない。`FetchReviewsPage` は HTTP ステータス、Body の読み取り・2 MiB 制限・Close と複合エラーを管理し、解釈へ有効な取得条件と本文を渡す。失敗時のゼロ値と原因保持を維持する。
+`review_page_response.go` の `decodeReviewPage` が本文の JSON 解析、wrapper・件数・カーソルの検査、空配列の正規化とページ生成を担当する。Issue #43 では専用の受信データから `parseRecommendationID` で ID を10進の uint64 に変換する。省略・null・空・構文不正・範囲超過は拒否し、0は受け付ける。先頭ゼロは数値に正規化する。これらは通信しない。`FetchReviewsPage` は HTTP ステータス、Body の読み取り・2 MiB 制限・Close と複合エラーを管理し、解釈へ有効な取得条件と本文を渡す。失敗時のゼロ値と原因保持を維持する。
 
 ## 検証
 
 応答解釈と ID 検査は、同じパッケージのユニットテストから非公開関数を直接呼び、HTTP を使わず検証する。ID の構文・数値境界、ページの生成・空配列・未知フィールド、不正応答でのゼロ値、JSON の構文・型エラーの原因保持を確認する。
 
 HTTP adapter の通常テストでは `httptest` とテスト用 Transport / Body を使い、実 Steam API は使わない。正常・空ページ、入力境界、HTTP エラーと非再試行、JSON・スキーマ・サイズ、期限・キャンセル、Body の解放とエラーを確認する。作業記録は [Issue #17 の記録](../worklogs/17-steam-review-page.md) と [Issue #39 の記録](../worklogs/39-steam-response-decoding.md) に残す。API を呼べることと、収集・保存・分析が実装済みであることを区別する。
+
+## Steam の名前付き数値型（Issue #43）
+
+[ADR-0012](../adr/0012-steam-domain-types.md) に従い、AppID・RecommendationID・TimestampCreated・TimestampUpdated を領域から各呼び出し元へ渡す。API の列挙値は公式名の int32 型で表し、既存の ReviewType の文字列との変換は HTTP adapter が担当する。応答データの文字列 ID と領域の数値型を分け、数値変換の原因も ErrInvalidResponse とともに保持する。

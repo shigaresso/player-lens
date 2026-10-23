@@ -33,12 +33,12 @@ func (e *HTTPStatusError) Error() string {
 
 // Review は元の ID と本文、推薦、作成・更新の UNIX 秒を保持する。
 type Review struct {
-	ID          string `json:"recommendationid"`
-	Text        string `json:"review"`
-	Language    string `json:"language"`
-	Recommended bool   `json:"voted_up"`
-	CreatedAt   uint32 `json:"timestamp_created"`
-	UpdatedAt   uint32 `json:"timestamp_updated"`
+	RecommendationID RecommendationID
+	Text             string `json:"review"`
+	Language         string `json:"language"`
+	Recommended      bool   `json:"voted_up"`
+	CreatedAt        uint32 `json:"timestamp_created"`
+	UpdatedAt        uint32 `json:"timestamp_updated"`
 }
 
 // ReviewPage は取得条件とレビュー、次のカーソルを保持する。空ページも成功となる。

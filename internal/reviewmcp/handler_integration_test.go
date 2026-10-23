@@ -39,7 +39,7 @@ func TestMCPProtocol(t *testing.T) {
 			var calls atomic.Int32
 			handler, err := NewHandler(fetchFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
 				calls.Add(1)
-				return steam.ReviewPage{Reviews: []steam.Review{{ID: "sdk", Text: "分析用の本文"}}, NextCursor: "next"}, nil
+				return steam.ReviewPage{Reviews: []steam.Review{{RecommendationID: 15, Text: "分析用の本文"}}, NextCursor: "next"}, nil
 			}), DefaultLimits(), nil)
 			if err != nil {
 				t.Fatal(err)
@@ -91,7 +91,7 @@ func TestMCPProtocol(t *testing.T) {
 				t.Fatalf("result=%+v err=%v", result, err)
 			}
 			out := decodeOutput(t, result)
-			if calls.Load() != 1 || out.ReturnedCount != 1 || out.Collection.Reviews[0].ID != "sdk" || out.Collection.StopReason != steam.StopReviewLimit {
+			if calls.Load() != 1 || out.ReturnedCount != 1 || out.Collection.Reviews[0].RecommendationID != "15" || out.Collection.StopReason != steam.StopReviewLimit {
 				t.Fatal(out)
 			}
 			invalid, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "collect_reviews", Arguments: map[string]any{"app_id": 0}})

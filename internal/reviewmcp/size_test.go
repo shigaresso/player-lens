@@ -19,7 +19,7 @@ func TestResponseSize(t *testing.T) {
 		{"上限を超える本文は切り詰めず省略を明示する", 70000, "response_too_large"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			collection := steam.Collection{AppID: 440, Options: steam.CollectionOptions{Language: "english", PageSize: 100, MaxReviews: 20, MaxPages: 3}, Reviews: []steam.Review{{ID: "large", Text: strings.Repeat("x", tc.length)}}, PagesFetched: 1, StopReason: steam.StopReviewLimit}
+			collection := steam.Collection{AppID: 440, Options: steam.CollectionOptions{Language: "english", PageSize: 100, MaxReviews: 20, MaxPages: 3}, Reviews: []steam.Review{{RecommendationID: 10, Text: strings.Repeat("x", tc.length)}}, PagesFetched: 1, StopReason: steam.StopReviewLimit}
 			result, err := encodeResult(collection, "", "", 0)
 			if err != nil {
 				t.Fatal(err)

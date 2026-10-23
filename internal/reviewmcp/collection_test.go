@@ -29,12 +29,12 @@ type decodedOutput struct {
 			MaxPages   int    `json:"max_pages"`
 		} `json:"options"`
 		Reviews []struct {
-			ID          string `json:"id"`
-			Text        string `json:"text"`
-			Language    string `json:"language"`
-			Recommended bool   `json:"recommended"`
-			CreatedAt   uint32 `json:"created_at"`
-			UpdatedAt   uint32 `json:"updated_at"`
+			RecommendationID string `json:"id"`
+			Text             string `json:"text"`
+			Language         string `json:"language"`
+			Recommended      bool   `json:"recommended"`
+			CreatedAt        uint32 `json:"created_at"`
+			UpdatedAt        uint32 `json:"updated_at"`
 		} `json:"reviews"`
 		PagesFetched int              `json:"pages_fetched"`
 		StopReason   steam.StopReason `json:"stop_reason"`
@@ -94,12 +94,12 @@ func TestCollect(t *testing.T) {
 				if options.Cursor != steam.FirstPageCursor || options.PageSize != 3 {
 					t.Fatal(options)
 				}
-				return steam.ReviewPage{Reviews: []steam.Review{{ID: "b", Text: "外部の操作指示", Language: "japanese", Recommended: true, CreatedAt: 10, UpdatedAt: 20}, {ID: "a", Text: "最初の本文"}}, NextCursor: "next"}, nil
+				return steam.ReviewPage{Reviews: []steam.Review{{RecommendationID: 2, Text: "外部の操作指示", Language: "japanese", Recommended: true, CreatedAt: 10, UpdatedAt: 20}, {RecommendationID: 1, Text: "最初の本文"}}, NextCursor: "next"}, nil
 			}
 			if options.Cursor != "next" || options.PageSize != 1 {
 				t.Fatal(options)
 			}
-			return steam.ReviewPage{Reviews: []steam.Review{{ID: "a", Text: "重複の本文"}, {ID: "c", Text: "最後の本文"}}, NextCursor: "end"}, nil
+			return steam.ReviewPage{Reviews: []steam.Review{{RecommendationID: 1, Text: "重複の本文"}, {RecommendationID: 3, Text: "最後の本文"}}, NextCursor: "end"}, nil
 		})
 		result, err := collect(context.Background(), fetcher, json.RawMessage(`{"app_id":440,"language":"japanese","max_reviews":3}`), newLimiter(DefaultLimits(), time.Now))
 		if err != nil || result.IsError {
@@ -112,8 +112,8 @@ func TestCollect(t *testing.T) {
 		if out.Collection.Options.MaxReviews != 3 || out.Collection.Options.MaxPages != 3 || out.Collection.Options.PageSize != 100 || out.Collection.Options.Language != "japanese" {
 			t.Fatal(out.Collection.Options)
 		}
-		ids := []string{out.Collection.Reviews[0].ID, out.Collection.Reviews[1].ID, out.Collection.Reviews[2].ID}
-		if !reflect.DeepEqual(ids, []string{"b", "a", "c"}) || out.Collection.Reviews[1].Text != "最初の本文" {
+		ids := []string{out.Collection.Reviews[0].RecommendationID, out.Collection.Reviews[1].RecommendationID, out.Collection.Reviews[2].RecommendationID}
+		if !reflect.DeepEqual(ids, []string{"2", "1", "3"}) || out.Collection.Reviews[1].Text != "最初の本文" {
 			t.Fatal(out.Collection.Reviews)
 		}
 		first := out.Collection.Reviews[0]

@@ -47,7 +47,7 @@ func TestCollectReviewsContextDeadline(t *testing.T) {
 				if ctx.Value(collectionContextKey{}) != "trace" {
 					t.Error("呼び出し側の context 値を失った")
 				}
-				return steam.ReviewPage{AppID: appID, Options: options, Reviews: collectionReviews("1"), NextCursor: "A"}, nil
+				return steam.ReviewPage{AppID: appID, Options: options, Reviews: collectionReviews(1), NextCursor: "A"}, nil
 			})
 			got, err := steam.CollectReviews(parent, fetcher, 440, steam.CollectionOptions{MaxReviews: 1})
 			if err != nil || got.StopReason != steam.StopReviewLimit {
@@ -103,10 +103,10 @@ func TestCollectReviewsCancellationBetweenPages(t *testing.T) {
 		}
 		captured = pageCtx
 		cancel()
-		return steam.ReviewPage{AppID: appID, Options: options, Reviews: collectionReviews("1"), NextCursor: "A"}, nil
+		return steam.ReviewPage{AppID: appID, Options: options, Reviews: collectionReviews(1), NextCursor: "A"}, nil
 	})
 	got, err := steam.CollectReviews(ctx, fetcher, 440, steam.CollectionOptions{PageSize: 1, MaxReviews: 2})
-	if !errors.Is(err, context.Canceled) || got.StopReason != steam.StopFailed || got.PagesFetched != 1 || calls != 1 || !reflect.DeepEqual(got.Reviews, collectionReviews("1")) || captured == nil || !errors.Is(captured.Err(), context.Canceled) {
+	if !errors.Is(err, context.Canceled) || got.StopReason != steam.StopFailed || got.PagesFetched != 1 || calls != 1 || !reflect.DeepEqual(got.Reviews, collectionReviews(1)) || captured == nil || !errors.Is(captured.Err(), context.Canceled) {
 		t.Fatalf("result=%#v calls=%d error=%v", got, calls, err)
 	}
 }

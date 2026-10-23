@@ -16,10 +16,10 @@ func TestMarshalCollectionReviewType(t *testing.T) {
 		reason  steam.StopReason
 		reviews []steam.Review
 	}{
-		{"全評価の条件を出力する", steam.ReviewTypeAll, steam.StopReviewLimit, []steam.Review{{ID: "1"}}},
-		{"おすすめの条件を出力する", steam.ReviewTypePositive, steam.StopReviewLimit, []steam.Review{{ID: "2", Recommended: true}}},
+		{"全評価の条件を出力する", steam.ReviewTypeAll, steam.StopReviewLimit, []steam.Review{{RecommendationID: 1}}},
+		{"おすすめの条件を出力する", steam.ReviewTypePositive, steam.StopReviewLimit, []steam.Review{{RecommendationID: 2, Recommended: true}}},
 		{"非おすすめの空結果でも条件を出力する", steam.ReviewTypeNegative, steam.StopExhausted, nil},
-		{"非おすすめの部分失敗でも条件を出力する", steam.ReviewTypeNegative, steam.StopFailed, []steam.Review{{ID: "3"}}},
+		{"非おすすめの部分失敗でも条件を出力する", steam.ReviewTypeNegative, steam.StopFailed, []steam.Review{{RecommendationID: 3}}},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			input := steam.Collection{AppID: 440, Options: steam.CollectionOptions{ReviewType: tt.kind}, Reviews: tt.reviews, StopReason: tt.reason}

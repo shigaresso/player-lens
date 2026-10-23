@@ -4,23 +4,22 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"regexp"
-	"strconv"
 )
-
-var reviewIDPattern = regexp.MustCompile(`^[0-9]+$`)
 
 type reviewPageResponse struct {
 	Response *struct {
-		Reviews []Review `json:"reviews"`
-		Cursor  string   `json:"cursor"`
+		Reviews []reviewPageReview `json:"reviews"`
+		Cursor  string             `json:"cursor"`
 	} `json:"response"`
 }
 
-// validReviewID は符号なしの数字列で表した正の uint64 の ID だけを受け付ける。
-func validReviewID(value string) bool {
-	id, err := strconv.ParseUint(value, 10, 64)
-	return err == nil && id > 0 && reviewIDPattern.MatchString(value)
+type reviewPageReview struct {
+	RecommendationID string `json:"recommendationid"`
+	Text             string `json:"review"`
+	Language         string `json:"language"`
+	Recommended      bool   `json:"voted_up"`
+	CreatedAt        uint32 `json:"timestamp_created"`
+	UpdatedAt        uint32 `json:"timestamp_updated"`
 }
 
 // decodeReviewPage は正規化済みの条件と本文からページを作り、不正な応答ではゼロ値を返す。
@@ -36,13 +35,13 @@ func decodeReviewPage(appID uint32, options PageOptions, body []byte) (ReviewPag
 	if len(result.Response.Reviews) > 0 && result.Response.Cursor == "" {
 		return ReviewPage{}, fmt.Errorf("missing next cursor: %w", ErrInvalidResponse)
 	}
-	for _, review := range result.Response.Reviews {
-		if !validReviewID(review.ID) {
-			return ReviewPage{}, fmt.Errorf("invalid review ID: %w", ErrInvalidResponse)
+	reviews := make([]Review, len(result.Response.Reviews))
+	for i, review := range result.Response.Reviews {
+		id, err := parseRecommendationID(review.RecommendationID)
+		if err != nil {
+			return ReviewPage{}, fmt.Errorf("invalid Steam recommendationid: %w", errors.Join(ErrInvalidResponse, err))
 		}
+		reviews[i] = Review{RecommendationID: id, Text: review.Text, Language: review.Language, Recommended: review.Recommended, CreatedAt: review.CreatedAt, UpdatedAt: review.UpdatedAt}
 	}
-	if result.Response.Reviews == nil {
-		result.Response.Reviews = []Review{}
-	}
-	return ReviewPage{AppID: appID, Options: options, Reviews: result.Response.Reviews, NextCursor: result.Response.Cursor}, nil
+	return ReviewPage{AppID: appID, Options: options, Reviews: reviews, NextCursor: result.Response.Cursor}, nil
 }

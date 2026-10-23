@@ -23,7 +23,7 @@ func TestMCPReviewType(t *testing.T) {
 				if id != 440 {
 					t.Errorf("AppID=%d", id)
 				}
-				return steam.ReviewPage{Reviews: []steam.Review{{ID: "1", Recommended: options.ReviewType == steam.ReviewTypePositive}}, NextCursor: "next"}, nil
+				return steam.ReviewPage{Reviews: []steam.Review{{RecommendationID: 1, Recommended: options.ReviewType == steam.ReviewTypePositive}}, NextCursor: "next"}, nil
 			}), Limits{RequestsPerMinute: 3, RequestsPerDay: 10, MaxConcurrent: 1}, nil)
 			if err != nil {
 				t.Fatal(err)

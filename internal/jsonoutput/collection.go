@@ -4,6 +4,7 @@ package jsonoutput
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/shigaresso/player-lens/internal/steam"
 )
@@ -40,7 +41,7 @@ type reviewDocument struct {
 func MarshalCollection(result steam.Collection) ([]byte, error) {
 	reviews := make([]reviewDocument, len(result.Reviews))
 	for i, review := range result.Reviews {
-		reviews[i] = reviewDocument{review.ID, review.Text, review.Language, review.Recommended, review.CreatedAt, review.UpdatedAt}
+		reviews[i] = reviewDocument{strconv.FormatUint(uint64(review.RecommendationID), 10), review.Text, review.Language, review.Recommended, review.CreatedAt, review.UpdatedAt}
 	}
 	document := collectionDocument{
 		SchemaVersion: 1,

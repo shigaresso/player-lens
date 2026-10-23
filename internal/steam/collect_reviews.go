@@ -56,7 +56,7 @@ func CollectReviews(ctx context.Context, fetcher PageFetcher, appID uint32, opti
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
 	result := Collection{AppID: appID, Options: options, Reviews: []Review{}}
-	seenIDs := make(map[string]bool)
+	seenIDs := make(map[RecommendationID]bool)
 	seenCursors := map[string]bool{FirstPageCursor: true}
 	cursor := FirstPageCursor
 	for result.PagesFetched < options.MaxPages {
@@ -76,8 +76,8 @@ func CollectReviews(ctx context.Context, fetcher PageFetcher, appID uint32, opti
 			return result, nil
 		}
 		for _, review := range page.Reviews {
-			if !seenIDs[review.ID] {
-				seenIDs[review.ID] = true
+			if !seenIDs[review.RecommendationID] {
+				seenIDs[review.RecommendationID] = true
 				result.Reviews = append(result.Reviews, review)
 			}
 		}

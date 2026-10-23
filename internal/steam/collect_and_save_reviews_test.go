@@ -20,7 +20,7 @@ func TestCollectAndSaveReviews(t *testing.T) {
 	var saved steam.Collection
 	fetcher := pageFetcherFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
 		events = append(events, "fetch")
-		return steam.ReviewPage{Reviews: collectionReviews("1"), NextCursor: "next"}, nil
+		return steam.ReviewPage{Reviews: collectionReviews(1), NextCursor: "next"}, nil
 	})
 	saver := collectionSaverFunc(func(_ context.Context, result steam.Collection) error {
 		events = append(events, "save")

@@ -77,7 +77,7 @@ func TestCollectionReviewTypePartialFailure(t *testing.T) {
 		if calls == 2 {
 			return steam.ReviewPage{}, io.ErrUnexpectedEOF
 		}
-		return steam.ReviewPage{Reviews: []steam.Review{{ID: "1", Text: "取得済み"}}, NextCursor: "next"}, nil
+		return steam.ReviewPage{Reviews: []steam.Review{{RecommendationID: 1, Text: "取得済み"}}, NextCursor: "next"}, nil
 	})
 	result, err := collect(t.Context(), fetcher, json.RawMessage(`{"app_id":440,"review_type":"negative","page_size":1,"max_reviews":2,"max_pages":2}`), newLimiter(DefaultLimits(), time.Now))
 	if err != nil {

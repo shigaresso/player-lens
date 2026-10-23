@@ -22,7 +22,7 @@ func (f requestFetcher) FetchReviewsPage(ctx context.Context, _ uint32, _ steam.
 	close(f.started)
 	select {
 	case <-f.release:
-		return steam.ReviewPage{Reviews: []steam.Review{{ID: "finish", Text: "取得完了"}}, NextCursor: "next"}, nil
+		return steam.ReviewPage{Reviews: []steam.Review{{RecommendationID: 12, Text: "取得完了"}}, NextCursor: "next"}, nil
 	case <-ctx.Done():
 		return steam.ReviewPage{}, ctx.Err()
 	}

@@ -50,12 +50,12 @@ func TestCollectReviewsMaximumReviews(t *testing.T) {
 		}
 		reviews := make([]steam.Review, 100)
 		for i := range reviews {
-			reviews[i].ID = strconv.Itoa((calls-1)*100 + i + 1)
+			reviews[i].RecommendationID = steam.RecommendationID((calls-1)*100 + i + 1)
 		}
 		return steam.ReviewPage{AppID: appID, Options: options, Reviews: reviews, NextCursor: strconv.Itoa(calls)}, nil
 	})
 	got, err := steam.CollectReviews(context.Background(), fetcher, 440, steam.CollectionOptions{MaxReviews: 10000})
-	if err != nil || calls != 100 || got.PagesFetched != 100 || len(got.Reviews) != 10000 || got.StopReason != steam.StopReviewLimit || got.Reviews[0].ID != "1" || got.Reviews[9999].ID != "10000" {
+	if err != nil || calls != 100 || got.PagesFetched != 100 || len(got.Reviews) != 10000 || got.StopReason != steam.StopReviewLimit || got.Reviews[0].RecommendationID != 1 || got.Reviews[9999].RecommendationID != 10000 {
 		t.Fatalf("reviews=%d pages=%d calls=%d reason=%s error=%v", len(got.Reviews), got.PagesFetched, calls, got.StopReason, err)
 	}
 }
@@ -73,7 +73,7 @@ func TestCollectReviewsFailureReleasesContext(t *testing.T) {
 			fetcher := pageFetcherFunc(func(ctx context.Context, appID uint32, options steam.PageOptions) (steam.ReviewPage, error) {
 				captured = ctx
 				if tt.cause == steam.ErrCursorCycle {
-					return steam.ReviewPage{AppID: appID, Options: options, Reviews: collectionReviews("1"), NextCursor: "*"}, nil
+					return steam.ReviewPage{AppID: appID, Options: options, Reviews: collectionReviews(1), NextCursor: "*"}, nil
 				}
 				return steam.ReviewPage{}, tt.cause
 			})

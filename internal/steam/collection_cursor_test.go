@@ -17,10 +17,10 @@ func TestCollectReviewsCursorCycle(t *testing.T) {
 		reason steam.StopReason
 		failed bool
 	}{
-		{"先頭カーソルへの循環を止める", []steam.ReviewPage{{Reviews: collectionReviews("1"), NextCursor: "*"}}, 10, collectionReviews("1"), steam.StopFailed, true},
-		{"同じ次カーソルへの循環を止める", []steam.ReviewPage{{Reviews: collectionReviews("1"), NextCursor: "A"}, {Reviews: collectionReviews("2"), NextCursor: "A"}}, 10, collectionReviews("1", "2"), steam.StopFailed, true},
-		{"以前のカーソルへの循環をページ上限より優先する", []steam.ReviewPage{{Reviews: collectionReviews("1"), NextCursor: "A"}, {Reviews: collectionReviews("2"), NextCursor: "B"}, {Reviews: collectionReviews("3"), NextCursor: "A"}}, 10, collectionReviews("1", "2", "3"), steam.StopFailed, true},
-		{"必要な件数を満たしたら続きの循環を調べない", []steam.ReviewPage{{Reviews: collectionReviews("1"), NextCursor: "*"}}, 1, collectionReviews("1"), steam.StopReviewLimit, false},
+		{"先頭カーソルへの循環を止める", []steam.ReviewPage{{Reviews: collectionReviews(1), NextCursor: "*"}}, 10, collectionReviews(1), steam.StopFailed, true},
+		{"同じ次カーソルへの循環を止める", []steam.ReviewPage{{Reviews: collectionReviews(1), NextCursor: "A"}, {Reviews: collectionReviews(2), NextCursor: "A"}}, 10, collectionReviews(1, 2), steam.StopFailed, true},
+		{"以前のカーソルへの循環をページ上限より優先する", []steam.ReviewPage{{Reviews: collectionReviews(1), NextCursor: "A"}, {Reviews: collectionReviews(2), NextCursor: "B"}, {Reviews: collectionReviews(3), NextCursor: "A"}}, 10, collectionReviews(1, 2, 3), steam.StopFailed, true},
+		{"必要な件数を満たしたら続きの循環を調べない", []steam.ReviewPage{{Reviews: collectionReviews(1), NextCursor: "*"}}, 1, collectionReviews(1), steam.StopReviewLimit, false},
 		{"空ページなら続きの循環を調べない", []steam.ReviewPage{{NextCursor: "*"}}, 10, []steam.Review{}, steam.StopExhausted, false},
 	}
 	for _, tt := range cases {

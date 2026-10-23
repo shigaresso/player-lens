@@ -80,7 +80,7 @@ func TestRunWithHTTPClientAndJSONSaver(t *testing.T) {
 			}
 			var result struct {
 				Reviews []struct {
-					ID string `json:"id"`
+					RecommendationID string `json:"id"`
 				} `json:"reviews"`
 				Reason steam.StopReason `json:"stop_reason"`
 			}

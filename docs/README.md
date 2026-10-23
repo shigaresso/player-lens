@@ -39,6 +39,7 @@
 | [ADR-0009：認証なしの公開 MCP](adr/0009-public-mcp-access.md) | 公開設定と Host 保護、OAuth を導入しない理由 | 採用。配置と実接続は未確認 |
 | [ADR-0010：Render 配置基盤](adr/0010-render-deployment.md) | 手動の GHCR 公開・Free・資格情報と配置準備の範囲 | 採用。実 CI・registry・配置は未実施 |
 | [ADR-0011：クライアント向け分析ガイド](adr/0011-client-review-analysis-guide.md) | MCP 結果へのガイド添付と分析の担当・制約 | 採用。版付きの本文を埋め込み、クライアントの最終回答は強制しない |
+| [ADR-0012：Steam の名前付き数値型](adr/0012-steam-domain-types.md) | Steam の ID・時刻・API 列挙値、JSON 境界との変換 | 採用。実装・検証は Issue #43 と作業記録に記載する |
 
 変更が複数の範囲にまたがる場合は、対応する文書をすべて読む。参照した節と ADR、要件に対応する検証を Issue・PR に記録する。ADR を追加・置換するときは、この一覧と適用範囲を更新する。
 

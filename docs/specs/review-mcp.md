@@ -25,7 +25,7 @@
 
 ## 結果・失敗・資源
 
-`structuredContent` と同じ JSON のテキストを返す。`collection` は既存の `jsonoutput.MarshalCollection` の schema_version=1 とし、レビュー ID・本文・言語・評価・UNIX 秒、条件・成功ページ数・終了理由を取得順に返す。`returned_count` は返した件数、`omitted_reviews` は応答量超過で返せなかった件数とする。成功時の `error_code`・`message` は空である。件数・ページ上限での正常終了は全件収集を意味しない。
+`structuredContent` と同じ JSON のテキストを返す。`collection` は既存の `jsonoutput.MarshalCollection` の schema_version=1 とし、レビュー ID・本文・言語・評価・UNIX 秒、条件・成功ページ数・終了理由を取得順に返す。Issue #43 の名前付き数値型は共通の JSON 変換で既存形式へ戻し、ID は0・最大値も10進文字列で返す。`returned_count` は返した件数、`omitted_reviews` は応答量超過で返せなかった件数とする。成功時の `error_code`・`message` は空である。件数・ページ上限での正常終了は全件収集を意味しない。
 
 Issue #35 で、すべてのツール結果に `analysis_guide`（文字列の `version` と `instructions`、初版は版1）を追加した。共通本文をバイナリへ埋め込み、レビュー本文や成功・失敗で変更しない。出力 schema とツール説明に存在を案内する。ガイドも二重化した128 KiB上限の対象とし、応答量超過時にも保持する。[レビュー分析仕様](review-analysis.md) と [ADR-0011](../adr/0011-client-review-analysis-guide.md) に内容・担当・制約を定める。Collection と CLI の JSON は変えない。厳密にトップレベルの追加項目を拒否するクライアントは対応が必要である。
 

@@ -29,7 +29,7 @@ func TestCollectFailure(t *testing.T) {
 			fetcher := fetchFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
 				calls++
 				if tc.partial && calls == 1 {
-					return steam.ReviewPage{Reviews: []steam.Review{{ID: "kept", Text: "取得済み"}}, NextCursor: "next"}, nil
+					return steam.ReviewPage{Reviews: []steam.Review{{RecommendationID: 14, Text: "取得済み"}}, NextCursor: "next"}, nil
 				}
 				return steam.ReviewPage{}, tc.cause
 			})
@@ -51,7 +51,7 @@ func TestCollectFailure(t *testing.T) {
 			if out.ReturnedCount != want || len(out.Collection.Reviews) != want || out.Collection.PagesFetched != want || calls != want+1 {
 				t.Fatal(out)
 			}
-			if tc.partial && out.Collection.Reviews[0].ID != "kept" {
+			if tc.partial && out.Collection.Reviews[0].RecommendationID != "14" {
 				t.Fatal(out)
 			}
 			data, marshalErr := json.Marshal(result)

@@ -62,7 +62,7 @@ func TestRunOutputAndExit(t *testing.T) {
 				if test.cancel {
 					cancel()
 				}
-				return steam.ReviewPage{Reviews: []steam.Review{{ID: "1", Text: "本文"}}, NextCursor: "next"}, nil
+				return steam.ReviewPage{Reviews: []steam.Review{{RecommendationID: 1, Text: "本文"}}, NextCursor: "next"}, nil
 			})
 			code := run(ctx, test.args, fetcher, saver, &stderr)
 			if code != test.code || calls != test.calls {
@@ -71,11 +71,11 @@ func TestRunOutputAndExit(t *testing.T) {
 			if test.wantJSON {
 				var result struct {
 					Reviews []struct {
-						ID string `json:"id"`
+						RecommendationID string `json:"id"`
 					} `json:"reviews"`
 					Reason steam.StopReason `json:"stop_reason"`
 				}
-				if err := json.Unmarshal(stdout.Bytes(), &result); err != nil || len(result.Reviews) != 1 || result.Reviews[0].ID != "1" || result.Reason != test.reason {
+				if err := json.Unmarshal(stdout.Bytes(), &result); err != nil || len(result.Reviews) != 1 || result.Reviews[0].RecommendationID != "1" || result.Reason != test.reason {
 					t.Fatalf("JSON=%q err=%v", stdout.String(), err)
 				}
 			} else if stdout.Len() != 0 {

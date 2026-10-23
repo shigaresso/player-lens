@@ -51,7 +51,7 @@ func TestCollectReviewsWithHTTPClient(t *testing.T) {
 	mu.Lock()
 	defer mu.Unlock()
 	wantRequests := []steam.PageOptions{{Language: "english", Cursor: "*", PageSize: 2}, {Language: "english", Cursor: "A+/=", PageSize: 1}}
-	if err != nil || got.StopReason != steam.StopReviewLimit || got.PagesFetched != 2 || len(got.Reviews) != 3 || got.Reviews[2].ID != "3" || !reflect.DeepEqual(requests, wantRequests) {
+	if err != nil || got.StopReason != steam.StopReviewLimit || got.PagesFetched != 2 || len(got.Reviews) != 3 || got.Reviews[2].RecommendationID != 3 || !reflect.DeepEqual(requests, wantRequests) {
 		t.Fatalf("result=%#v requests=%#v error=%v", got, requests, err)
 	}
 }

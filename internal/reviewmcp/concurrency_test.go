@@ -107,7 +107,7 @@ func TestCollectionReleasesSlotAfterFailure(t *testing.T) {
 				switch tc.code {
 				case "fetch_failed":
 					if calls == 1 {
-						return steam.ReviewPage{Reviews: []steam.Review{{ID: "partial"}}, NextCursor: "next"}, nil
+						return steam.ReviewPage{Reviews: []steam.Review{{RecommendationID: 11}}, NextCursor: "next"}, nil
 					}
 					return steam.ReviewPage{}, errors.New("fetch failed")
 				case "cancelled":
@@ -116,7 +116,7 @@ func TestCollectionReleasesSlotAfterFailure(t *testing.T) {
 				case "deadline_exceeded":
 					return steam.ReviewPage{}, context.DeadlineExceeded
 				default:
-					return steam.ReviewPage{Reviews: []steam.Review{{ID: "large", Text: strings.Repeat("x", 70000)}}, NextCursor: "next"}, nil
+					return steam.ReviewPage{Reviews: []steam.Review{{RecommendationID: 10, Text: strings.Repeat("x", 70000)}}, NextCursor: "next"}, nil
 				}
 			})
 			count := 2

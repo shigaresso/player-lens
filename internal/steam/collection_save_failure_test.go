@@ -30,7 +30,7 @@ func TestCollectAndSaveReviewsFailure(t *testing.T) {
 					return steam.ReviewPage{}, io.ErrUnexpectedEOF
 				}
 				if calls == 1 {
-					return steam.ReviewPage{Reviews: collectionReviews("1"), NextCursor: "next"}, nil
+					return steam.ReviewPage{Reviews: collectionReviews(1), NextCursor: "next"}, nil
 				}
 				return steam.ReviewPage{}, nil
 			})

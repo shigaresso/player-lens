@@ -34,6 +34,12 @@ HTTP 200 以外はステータスを持つエラーとし、リダイレクト�
 
 呼び出し側の context と期限を引き継ぎ、1回を最大10秒に制限する。応答は最大2 MiBとする。応答 Body は成功・失敗とも adapter が閉じ、読込・Close・通信・context の原因は `errors.Is` / `errors.As` で追跡可能にする。複数原因は併せて返す。
 
+### 応答解釈の境界（Issue #39）
+
+`review_page_response.go` の `decodeReviewPage` が本文の JSON 解析、wrapper・件数・カーソルの検査、空配列の正規化とページ生成を担当する。ID は `validReviewID` で正の uint64 を表す数字列か検査する。これらは通信しない。`FetchReviewsPage` は HTTP ステータス、Body の読み取り・2 MiB 制限・Close と複合エラーを管理し、解釈へ有効な取得条件と本文を渡す。失敗時のゼロ値と原因保持を維持する。
+
 ## 検証
 
-通常テストでは `httptest` とテスト用 Transport / Body を使い、実 Steam API は使わない。正常・空ページ、入力境界、HTTP エラーと非再試行、JSON・スキーマ・サイズ、期限・キャンセル、Body の解放とエラーを確認する。作業記録は [Issue #17 の記録](../worklogs/17-steam-review-page.md) に残す。API を呼べることと、収集・保存・分析が実装済みであることを区別する。
+応答解釈と ID 検査は、同じパッケージのユニットテストから非公開関数を直接呼び、HTTP を使わず検証する。ID の構文・数値境界、ページの生成・空配列・未知フィールド、不正応答でのゼロ値、JSON の構文・型エラーの原因保持を確認する。
+
+HTTP adapter の通常テストでは `httptest` とテスト用 Transport / Body を使い、実 Steam API は使わない。正常・空ページ、入力境界、HTTP エラーと非再試行、JSON・スキーマ・サイズ、期限・キャンセル、Body の解放とエラーを確認する。作業記録は [Issue #17 の記録](../worklogs/17-steam-review-page.md) と [Issue #39 の記録](../worklogs/39-steam-response-decoding.md) に残す。API を呼べることと、収集・保存・分析が実装済みであることを区別する。

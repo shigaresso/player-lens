@@ -66,3 +66,39 @@ func TestMarshalCollection(t *testing.T) {
 		})
 	}
 }
+
+func TestMarshalCollectionNumericRecommendationID(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		id   steam.RecommendationID
+		want string
+	}{
+		{"ゼロを文字列で出力する", 0, `"0"`},
+		{"uint64最大値を文字列で精度損失なく出力する", 18446744073709551615, `"18446744073709551615"`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			data, err := jsonoutput.MarshalCollection(steam.Collection{
+				AppID:   4294967295,
+				Reviews: []steam.Review{{RecommendationID: tc.id, TimestampCreated: 4294967295, TimestampUpdated: 0}},
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			var got struct {
+				SchemaVersion int                          `json:"schema_version"`
+				AppID         json.RawMessage              `json:"app_id"`
+				Reviews       []map[string]json.RawMessage `json:"reviews"`
+			}
+			if err := json.Unmarshal(data, &got); err != nil {
+				t.Fatal(err)
+			}
+			if got.SchemaVersion != 1 || string(got.AppID) != "4294967295" || len(got.Reviews) != 1 {
+				t.Fatalf("JSON=%s", data)
+			}
+			review := got.Reviews[0]
+			if len(review) != 6 || string(review["id"]) != tc.want || string(review["created_at"]) != "4294967295" || string(review["updated_at"]) != "0" {
+				t.Fatalf("レビューの公開形式を変更した: %s", data)
+			}
+		})
+	}
+}

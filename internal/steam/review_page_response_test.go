@@ -3,6 +3,7 @@ package steam
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"strconv"
 	"testing"
@@ -43,6 +44,29 @@ func TestParseRecommendationID(t *testing.T) {
 				if !errors.As(err, &cause) {
 					t.Fatalf("数値変換の原因を失った: %v", err)
 				}
+			}
+		})
+	}
+}
+
+func TestDecodeReviewPageRecommendationIDErrorCause(t *testing.T) {
+	for _, tc := range []struct {
+		name, value string
+		wantErr     error
+	}{
+		{"空のIDの構文エラーを保持する", "", strconv.ErrSyntax},
+		{"不正なIDの構文エラーを保持する", "bad", strconv.ErrSyntax},
+		{"uint64の範囲超過の原因を保持する", "18446744073709551616", strconv.ErrRange},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			body := fmt.Sprintf(`{"response":{"reviews":[{"recommendationid":"1"},{"recommendationid":%q}],"cursor":"next"}}`, tc.value)
+			got, err := decodeReviewPage(440, PageOptions{PageSize: 2}, []byte(body))
+			if !errors.Is(err, ErrInvalidResponse) || !errors.Is(err, tc.wantErr) || !reflect.DeepEqual(got, ReviewPage{}) {
+				t.Fatalf("page=%#v error=%v", got, err)
+			}
+			var cause *strconv.NumError
+			if !errors.As(err, &cause) || cause.Num != tc.value {
+				t.Fatalf("数値変換の原因を失った: %v", err)
 			}
 		})
 	}

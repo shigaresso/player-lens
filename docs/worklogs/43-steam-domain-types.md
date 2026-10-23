@@ -17,10 +17,30 @@ cmd・internal の全 Go ソースを列挙し、ID・uint32・uint64・API 型�
 2. ページ解釈へ型付き ID と0の受理、欠落・null の拒否を要求するテストを変更した。`go test -count=1 ./internal/steam -run '^TestDecodeReviewPage'` は未対応の RecommendationID フィールドで Red になった。
 3. 応答専用データから領域の数値型へ変換し、収集のキーと JSON 出力へ反映した。型・フィールド変更に必要な呼び出し元とテスト fixture・参照の機械的更新を同じ変更に含めた。更新漏れの fixture と参照を修正し、Compose で `go test -count=1 ./internal/steam ./internal/jsonoutput ./internal/reviewcli ./internal/reviewmcp ./cmd/collect-reviews ./cmd/server` が全6パッケージで Green になった。
 
-AppID・時刻・API 列挙値の導入と最終検証は後続の変更で記録する。仕様・ADR の採用を実装済みの証明とは扱わない。
+AppID・時刻・API 列挙値の導入と最終検証は後続の節に記録した。仕様・ADR の採用を実装済みの証明とは扱わない。
 
 ## AppID・時刻・API 列挙値
 
 AppID・TimestampCreated・TimestampUpdated を uint32、API の EUserReviewsReviewType・EUserReviewsAppReviewsFilter・EUserReviewsPurchaseType を int32 の定義型として api_types.go に導入した。AppID は PageFetcher、各操作・結果、CLI の入力変換、MCP の入力・結果、JSON DTO、テストの依存実装へ引き継いだ。時刻は領域と受信・出力 DTO のフィールド名も API に対応させ、外部 JSON の既存名と数値表現を維持した。
 
 型と参照の機械的置換のため形式上の Red は作らなかった。置換中の自己参照を修正し、`docker compose run --rm --no-deps -T verify go test -count=1 ./...` が全7パッケージで成功した。API の既存の直接テスト・HTTP 送信内容テストも同じ期待値で成功し、公開する all/positive/negative の文字列と入力検査を維持した。
+
+## 境界の回帰テスト
+
+次の契約を一つずつテストだけ追加して実行した。すべて既存実装で Green だったため、実装を変更せずテストのみの変更として保存した。各コマンドは Compose の verify で `go test -count=1` と対象パッケージ・`-run '^対象名$'` を指定した。
+
+- TestDecodeReviewPageRecommendationIDErrorCause（steam）：空・構文不正・uint64 超過の原因が ErrInvalidResponse と NumError とともに追跡でき、先行する正常レビューも返さない。
+- TestCollectReviewsNumericRecommendationIDs（steam）：実 HTTP adapter で0000/0と0001/1を数値として重複排除し、最初の値と順序、最大 ID、ページ終了を保持する。
+- TestMarshalCollectionNumericRecommendationID（jsonoutput）：0・最大 ID を引用符付き文字列にし、最大 AppID・時刻と0を既存の数値・項目名で出力する。
+- TestRunNumericRecommendationIDs（reviewcli）：CLI 入力から実 HTTP・収集・Saver を通し、最大 AppID と0・最大 ID の文字列出力を確認する。
+- TestMCPNumericRecommendationIDs（reviewmcp、`-tags=integration`）：実 SDK クライアントで成功と途中失敗を呼び、最大 AppID の受け渡し、0・最大 ID の文字列、終了理由・エラーコード・部分結果を確認する。
+
+## 最終検証・セルフレビュー
+
+`bash scripts/check-app.sh` が成功した。整形・vet・通常テストは全7パッケージ、lint は0 issues。Git 非依存の3条件、race detector 付き結合テストを含む全7パッケージ、本番イメージの HTTP・MCP・PORT 切り替え・SIGTERM/SIGINT・公開 URL と制限値などの設定異常を確認した。image ID は `sha256:9cfba4fbb8144bd6db8db5d4d87a5a859ba49c176728dc49dc6b322a21aaeab3`。
+
+Go ソース89ファイル（うちプロダクション27）を列挙し、cmd・internal 以外に Go ソースがないことを確認した。全ソースで旧 ID フィールド・時刻名・validReviewID・正規表現と組み込み数値型を再検索した。残る組み込み型は定義型の基底、ParseUint/FormatUint との変換、JSON の schema の最大値、外部表現を検査するテスト DTO であり、領域の ID・時刻の引き継ぎ漏れはなかった。独自型は API の実在や任意の値の妥当性を保証するものではない。JSON 変換に使う DTO と領域の型を読み分け、既存のエラー・資源・期限を維持していることを AI のセルフレビューで確認した。
+
+必須 pre-commit の規約177テスト・静的検査とステージ済み Go 整形、commit-msg は各コミットで実行する。実フック8テストと実 Go ツールの独立検証は `git diff 2d4d4c3 HEAD -- scripts .github Dockerfile compose.yaml lefthook.yml .lefthook go.mod go.sum .golangci.yml` に差分がないことを確認し、以前の成功結果を再利用した。これらの独立検証の今回再実行とは区別する。
+
+coverage 閾値・分岐・mutation/Stryker は未導入であり、実行していない。人によるレビュー・実 Steam API の取得・実 CI・配置は未実施。ユーザーの指示に従い push・PR 作成・Issue のクローズは行わず、PR 本文案を43-pr.mdに保存した。

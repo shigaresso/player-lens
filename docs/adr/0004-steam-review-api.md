@@ -20,7 +20,7 @@
 
 ## 名前付き数値型（Issue #43）
 
-ID・時刻と API の3列挙値の型、recommendationid の0の受理と数値化、外部 JSON との変換は [ADR-0012](0012-steam-domain-types.md) を採用する。既存の ReviewType の文字列入力と API の数値との分離は維持する。
+ID・時刻と API の3列挙値の型、recommendationid の0の受理と数値化、外部 JSON との変換は [ADR-0012](0012-steam-domain-types.md) を採用する。外部の文字列入力・出力と内部の数値列挙型の変換は CLI・MCP・JSON の境界に集約する。Issue #33 の文字列型を内部へ伝播する方針をここで置き換える。
 
 ## 利点と制約
 

@@ -7,28 +7,6 @@ import (
 	"testing"
 )
 
-func TestSteamReviewTypeCode(t *testing.T) {
-	for _, tc := range []struct {
-		name       string
-		reviewType ReviewType
-		want       EUserReviewsReviewType
-		invalid    bool
-	}{
-		{"全評価はSteamの0に変換する", ReviewTypeAll, 0, false},
-		{"おすすめはSteamの1に変換する", ReviewTypePositive, 1, false},
-		{"非おすすめはSteamの2に変換する", ReviewTypeNegative, 2, false},
-		{"未正規化の空の種別は拒否する", "", 0, true},
-		{"未知の種別は拒否する", "mixed", 0, true},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			got, err := steamReviewTypeCode(tc.reviewType)
-			if got != tc.want || (err != nil) != tc.invalid || errors.Is(err, ErrInvalidArgument) != tc.invalid {
-				t.Fatalf("code=%d error=%v want=%d invalid=%v", got, err, tc.want, tc.invalid)
-			}
-		})
-	}
-}
-
 func TestNewReviewPageRequest(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
@@ -46,7 +24,7 @@ func TestNewReviewPageRequest(t *testing.T) {
 		},
 		{
 			name:    "未知の評価種別ではゼロ値と入力エラーを返す",
-			options: PageOptions{ReviewType: "mixed", Language: "japanese", PageSize: 7},
+			options: PageOptions{ReviewType: 3, Language: "japanese", PageSize: 7},
 			invalid: true,
 		},
 	} {

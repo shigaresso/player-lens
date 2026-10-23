@@ -15,7 +15,7 @@ func TestParseInputReviewType(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
 		input   string
-		want    steam.ReviewType
+		want    steam.EUserReviewsReviewType
 		invalid bool
 	}{
 		{"省略は全評価", `{"app_id":440}`, steam.ReviewTypeAll, false},
@@ -23,13 +23,13 @@ func TestParseInputReviewType(t *testing.T) {
 		{"全評価を明示する", `{"app_id":440,"review_type":"all"}`, steam.ReviewTypeAll, false},
 		{"おすすめを指定する", `{"app_id":440,"review_type":"positive"}`, steam.ReviewTypePositive, false},
 		{"非おすすめを指定する", `{"app_id":440,"review_type":"negative"}`, steam.ReviewTypeNegative, false},
-		{"未知値を拒否する", `{"app_id":440,"review_type":"mixed"}`, "", true},
-		{"大文字を拒否する", `{"app_id":440,"review_type":"Positive"}`, "", true},
-		{"前後空白を拒否する", `{"app_id":440,"review_type":" negative "}`, "", true},
-		{"nullを拒否する", `{"app_id":440,"review_type":null}`, "", true},
-		{"数値を拒否する", `{"app_id":440,"review_type":1}`, "", true},
-		{"配列を拒否する", `{"app_id":440,"review_type":[]}`, "", true},
-		{"真偽値を拒否する", `{"app_id":440,"review_type":true}`, "", true},
+		{"未知値を拒否する", `{"app_id":440,"review_type":"mixed"}`, 0, true},
+		{"大文字を拒否する", `{"app_id":440,"review_type":"Positive"}`, 0, true},
+		{"前後空白を拒否する", `{"app_id":440,"review_type":" negative "}`, 0, true},
+		{"nullを拒否する", `{"app_id":440,"review_type":null}`, 0, true},
+		{"数値を拒否する", `{"app_id":440,"review_type":1}`, 0, true},
+		{"配列を拒否する", `{"app_id":440,"review_type":[]}`, 0, true},
+		{"真偽値を拒否する", `{"app_id":440,"review_type":true}`, 0, true},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			id, options, err := parseInput([]byte(tt.input))

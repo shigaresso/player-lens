@@ -13,7 +13,7 @@
 
 `steam.Client.FetchReviewsPage` は1回の HTTP 通信と入力・応答の検査、応答 Body の解放を担当する adapter とする。収集操作とは区別し、ページングや収集全体の件数・時間・部分失敗を重複させない。
 
-Issue #38 で adapter 内のリクエスト変換を分離した。`steamReviewTypeCode`、`newReviewPageRequest`、`encodeReviewPageQuery` は、正規化済みの条件を Steam API の入力とクエリへ変換する通信なしの処理であり、新しいユースケースではない。
+Issue #38 で adapter 内のリクエスト変換を分離した。Issue #43 では文字列の評価種別から数値への変換を入力境界へ移した。`newReviewPageRequest`、`encodeReviewPageQuery` は、正規化済みの条件を Steam API の入力とクエリへ変換する通信なしの処理であり、新しいユースケースではない。
 
 Issue #39 で応答解釈も分離した。`decodeReviewPage` は本文と取得条件からページを作り、Issue #43 の `parseRecommendationID` は ID の文字列を0を含む uint64 に変換する。Body の読み取り・サイズ制限・解放は `FetchReviewsPage` に残す。
 
@@ -33,8 +33,8 @@ Issue #35 の `analysis_guide` は MCP の案内と結果変換の責務であ�
 
 ## 評価種別（Issue #33）
 
-`PageOptions` と `CollectionOptions` の `ReviewType` は all / positive / negative を表し、空は all へ正規化する。検査は steam の共通正規化、API の数値変換は HTTP adapter が担当する。収集は全ページへ条件を渡し、Collection と JSON の options.review_type に保持する。CLI の --review-type と MCP の review_type は同じ操作へ接続し、独自のページングや取得後の間引きを追加しない。保存先の interface とバックエンド分析の未導入状態は維持する。
+Issue #43 では `PageOptions` と `CollectionOptions` の `ReviewType` は EUserReviewsReviewType の0 / 1 / 2で表す。文字列は CLI・MCP の入力境界で ParseReviewType により解析し、JSON 出力境界の FormatReviewType で戻す。未知の数値は共通正規化と送信・出力で拒否する。収集は全ページへ条件を渡し、Collection と JSON の options.review_type に保持する。CLI の --review-type と MCP の review_type は同じ操作へ接続し、独自のページングや取得後の間引きを追加しない。保存先の interface とバックエンド分析の未導入状態は維持する。
 
 ## Steam の数値型（Issue #43）
 
-AppID・RecommendationID・TimestampCreated・TimestampUpdated は steam の定義型を各操作と呼び出し元へ引き継ぐ。API の3列挙型は HTTP adapter の数値表現に使う。領域の型に JSON の読み書きを持たせず、HTTP の受信と jsonoutput の出力で変換する。選択理由と外部形式は [ADR-0012](adr/0012-steam-domain-types.md) に従う。
+AppID・RecommendationID・TimestampCreated・TimestampUpdated は steam の定義型を各操作と呼び出し元へ引き継ぐ。評価種別の列挙型は内部全体で引き継ぎ、残る2列挙型は HTTP adapter の数値表現に使う。領域の型に JSON の読み書きを持たせず、HTTP の受信と jsonoutput の出力で変換する。選択理由と外部形式は [ADR-0012](adr/0012-steam-domain-types.md) に従う。

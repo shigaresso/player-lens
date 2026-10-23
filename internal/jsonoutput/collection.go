@@ -19,11 +19,11 @@ type collectionDocument struct {
 }
 
 type collectionOptions struct {
-	ReviewType steam.ReviewType `json:"review_type"`
-	Language   string           `json:"language"`
-	PageSize   int              `json:"page_size"`
-	MaxReviews int              `json:"max_reviews"`
-	MaxPages   int              `json:"max_pages"`
+	ReviewType string `json:"review_type"`
+	Language   string `json:"language"`
+	PageSize   int    `json:"page_size"`
+	MaxReviews int    `json:"max_reviews"`
+	MaxPages   int    `json:"max_pages"`
 }
 
 type reviewDocument struct {
@@ -39,6 +39,10 @@ type reviewDocument struct {
 // 入力を変更せず、空のレビューは [] とする。時刻は元データの UNIX 秒である。
 // 取得時刻・永続的な本文版・分析対象集合はこの出力形式では管理しない。
 func MarshalCollection(result steam.Collection) ([]byte, error) {
+	reviewType, err := steam.FormatReviewType(result.Options.ReviewType)
+	if err != nil {
+		return nil, fmt.Errorf("prepare review collection JSON: %w", err)
+	}
 	reviews := make([]reviewDocument, len(result.Reviews))
 	for i, review := range result.Reviews {
 		reviews[i] = reviewDocument{strconv.FormatUint(uint64(review.RecommendationID), 10), review.Text, review.Language, review.Recommended, review.TimestampCreated, review.TimestampUpdated}
@@ -46,7 +50,7 @@ func MarshalCollection(result steam.Collection) ([]byte, error) {
 	document := collectionDocument{
 		SchemaVersion: 1,
 		AppID:         result.AppID,
-		Options:       collectionOptions{result.Options.ReviewType, result.Options.Language, result.Options.PageSize, result.Options.MaxReviews, result.Options.MaxPages},
+		Options:       collectionOptions{reviewType, result.Options.Language, result.Options.PageSize, result.Options.MaxReviews, result.Options.MaxPages},
 		Reviews:       reviews,
 		PagesFetched:  result.PagesFetched,
 		StopReason:    result.StopReason,

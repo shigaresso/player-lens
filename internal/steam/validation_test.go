@@ -55,7 +55,7 @@ func TestFetchReviewsPageInvalidArguments(t *testing.T) {
 		appID   steam.AppID
 		options steam.PageOptions
 	}{
-		{"未知の評価種別を通信前に拒否する", 440, steam.PageOptions{ReviewType: "mixed"}},
+		{"未知の評価種別を通信前に拒否する", 440, steam.PageOptions{ReviewType: 3}},
 		{"AppIDゼロを拒否する", 0, steam.PageOptions{}},
 		{"負の件数を拒否する", 440, steam.PageOptions{PageSize: -1}},
 		{"101件を拒否する", 440, steam.PageOptions{PageSize: 101}},

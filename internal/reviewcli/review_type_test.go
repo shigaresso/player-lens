@@ -14,7 +14,7 @@ func TestRunReviewType(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
 		args    []string
-		want    steam.ReviewType
+		want    steam.EUserReviewsReviewType
 		invalid bool
 	}{
 		{"省略は全評価", nil, steam.ReviewTypeAll, false},
@@ -22,10 +22,10 @@ func TestRunReviewType(t *testing.T) {
 		{"全評価を指定する", []string{"--review-type=all"}, steam.ReviewTypeAll, false},
 		{"おすすめを指定する", []string{"--review-type", "positive"}, steam.ReviewTypePositive, false},
 		{"非おすすめを指定する", []string{"--review-type=negative"}, steam.ReviewTypeNegative, false},
-		{"未知値は通信と保存前に拒否する", []string{"--review-type=mixed"}, "", true},
-		{"大文字は拒否する", []string{"--review-type=Positive"}, "", true},
-		{"前後空白は拒否する", []string{"--review-type= negative "}, "", true},
-		{"値の欠落は拒否する", []string{"--review-type"}, "", true},
+		{"未知値は通信と保存前に拒否する", []string{"--review-type=mixed"}, 0, true},
+		{"大文字は拒否する", []string{"--review-type=Positive"}, 0, true},
+		{"前後空白は拒否する", []string{"--review-type= negative "}, 0, true},
+		{"値の欠落は拒否する", []string{"--review-type"}, 0, true},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			calls, saves := 0, 0

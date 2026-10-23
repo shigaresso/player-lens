@@ -44,3 +44,14 @@ Go ソース89ファイル（うちプロダクション27）を列挙し、cmd�
 必須 pre-commit の規約177テスト・静的検査とステージ済み Go 整形、commit-msg は各コミットで実行する。実フック8テストと実 Go ツールの独立検証は `git diff 2d4d4c3 HEAD -- scripts .github Dockerfile compose.yaml lefthook.yml .lefthook go.mod go.sum .golangci.yml` に差分がないことを確認し、以前の成功結果を再利用した。これらの独立検証の今回再実行とは区別する。
 
 coverage 閾値・分岐・mutation/Stryker は未導入であり、実行していない。人によるレビュー・実 Steam API の取得・実 CI・配置は未実施。ユーザーの指示に従い push・PR 作成・Issue のクローズは行わず、PR 本文案を43-pr.mdに保存した。
+
+## 評価種別の内部列挙型への統一
+
+ユーザーの指摘に従い、内部に文字列の ReviewType を残す初期方針を変更した。ADR-0012・仕様と Issue の範囲を先に更新した。内部は EUserReviewsReviewType に統一し、既存の ReviewTypeAll・ReviewTypePositive・ReviewTypeNegative を公式名の数値定数を参照する型付き定数に変更した。文字列の型と steamReviewTypeCode は廃止した。
+
+- ParseReviewType の文字列境界のテストを先に追加し、未定義関数で Red、実装後に同じテストで Green を確認した。
+- FormatReviewType の文字列出力のテストを追加し、未定義関数で Red、実装後に Green を確認した。0・1・2の文字列化と未知の数値でのゼロ値・ErrInvalidArgument を確認した。
+- 取得・収集の正規化テストを数値列挙型に変更し、旧文字列型との不一致で Red を確認した。型を内部全体へ反映し、CLI・MCP 入力で解析、JSON 出力で文字列化するよう実装した。型と責務の移動に必要なテスト参照の機械的更新を含め、Compose の `go test -count=1 ./...` が全7パッケージで Green になった。
+- 旧 TestSteamReviewTypeCode は廃止した変換関数とともに除いた。代わりに Parse/Format の直接テスト、既存の HTTP 送信テスト、リクエスト型の生成と未知数値の拒否テストが対応する契約を確認する。
+
+Go の名前付き数値型自体は任意の整数から作れる。0・1・2への制限は解析・共通正規化・リクエスト生成・出力で検査する。ゼロ値は全評価なので、空の Collection の options.review_type は以前の空文字から all の明示に変わる。JSON のフィールド名と文字列型は維持する。

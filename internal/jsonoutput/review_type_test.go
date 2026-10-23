@@ -12,14 +12,15 @@ import (
 func TestMarshalCollectionReviewType(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
-		kind    steam.ReviewType
+		kind    steam.EUserReviewsReviewType
+		want    string
 		reason  steam.StopReason
 		reviews []steam.Review
 	}{
-		{"全評価の条件を出力する", steam.ReviewTypeAll, steam.StopReviewLimit, []steam.Review{{RecommendationID: 1}}},
-		{"おすすめの条件を出力する", steam.ReviewTypePositive, steam.StopReviewLimit, []steam.Review{{RecommendationID: 2, Recommended: true}}},
-		{"非おすすめの空結果でも条件を出力する", steam.ReviewTypeNegative, steam.StopExhausted, nil},
-		{"非おすすめの部分失敗でも条件を出力する", steam.ReviewTypeNegative, steam.StopFailed, []steam.Review{{RecommendationID: 3}}},
+		{"全評価の条件を出力する", steam.ReviewTypeAll, "all", steam.StopReviewLimit, []steam.Review{{RecommendationID: 1}}},
+		{"おすすめの条件を出力する", steam.ReviewTypePositive, "positive", steam.StopReviewLimit, []steam.Review{{RecommendationID: 2, Recommended: true}}},
+		{"非おすすめの空結果でも条件を出力する", steam.ReviewTypeNegative, "negative", steam.StopExhausted, nil},
+		{"非おすすめの部分失敗でも条件を出力する", steam.ReviewTypeNegative, "negative", steam.StopFailed, []steam.Review{{RecommendationID: 3}}},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			input := steam.Collection{AppID: 440, Options: steam.CollectionOptions{ReviewType: tt.kind}, Reviews: tt.reviews, StopReason: tt.reason}
@@ -39,7 +40,7 @@ func TestMarshalCollectionReviewType(t *testing.T) {
 			if err := json.Unmarshal(data, &out); err != nil {
 				t.Fatal(err)
 			}
-			if out.Version != 1 || out.Options.ReviewType != string(tt.kind) || out.StopReason != tt.reason || out.Reviews == nil || len(out.Reviews) != len(tt.reviews) {
+			if out.Version != 1 || out.Options.ReviewType != tt.want || out.StopReason != tt.reason || out.Reviews == nil || len(out.Reviews) != len(tt.reviews) {
 				t.Fatalf("JSON=%s", data)
 			}
 			if !reflect.DeepEqual(input, before) {

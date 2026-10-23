@@ -12,7 +12,7 @@ import (
 )
 
 func TestHandlerLimits(t *testing.T) {
-	handler, err := NewHandler(fetchFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
+	handler, err := NewHandler(fetchFunc(func(context.Context, steam.AppID, steam.PageOptions) (steam.ReviewPage, error) {
 		t.Fatal("拒否する HTTP リクエストで取得した")
 		return steam.ReviewPage{}, nil
 	}), DefaultLimits(), nil)
@@ -57,7 +57,7 @@ func TestNewHandlerRejectsNilFetcher(t *testing.T) {
 }
 
 func TestLocalHost(t *testing.T) {
-	handler, err := NewHandler(fetchFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
+	handler, err := NewHandler(fetchFunc(func(context.Context, steam.AppID, steam.PageOptions) (steam.ReviewPage, error) {
 		t.Fatal("HTTP Host 検査で取得した")
 		return steam.ReviewPage{}, nil
 	}), DefaultLimits(), nil)

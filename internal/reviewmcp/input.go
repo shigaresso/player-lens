@@ -19,15 +19,15 @@ const (
 
 type toolInput struct {
 	ReviewType steam.ReviewType `json:"review_type"`
-	AppID      uint32           `json:"app_id"`
+	AppID      steam.AppID      `json:"app_id"`
 	Language   string           `json:"language"`
 	PageSize   int              `json:"page_size"`
 	MaxReviews int              `json:"max_reviews"`
 	MaxPages   int              `json:"max_pages"`
 }
 
-func parseInput(data []byte) (uint32, steam.CollectionOptions, error) {
-	invalid := func() (uint32, steam.CollectionOptions, error) {
+func parseInput(data []byte) (steam.AppID, steam.CollectionOptions, error) {
+	invalid := func() (steam.AppID, steam.CollectionOptions, error) {
 		return 0, steam.CollectionOptions{}, fmt.Errorf("invalid MCP collection input: %w", steam.ErrInvalidArgument)
 	}
 	var fields map[string]json.RawMessage

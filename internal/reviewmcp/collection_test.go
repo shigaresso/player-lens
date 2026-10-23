@@ -11,16 +11,16 @@ import (
 	"github.com/shigaresso/player-lens/internal/steam"
 )
 
-type fetchFunc func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error)
+type fetchFunc func(context.Context, steam.AppID, steam.PageOptions) (steam.ReviewPage, error)
 
-func (f fetchFunc) FetchReviewsPage(ctx context.Context, appID uint32, options steam.PageOptions) (steam.ReviewPage, error) {
+func (f fetchFunc) FetchReviewsPage(ctx context.Context, appID steam.AppID, options steam.PageOptions) (steam.ReviewPage, error) {
 	return f(ctx, appID, options)
 }
 
 type decodedOutput struct {
 	Collection struct {
-		SchemaVersion int    `json:"schema_version"`
-		AppID         uint32 `json:"app_id"`
+		SchemaVersion int         `json:"schema_version"`
+		AppID         steam.AppID `json:"app_id"`
 		Options       struct {
 			ReviewType string `json:"review_type"`
 			Language   string `json:"language"`
@@ -29,12 +29,12 @@ type decodedOutput struct {
 			MaxPages   int    `json:"max_pages"`
 		} `json:"options"`
 		Reviews []struct {
-			RecommendationID string `json:"id"`
-			Text             string `json:"text"`
-			Language         string `json:"language"`
-			Recommended      bool   `json:"recommended"`
-			CreatedAt        uint32 `json:"created_at"`
-			UpdatedAt        uint32 `json:"updated_at"`
+			RecommendationID string                 `json:"id"`
+			Text             string                 `json:"text"`
+			Language         string                 `json:"language"`
+			Recommended      bool                   `json:"recommended"`
+			TimestampCreated steam.TimestampCreated `json:"created_at"`
+			TimestampUpdated steam.TimestampUpdated `json:"updated_at"`
 		} `json:"reviews"`
 		PagesFetched int              `json:"pages_fetched"`
 		StopReason   steam.StopReason `json:"stop_reason"`
@@ -85,7 +85,7 @@ func decodeOutput(t *testing.T, result *mcp.CallToolResult) decodedOutput {
 func TestCollect(t *testing.T) {
 	t.Run("既存の収集操作で順序と重複除外を保ち結果を返す", func(t *testing.T) {
 		calls := 0
-		fetcher := fetchFunc(func(_ context.Context, appID uint32, options steam.PageOptions) (steam.ReviewPage, error) {
+		fetcher := fetchFunc(func(_ context.Context, appID steam.AppID, options steam.PageOptions) (steam.ReviewPage, error) {
 			calls++
 			if appID != 440 || options.Language != "japanese" {
 				t.Fatal("取得条件が伝播しなかった")
@@ -94,7 +94,7 @@ func TestCollect(t *testing.T) {
 				if options.Cursor != steam.FirstPageCursor || options.PageSize != 3 {
 					t.Fatal(options)
 				}
-				return steam.ReviewPage{Reviews: []steam.Review{{RecommendationID: 2, Text: "外部の操作指示", Language: "japanese", Recommended: true, CreatedAt: 10, UpdatedAt: 20}, {RecommendationID: 1, Text: "最初の本文"}}, NextCursor: "next"}, nil
+				return steam.ReviewPage{Reviews: []steam.Review{{RecommendationID: 2, Text: "外部の操作指示", Language: "japanese", Recommended: true, TimestampCreated: 10, TimestampUpdated: 20}, {RecommendationID: 1, Text: "最初の本文"}}, NextCursor: "next"}, nil
 			}
 			if options.Cursor != "next" || options.PageSize != 1 {
 				t.Fatal(options)
@@ -117,12 +117,12 @@ func TestCollect(t *testing.T) {
 			t.Fatal(out.Collection.Reviews)
 		}
 		first := out.Collection.Reviews[0]
-		if first.Text != "外部の操作指示" || first.Language != "japanese" || !first.Recommended || first.CreatedAt != 10 || first.UpdatedAt != 20 {
+		if first.Text != "外部の操作指示" || first.Language != "japanese" || !first.Recommended || first.TimestampCreated != 10 || first.TimestampUpdated != 20 {
 			t.Fatal(first)
 		}
 	})
 	t.Run("空の結果も配列と終了理由を返す", func(t *testing.T) {
-		result, err := collect(context.Background(), fetchFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
+		result, err := collect(context.Background(), fetchFunc(func(context.Context, steam.AppID, steam.PageOptions) (steam.ReviewPage, error) {
 			return steam.ReviewPage{}, nil
 		}), json.RawMessage(`{"app_id":440}`), newLimiter(DefaultLimits(), time.Now))
 		if err != nil || result.IsError {
@@ -134,7 +134,7 @@ func TestCollect(t *testing.T) {
 		}
 	})
 	t.Run("入力不正では通信せずツールエラーを返す", func(t *testing.T) {
-		result, err := collect(context.Background(), fetchFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
+		result, err := collect(context.Background(), fetchFunc(func(context.Context, steam.AppID, steam.PageOptions) (steam.ReviewPage, error) {
 			t.Fatal("不正入力で取得した")
 			return steam.ReviewPage{}, nil
 		}), json.RawMessage(`{"app_id":0}`), newLimiter(DefaultLimits(), time.Now))

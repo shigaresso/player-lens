@@ -29,7 +29,7 @@ func TestRunReviewType(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			calls, saves := 0, 0
-			fetcher := fetcherFunc(func(_ context.Context, id uint32, options steam.PageOptions) (steam.ReviewPage, error) {
+			fetcher := fetcherFunc(func(_ context.Context, id steam.AppID, options steam.PageOptions) (steam.ReviewPage, error) {
 				calls++
 				if tt.invalid || id != 440 || options.ReviewType != tt.want {
 					t.Fatalf("取得条件=%+v", options)

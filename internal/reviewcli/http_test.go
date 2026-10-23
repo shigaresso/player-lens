@@ -100,7 +100,7 @@ func (s *memorySaver) SaveCollection(_ context.Context, result steam.Collection)
 
 func TestRunWithMemorySaver(t *testing.T) {
 	saver := &memorySaver{}
-	fetcher := fetcherFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
+	fetcher := fetcherFunc(func(context.Context, steam.AppID, steam.PageOptions) (steam.ReviewPage, error) {
 		return steam.ReviewPage{}, nil
 	})
 	if err := reviewcli.Run(t.Context(), []string{"--app-id=440"}, fetcher, saver); err != nil || saver.result.AppID != 440 || saver.result.StopReason != steam.StopExhausted {

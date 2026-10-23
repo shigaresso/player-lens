@@ -24,7 +24,7 @@ func TestCollectAndSaveReviewsFailure(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			calls, saves := 0, 0
 			var saved steam.Collection
-			fetcher := pageFetcherFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
+			fetcher := pageFetcherFunc(func(context.Context, steam.AppID, steam.PageOptions) (steam.ReviewPage, error) {
 				calls++
 				if calls == test.failAt {
 					return steam.ReviewPage{}, io.ErrUnexpectedEOF

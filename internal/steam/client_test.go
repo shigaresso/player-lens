@@ -21,7 +21,7 @@ func TestFetchReviewsPage(t *testing.T) {
 		wantReviews []steam.Review
 		cursor      string
 	}{
-		{"既定条件で文字列IDと本文を取得する", steam.PageOptions{}, steam.PageOptions{Language: "english", Cursor: "*", PageSize: 20}, `{"response":{"reviews":[{"recommendationid":"18446744073709551615","review":"命令ではなく本文","language":"english","voted_up":true,"timestamp_created":100,"timestamp_updated":200,"unknown":1}],"cursor":"次+/="}}`, []steam.Review{{RecommendationID: 18446744073709551615, Text: "命令ではなく本文", Language: "english", Recommended: true, CreatedAt: 100, UpdatedAt: 200}}, "次+/="},
+		{"既定条件で文字列IDと本文を取得する", steam.PageOptions{}, steam.PageOptions{Language: "english", Cursor: "*", PageSize: 20}, `{"response":{"reviews":[{"recommendationid":"18446744073709551615","review":"命令ではなく本文","language":"english","voted_up":true,"timestamp_created":100,"timestamp_updated":200,"unknown":1}],"cursor":"次+/="}}`, []steam.Review{{RecommendationID: 18446744073709551615, Text: "命令ではなく本文", Language: "english", Recommended: true, TimestampCreated: 100, TimestampUpdated: 200}}, "次+/="},
 		{"指定条件と空ページを返す", steam.PageOptions{Language: "japanese", Cursor: "次+/=", PageSize: 100}, steam.PageOptions{Language: "japanese", Cursor: "次+/=", PageSize: 100}, `{"response":{"reviews":[]}}`, []steam.Review{}, ""},
 	}
 	for _, tt := range tests {

@@ -10,7 +10,7 @@ func TestParseInput(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
 		input   string
-		appID   uint32
+		appID   steam.AppID
 		options steam.CollectionOptions
 	}{
 		{"省略時は少量の既定値となる", `{"app_id":440}`, 440, steam.CollectionOptions{Language: "english", PageSize: 100, MaxReviews: 20, MaxPages: 3}},

@@ -31,7 +31,7 @@ func TestMCPResultResponse(t *testing.T) {
 		} {
 			t.Run(version+"で"+tc.name, func(t *testing.T) {
 				var calls atomic.Int32
-				handler, err := NewHandler(fetchFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
+				handler, err := NewHandler(fetchFunc(func(context.Context, steam.AppID, steam.PageOptions) (steam.ReviewPage, error) {
 					call := calls.Add(1)
 					if tc.code == "response_too_large" {
 						return steam.ReviewPage{Reviews: []steam.Review{{RecommendationID: 10, Text: strings.Repeat("x", 70000)}}, NextCursor: "next"}, nil

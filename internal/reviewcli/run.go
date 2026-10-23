@@ -54,6 +54,6 @@ func Run(ctx context.Context, args []string, fetcher steam.PageFetcher, saver st
 	if err != nil {
 		return fmt.Errorf("prepare review collection arguments: %w", errors.Join(ErrUsage, err))
 	}
-	_, err = steam.CollectAndSaveReviews(ctx, fetcher, saver, uint32(id), options)
+	_, err = steam.CollectAndSaveReviews(ctx, fetcher, saver, steam.AppID(id), options)
 	return err
 }

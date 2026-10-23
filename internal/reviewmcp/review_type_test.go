@@ -69,7 +69,7 @@ func TestInputSchemaReviewType(t *testing.T) {
 
 func TestCollectionReviewTypePartialFailure(t *testing.T) {
 	calls := 0
-	fetcher := fetchFunc(func(_ context.Context, _ uint32, options steam.PageOptions) (steam.ReviewPage, error) {
+	fetcher := fetchFunc(func(_ context.Context, _ steam.AppID, options steam.PageOptions) (steam.ReviewPage, error) {
 		calls++
 		if options.ReviewType != steam.ReviewTypeNegative {
 			t.Fatalf("options=%+v", options)

@@ -27,7 +27,7 @@ func TestCollectReviewsFailure(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			calls := 0
-			fetcher := pageFetcherFunc(func(_ context.Context, _ uint32, options steam.PageOptions) (steam.ReviewPage, error) {
+			fetcher := pageFetcherFunc(func(_ context.Context, _ steam.AppID, options steam.PageOptions) (steam.ReviewPage, error) {
 				calls++
 				if calls > tt.failOn {
 					t.Fatal("失敗後に再取得した")

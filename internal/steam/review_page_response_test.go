@@ -63,8 +63,8 @@ func TestDecodeReviewPageSuccess(t *testing.T) {
 				{"recommendationid":"0001","review":"改善してほしい","language":"english","voted_up":false,"timestamp_created":0,"timestamp_updated":2}
 			],"cursor":"次+/=&?"}}`,
 			reviews: []Review{
-				{RecommendationID: 18446744073709551615, Text: "面白いゲーム", Language: "japanese", Recommended: true, CreatedAt: 1, UpdatedAt: 4294967295},
-				{RecommendationID: 1, Text: "改善してほしい", Language: "english", Recommended: false, CreatedAt: 0, UpdatedAt: 2},
+				{RecommendationID: 18446744073709551615, Text: "面白いゲーム", Language: "japanese", Recommended: true, TimestampCreated: 1, TimestampUpdated: 4294967295},
+				{RecommendationID: 1, Text: "改善してほしい", Language: "english", Recommended: false, TimestampCreated: 0, TimestampUpdated: 2},
 			},
 			nextCursor: "次+/=&?",
 		},

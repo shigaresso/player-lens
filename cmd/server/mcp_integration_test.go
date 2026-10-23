@@ -18,7 +18,7 @@ type requestFetcher struct {
 	release chan struct{}
 }
 
-func (f requestFetcher) FetchReviewsPage(ctx context.Context, _ uint32, _ steam.PageOptions) (steam.ReviewPage, error) {
+func (f requestFetcher) FetchReviewsPage(ctx context.Context, _ steam.AppID, _ steam.PageOptions) (steam.ReviewPage, error) {
 	close(f.started)
 	select {
 	case <-f.release:

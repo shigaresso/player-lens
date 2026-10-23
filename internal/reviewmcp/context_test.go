@@ -27,7 +27,7 @@ func TestCollectionContext(t *testing.T) {
 			}
 			var passed context.Context
 			start := time.Now()
-			fetcher := fetchFunc(func(received context.Context, _ uint32, _ steam.PageOptions) (steam.ReviewPage, error) {
+			fetcher := fetchFunc(func(received context.Context, _ steam.AppID, _ steam.PageOptions) (steam.ReviewPage, error) {
 				passed = received
 				deadline, ok := received.Deadline()
 				if !ok || received.Value(key{}) != "request" {
@@ -69,7 +69,7 @@ func TestCollectionContext(t *testing.T) {
 				cancel()
 			}
 			defer cancel()
-			result, err := collect(ctx, fetchFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
+			result, err := collect(ctx, fetchFunc(func(context.Context, steam.AppID, steam.PageOptions) (steam.ReviewPage, error) {
 				t.Fatal("終了済み context で取得した")
 				return steam.ReviewPage{}, nil
 			}), json.RawMessage(`{"app_id":440}`), newLimiter(DefaultLimits(), time.Now))

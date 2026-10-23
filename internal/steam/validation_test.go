@@ -52,7 +52,7 @@ func TestNewClient(t *testing.T) {
 func TestFetchReviewsPageInvalidArguments(t *testing.T) {
 	tests := []struct {
 		name    string
-		appID   uint32
+		appID   steam.AppID
 		options steam.PageOptions
 	}{
 		{"未知の評価種別を通信前に拒否する", 440, steam.PageOptions{ReviewType: "mixed"}},

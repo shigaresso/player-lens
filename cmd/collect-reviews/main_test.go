@@ -12,9 +12,9 @@ import (
 	"github.com/shigaresso/player-lens/internal/steam"
 )
 
-type fetcherFunc func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error)
+type fetcherFunc func(context.Context, steam.AppID, steam.PageOptions) (steam.ReviewPage, error)
 
-func (f fetcherFunc) FetchReviewsPage(ctx context.Context, id uint32, options steam.PageOptions) (steam.ReviewPage, error) {
+func (f fetcherFunc) FetchReviewsPage(ctx context.Context, id steam.AppID, options steam.PageOptions) (steam.ReviewPage, error) {
 	return f(ctx, id, options)
 }
 
@@ -54,7 +54,7 @@ func TestRunOutputAndExit(t *testing.T) {
 				t.Fatal(err)
 			}
 			calls := 0
-			fetcher := fetcherFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
+			fetcher := fetcherFunc(func(context.Context, steam.AppID, steam.PageOptions) (steam.ReviewPage, error) {
 				calls++
 				if calls == 2 && test.fail {
 					return steam.ReviewPage{}, io.ErrUnexpectedEOF

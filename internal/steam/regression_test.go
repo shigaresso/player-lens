@@ -16,11 +16,11 @@ import (
 func TestFetchReviewsPageValidBoundaries(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
-		appID   uint32
+		appID   steam.AppID
 		options steam.PageOptions
 	}{
 		{"最小のAppIDと件数を受け付ける", 1, steam.PageOptions{Language: "all", Cursor: steam.FirstPageCursor, PageSize: 1}},
-		{"最大のAppIDと入力長を受け付ける", ^uint32(0), steam.PageOptions{Language: "a" + strings.Repeat("b", 31), Cursor: strings.Repeat("x", 4096), PageSize: 100}},
+		{"最大のAppIDと入力長を受け付ける", ^steam.AppID(0), steam.PageOptions{Language: "a" + strings.Repeat("b", 31), Cursor: strings.Repeat("x", 4096), PageSize: 100}},
 		{"言語の数字と区切りを受け付ける", 440, steam.PageOptions{Language: "en_1-test", Cursor: steam.FirstPageCursor, PageSize: 20}},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -32,10 +32,10 @@ func TestFetchReviewsPageValidBoundaries(t *testing.T) {
 					t.Errorf("URL=%s", r.URL)
 				}
 				var input struct {
-					AppID     uint32   `json:"appid"`
-					Languages []string `json:"languages"`
-					Cursor    string   `json:"cursor"`
-					PageSize  int      `json:"num_per_page"`
+					AppID     steam.AppID `json:"appid"`
+					Languages []string    `json:"languages"`
+					Cursor    string      `json:"cursor"`
+					PageSize  int         `json:"num_per_page"`
 				}
 				if err := json.Unmarshal([]byte(r.URL.Query().Get("input_json")), &input); err != nil {
 					t.Error(err)

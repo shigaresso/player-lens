@@ -23,7 +23,7 @@ func TestCollectReviewsReviewType(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			calls := 0
-			fetcher := pageFetcherFunc(func(_ context.Context, id uint32, options steam.PageOptions) (steam.ReviewPage, error) {
+			fetcher := pageFetcherFunc(func(_ context.Context, id steam.AppID, options steam.PageOptions) (steam.ReviewPage, error) {
 				calls++
 				cursor := steam.FirstPageCursor
 				if calls == 2 {

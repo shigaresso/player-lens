@@ -31,7 +31,7 @@ func TestCollectReviewsContextDeadline(t *testing.T) {
 			defer cancel()
 			start := time.Now()
 			var captured context.Context
-			fetcher := pageFetcherFunc(func(ctx context.Context, appID uint32, options steam.PageOptions) (steam.ReviewPage, error) {
+			fetcher := pageFetcherFunc(func(ctx context.Context, appID steam.AppID, options steam.PageOptions) (steam.ReviewPage, error) {
 				captured = ctx
 				deadline, ok := ctx.Deadline()
 				if !ok {
@@ -79,7 +79,7 @@ func TestCollectReviewsStoppedContext(t *testing.T) {
 				ctx, cancel = context.WithDeadline(context.Background(), time.Now().Add(-time.Second))
 				defer cancel()
 			}
-			fetcher := pageFetcherFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
+			fetcher := pageFetcherFunc(func(context.Context, steam.AppID, steam.PageOptions) (steam.ReviewPage, error) {
 				t.Fatal("終了済み context で取得した")
 				return steam.ReviewPage{}, nil
 			})
@@ -96,7 +96,7 @@ func TestCollectReviewsCancellationBetweenPages(t *testing.T) {
 	defer cancel()
 	calls := 0
 	var captured context.Context
-	fetcher := pageFetcherFunc(func(pageCtx context.Context, appID uint32, options steam.PageOptions) (steam.ReviewPage, error) {
+	fetcher := pageFetcherFunc(func(pageCtx context.Context, appID steam.AppID, options steam.PageOptions) (steam.ReviewPage, error) {
 		calls++
 		if calls > 1 {
 			t.Fatal("キャンセル後に次のページを取得した")

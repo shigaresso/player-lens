@@ -26,7 +26,7 @@ func TestCollectFailure(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			calls := 0
-			fetcher := fetchFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
+			fetcher := fetchFunc(func(context.Context, steam.AppID, steam.PageOptions) (steam.ReviewPage, error) {
 				calls++
 				if tc.partial && calls == 1 {
 					return steam.ReviewPage{Reviews: []steam.Review{{RecommendationID: 14, Text: "取得済み"}}, NextCursor: "next"}, nil

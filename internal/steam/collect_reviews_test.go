@@ -9,9 +9,9 @@ import (
 	"github.com/shigaresso/player-lens/internal/steam"
 )
 
-type pageFetcherFunc func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error)
+type pageFetcherFunc func(context.Context, steam.AppID, steam.PageOptions) (steam.ReviewPage, error)
 
-func (f pageFetcherFunc) FetchReviewsPage(ctx context.Context, appID uint32, options steam.PageOptions) (steam.ReviewPage, error) {
+func (f pageFetcherFunc) FetchReviewsPage(ctx context.Context, appID steam.AppID, options steam.PageOptions) (steam.ReviewPage, error) {
 	return f(ctx, appID, options)
 }
 
@@ -46,7 +46,7 @@ func TestCollectReviewsPages(t *testing.T) {
 				tt.requests[i].ReviewType = steam.ReviewTypeAll
 			}
 			var requests []steam.PageOptions
-			fetcher := pageFetcherFunc(func(_ context.Context, appID uint32, options steam.PageOptions) (steam.ReviewPage, error) {
+			fetcher := pageFetcherFunc(func(_ context.Context, appID steam.AppID, options steam.PageOptions) (steam.ReviewPage, error) {
 				if appID != 440 || len(requests) >= len(tt.pages) {
 					t.Fatalf("予期しない取得: appID=%d 回数=%d", appID, len(requests)+1)
 				}

@@ -37,7 +37,7 @@ func TestMCPProtocol(t *testing.T) {
 	for _, version := range []string{"2026-07-28", "2025-11-25", "2025-06-18", "2025-03-26"} {
 		t.Run(version+"で初期処理とツール呼び出しができる", func(t *testing.T) {
 			var calls atomic.Int32
-			handler, err := NewHandler(fetchFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
+			handler, err := NewHandler(fetchFunc(func(context.Context, steam.AppID, steam.PageOptions) (steam.ReviewPage, error) {
 				calls.Add(1)
 				return steam.ReviewPage{Reviews: []steam.Review{{RecommendationID: 15, Text: "分析用の本文"}}, NextCursor: "next"}, nil
 			}), DefaultLimits(), nil)

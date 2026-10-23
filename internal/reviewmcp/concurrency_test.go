@@ -99,7 +99,7 @@ func TestCollectionReleasesSlotAfterFailure(t *testing.T) {
 			defer cancel()
 			first := true
 			calls := 0
-			fetcher := fetchFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
+			fetcher := fetchFunc(func(context.Context, steam.AppID, steam.PageOptions) (steam.ReviewPage, error) {
 				calls++
 				if !first {
 					return steam.ReviewPage{}, nil
@@ -152,7 +152,7 @@ func TestCollectionBusyResponse(t *testing.T) {
 		t.Fatal(code)
 	}
 	defer release()
-	result, err := collect(context.Background(), fetchFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
+	result, err := collect(context.Background(), fetchFunc(func(context.Context, steam.AppID, steam.PageOptions) (steam.ReviewPage, error) {
 		t.Fatal("同時枠のない呼び出しで取得した")
 		return steam.ReviewPage{}, nil
 	}), json.RawMessage(`{"app_id":440}`), gate)

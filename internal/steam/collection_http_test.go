@@ -20,10 +20,10 @@ func TestCollectReviewsWithHTTPClient(t *testing.T) {
 		mu.Lock()
 		defer mu.Unlock()
 		var input struct {
-			AppID     uint32   `json:"appid"`
-			Cursor    string   `json:"cursor"`
-			PageSize  int      `json:"num_per_page"`
-			Languages []string `json:"languages"`
+			AppID     steam.AppID `json:"appid"`
+			Cursor    string      `json:"cursor"`
+			PageSize  int         `json:"num_per_page"`
+			Languages []string    `json:"languages"`
 		}
 		if err := json.Unmarshal([]byte(r.URL.Query().Get("input_json")), &input); err != nil {
 			t.Error(err)

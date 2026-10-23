@@ -39,7 +39,7 @@ func TestCollectAndSaveReviewsSaveContext(t *testing.T) {
 			}
 			before := parent.Err()
 			var captured context.Context
-			fetcher := pageFetcherFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
+			fetcher := pageFetcherFunc(func(context.Context, steam.AppID, steam.PageOptions) (steam.ReviewPage, error) {
 				return steam.ReviewPage{}, nil
 			})
 			saver := collectionSaverFunc(func(ctx context.Context, result steam.Collection) error {

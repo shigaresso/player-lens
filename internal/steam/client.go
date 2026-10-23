@@ -31,19 +31,19 @@ func (e *HTTPStatusError) Error() string {
 	return fmt.Sprintf("Steam review HTTP status %d", e.StatusCode)
 }
 
-// Review は元の ID と本文、推薦、作成・更新の UNIX 秒を保持する。
+// Review は Steam の数値 ID と本文、推薦、作成・更新の UNIX 秒を保持する。
 type Review struct {
 	RecommendationID RecommendationID
-	Text             string `json:"review"`
-	Language         string `json:"language"`
-	Recommended      bool   `json:"voted_up"`
-	CreatedAt        uint32 `json:"timestamp_created"`
-	UpdatedAt        uint32 `json:"timestamp_updated"`
+	Text             string           `json:"review"`
+	Language         string           `json:"language"`
+	Recommended      bool             `json:"voted_up"`
+	TimestampCreated TimestampCreated `json:"timestamp_created"`
+	TimestampUpdated TimestampUpdated `json:"timestamp_updated"`
 }
 
 // ReviewPage は取得条件とレビュー、次のカーソルを保持する。空ページも成功となる。
 type ReviewPage struct {
-	AppID      uint32
+	AppID      AppID
 	Options    PageOptions
 	Reviews    []Review
 	NextCursor string
@@ -73,7 +73,7 @@ func NewClient(httpClient *http.Client, endpoint string) (*Client, error) {
 }
 
 // FetchReviewsPage は1ページを取得する。再試行や保存は行わず、失敗時にはゼロ値を返す。
-func (c *Client) FetchReviewsPage(ctx context.Context, appID uint32, options PageOptions) (page ReviewPage, err error) {
+func (c *Client) FetchReviewsPage(ctx context.Context, appID AppID, options PageOptions) (page ReviewPage, err error) {
 	if appID == 0 {
 		return ReviewPage{}, fmt.Errorf("invalid Steam AppID: %w", ErrInvalidArgument)
 	}

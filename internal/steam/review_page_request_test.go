@@ -11,7 +11,7 @@ func TestSteamReviewTypeCode(t *testing.T) {
 	for _, tc := range []struct {
 		name       string
 		reviewType ReviewType
-		want       int
+		want       EUserReviewsReviewType
 		invalid    bool
 	}{
 		{"全評価はSteamの0に変換する", ReviewTypeAll, 0, false},

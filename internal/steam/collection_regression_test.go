@@ -14,7 +14,7 @@ import (
 func TestCollectReviewsInvalidInput(t *testing.T) {
 	for _, tt := range []struct {
 		name       string
-		appID      uint32
+		appID      steam.AppID
 		options    steam.CollectionOptions
 		nilFetcher bool
 	}{
@@ -26,7 +26,7 @@ func TestCollectReviewsInvalidInput(t *testing.T) {
 		{"ページ上限の超過を拒否する", 440, steam.CollectionOptions{MaxPages: 101}, false},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			var fetcher steam.PageFetcher = pageFetcherFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
+			var fetcher steam.PageFetcher = pageFetcherFunc(func(context.Context, steam.AppID, steam.PageOptions) (steam.ReviewPage, error) {
 				t.Fatal("不正入力で取得した")
 				return steam.ReviewPage{}, nil
 			})
@@ -43,7 +43,7 @@ func TestCollectReviewsInvalidInput(t *testing.T) {
 
 func TestCollectReviewsMaximumReviews(t *testing.T) {
 	calls := 0
-	fetcher := pageFetcherFunc(func(_ context.Context, appID uint32, options steam.PageOptions) (steam.ReviewPage, error) {
+	fetcher := pageFetcherFunc(func(_ context.Context, appID steam.AppID, options steam.PageOptions) (steam.ReviewPage, error) {
 		calls++
 		if calls > 100 || options.PageSize != 100 {
 			t.Fatalf("calls=%d options=%#v", calls, options)
@@ -70,7 +70,7 @@ func TestCollectReviewsFailureReleasesContext(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			var captured context.Context
-			fetcher := pageFetcherFunc(func(ctx context.Context, appID uint32, options steam.PageOptions) (steam.ReviewPage, error) {
+			fetcher := pageFetcherFunc(func(ctx context.Context, appID steam.AppID, options steam.PageOptions) (steam.ReviewPage, error) {
 				captured = ctx
 				if tt.cause == steam.ErrCursorCycle {
 					return steam.ReviewPage{AppID: appID, Options: options, Reviews: collectionReviews(1), NextCursor: "*"}, nil

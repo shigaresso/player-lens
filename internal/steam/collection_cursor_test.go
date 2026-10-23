@@ -26,7 +26,7 @@ func TestCollectReviewsCursorCycle(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			calls := 0
-			fetcher := pageFetcherFunc(func(_ context.Context, appID uint32, options steam.PageOptions) (steam.ReviewPage, error) {
+			fetcher := pageFetcherFunc(func(_ context.Context, appID steam.AppID, options steam.PageOptions) (steam.ReviewPage, error) {
 				if calls >= len(tt.pages) {
 					t.Fatal("循環の検出後に取得した")
 				}

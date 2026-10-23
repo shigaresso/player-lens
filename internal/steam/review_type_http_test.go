@@ -13,7 +13,7 @@ import (
 func TestFetchReviewsPageReviewType(t *testing.T) {
 	for _, tt := range []struct {
 		name        string
-		input       steam.EUserReviewsReviewType
+		input       steam.ReviewType
 		wantType    int
 		recommended bool
 	}{

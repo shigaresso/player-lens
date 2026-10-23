@@ -14,7 +14,7 @@ func TestRunReviewType(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
 		args    []string
-		want    steam.EUserReviewsReviewType
+		want    steam.ReviewType
 		invalid bool
 	}{
 		{"省略は全評価", nil, steam.ReviewTypeAll, false},

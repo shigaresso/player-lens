@@ -33,7 +33,7 @@ Issue #35 の `analysis_guide` は MCP の案内と結果変換の責務であ�
 
 ## 評価種別（Issue #33）
 
-Issue #43 では `PageOptions` と `CollectionOptions` の `ReviewType` は EUserReviewsReviewType の0 / 1 / 2で表す。文字列は CLI・MCP の入力境界で ParseReviewType により解析し、JSON 出力境界の FormatReviewType で戻す。未知の数値は共通正規化と送信・出力で拒否する。収集は全ページへ条件を渡し、Collection と JSON の options.review_type に保持する。CLI の --review-type と MCP の review_type は同じ操作へ接続し、独自のページングや取得後の間引きを追加しない。保存先の interface とバックエンド分析の未導入状態は維持する。
+Issue #43 では `PageOptions` と `CollectionOptions` の `ReviewType` は独立した数値列挙型 ReviewType の0 / 1 / 2で表す。値は公式の定数から定義し、HTTP adapter で EUserReviewsReviewType に変換する。文字列は CLI・MCP の入力境界で ParseReviewType により解析し、JSON 出力境界の FormatReviewType で戻す。未知の数値は共通正規化と送信・出力で拒否する。収集は全ページへ条件を渡し、Collection と JSON の options.review_type に保持する。CLI の --review-type と MCP の review_type は同じ操作へ接続し、独自のページングや取得後の間引きを追加しない。保存先の interface とバックエンド分析の未導入状態は維持する。
 
 ## Steam の数値型（Issue #43）
 

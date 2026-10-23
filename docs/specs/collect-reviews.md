@@ -14,7 +14,7 @@
 
 | 項目 | 既定値 | 有効範囲 |
 | --- | --- | --- |
-| ReviewType | all | all・positive・negative（空は all） |
+| ReviewType | ReviewTypeAll（0） | ReviewTypeAll・ReviewTypePositive・ReviewTypeNegative（CLI・MCP の文字列の空は all） |
 | Language | english | `NormalizePageOptions` と同じ API コード構文 |
 | PageSize | 100 | 1〜`MaxPageSize`（100） |
 | MaxReviews | 1000 | 1〜`MaxCollectionReviews`（10000） |

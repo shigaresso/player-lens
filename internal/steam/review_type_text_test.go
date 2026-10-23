@@ -10,7 +10,7 @@ import (
 func TestParseReviewType(t *testing.T) {
 	for _, tc := range []struct {
 		name, input string
-		want        steam.EUserReviewsReviewType
+		want        steam.ReviewType
 		invalid     bool
 	}{
 		{"省略は全評価の0になる", "", 0, false},
@@ -34,7 +34,7 @@ func TestParseReviewType(t *testing.T) {
 func TestFormatReviewType(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
-		input   steam.EUserReviewsReviewType
+		input   steam.ReviewType
 		want    string
 		invalid bool
 	}{

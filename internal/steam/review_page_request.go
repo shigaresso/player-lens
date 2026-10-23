@@ -37,7 +37,7 @@ func newReviewPageRequest(appID AppID, options PageOptions) (reviewPageRequest, 
 		Languages:      []string{options.Language},
 		Cursor:         options.Cursor,
 		PageSize:       options.PageSize,
-		ReviewType:     options.ReviewType,
+		ReviewType:     EUserReviewsReviewType(options.ReviewType),
 		PurchaseType:   k_EUserReviewsPurchaseType_All,
 		FilterOfftopic: true,
 	}, nil

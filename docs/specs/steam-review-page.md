@@ -8,7 +8,7 @@
 
 [ADR-0004](../adr/0004-steam-review-api.md) の公開 API を GET で呼ぶ。キーは使わず、`format=json` と URL エンコードした `input_json` を送る。`appid` は正の uint32、`filter=1`（Recent）、`review_type` は条件に従い0（All）・1（Positive）・2（Negative）、`purchase_type=1`（All）、`filter_offtopic_activity=true` とする。
 
-Issue #33 で評価種別を追加し、Issue #43 で内部を `EUserReviewsReviewType` の数値列挙値に統一した。CLI・MCP 境界では空と `all` を0、`positive` を1、`negative` を2に変換する。大文字・空白・未知値は通信前に拒否する。API の数値への変換は HTTP adapter が担当し、取得後のローカルな間引きで代用しない。
+Issue #33 で評価種別を追加し、Issue #43 で内部を `ReviewType` の数値列挙値にした。CLI・MCP 境界では空と `all` を0、`positive` を1、`negative` を2に変換する。大文字・空白・未知値は通信前に拒否する。API の数値への変換は HTTP adapter が担当し、取得後のローカルな間引きで代用しない。
 
 `PageOptions` の言語は既定 `english`、カーソルは `*`、件数は20とする。件数は1〜100、言語は小文字の英字で始まる英小文字・数字・ハイフン・アンダースコア32文字以内、カーソルは4096バイト以内とする。言語コードの対応は Steam 側に依存し、この構文検査だけで対応言語を保証しない。不正入力は通信前に拒否する。
 
@@ -22,7 +22,7 @@ HTTP クライアントと接続先は外から渡す。空の接続先は公式
 
 ### リクエスト変換の境界（Issue #38）
 
-`review_page_request.go` の `newReviewPageRequest` が内部の数値列挙値をそのまま API へ渡し、未知の数値は `ErrInvalidArgument` で拒否する。`newReviewPageRequest` は正規化済みの条件を名前付きの API 入力型へ変換し、`encodeReviewPageQuery` は JSON とクエリへ変換する。これらは通信・時刻・保存に依存しない。既定値と入力検査は `NormalizePageOptions`、期限・通信・応答 Body の解放は `FetchReviewsPage` が担当する。
+`review_page_request.go` の `newReviewPageRequest` が内部の ReviewType の数値列挙値を EUserReviewsReviewType に変換して API へ渡し、未知の数値は `ErrInvalidArgument` で拒否する。`newReviewPageRequest` は正規化済みの条件を名前付きの API 入力型へ変換し、`encodeReviewPageQuery` は JSON とクエリへ変換する。これらは通信・時刻・保存に依存しない。既定値と入力検査は `NormalizePageOptions`、期限・通信・応答 Body の解放は `FetchReviewsPage` が担当する。
 
 API 側の数値定数は [公式の列挙名](https://partner.steamgames.com/doc/webapi/IUserReviewsService#Enums) と同じ `k_EUserReviewsReviewType_All`・`k_EUserReviewsReviewType_Positive`・`k_EUserReviewsReviewType_Negative`、`k_EUserReviewsAppReviewsFilter_Recent`、`k_EUserReviewsPurchaseType_All` を使う。これらは非公開とし、API へ送る値を明示的な数値で定義する。
 
@@ -46,4 +46,4 @@ HTTP adapter の通常テストでは `httptest` とテスト用 Transport / Bod
 
 ## Steam の名前付き数値型（Issue #43）
 
-[ADR-0012](../adr/0012-steam-domain-types.md) に従い、AppID・RecommendationID・TimestampCreated・TimestampUpdated を領域から各呼び出し元へ渡す。API の列挙値は公式名の int32 型で表し、評価種別は内部で同じ数値列挙型を使い、文字列との変換は CLI・MCP の入力と JSON の出力境界だけが担当する。応答データの文字列 ID と領域の数値型を分け、数値変換の原因も ErrInvalidResponse とともに保持する。
+[ADR-0012](../adr/0012-steam-domain-types.md) に従い、AppID・RecommendationID・TimestampCreated・TimestampUpdated を領域から各呼び出し元へ渡す。API の列挙値は公式名の int32 型で表し、評価種別は内部で独立した ReviewType を使い、各値を公式の定数から定義する。HTTP adapter で EUserReviewsReviewType に変換する。文字列との変換は CLI・MCP の入力と JSON の出力境界だけが担当する。応答データの文字列 ID と領域の数値型を分け、数値変換の原因も ErrInvalidResponse とともに保持する。

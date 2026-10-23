@@ -19,7 +19,7 @@ Steam の応答は専用の受信データで読み、recommendationid の文字
 
 AppID は既存の正数という取得対象の条件を維持し、時刻は UNIX 秒・uint32 の範囲を維持する。名前付き型の導入自体で、値の実在や呼び出し後の変更の有効性を保証したとは扱わない。
 
-評価種別は内部で `EUserReviewsReviewType` の列挙値に統一し、文字列の `ReviewType` は廃止する。公式名の k_EUserReviewsReviewType_* を値の定義元とし、外部パッケージからは型付きの ReviewTypeAll・ReviewTypePositive・ReviewTypeNegative 定数を使えるようにする。CLI・MCP の文字列は ParseReviewType で解析し、JSON は FormatReviewType で文字列に戻す。未知の整数は正規化・送信・出力で拒否する。ゼロ値は全評価なので、空の結果にも options.review_type=all を明示する。
+評価種別は既存の `ReviewType` と3定数の構成を内部で再利用し、`type ReviewType EUserReviewsReviewType` による独立した数値列挙型にする。ReviewTypeAll・ReviewTypePositive・ReviewTypeNegative は公式名の k_EUserReviewsReviewType_* を ReviewType に変換して定義する。公式型の別名定数ではなく内部の取得条件の値として使い、HTTP adapter で EUserReviewsReviewType に明示的に変換する。CLI・MCP の文字列は ParseReviewType で解析し、JSON は FormatReviewType で文字列に戻す。未知の整数は正規化・送信・出力で拒否する。ゼロ値は全評価なので、空の結果にも options.review_type=all を明示する。
 
 出力境界の `jsonoutput` は schema_version=1 と既存の項目名を維持し、数値の RecommendationID を10進の JSON 文字列に変換する。0 と最大値も精度損失なく出力する。JSON のレビュー ID は文字列のままだが、先頭ゼロという元の表記は保持しない。CLI と MCP は同じ変換を使う。
 

@@ -59,4 +59,4 @@ Dockerfile の共通 `GOFLAGS=-buildvcs=false` を使い、ローカル CLI と�
 
 通常テストは取得・保存のテスト実装と httptest を使い、Steam へ接続しない。実 Client と JSON Saver の連携、別実装のメモリ Saver を確認する。integration タグのプロセステストはバイナリをビルドし、help・不正入力の終了コードと出力を外部通信なしで確認する。実 DB・MCP・永続保存と同等の保証とは扱わない。検証結果は [作業記録](../worklogs/23-review-collection-cli.md) に残す。
 
-Issue #43 の評価種別は内部では EUserReviewsReviewType を使う。CLI 入力の文字列は ParseReviewType で解析し、JSON 出力は FormatReviewType で all/positive/negative に戻す。未知の数値は出力時も拒否する。ゼロ値は全評価なので、空の Collection の options.review_type も all とする。
+Issue #43 の評価種別は内部では ReviewType を使い、HTTP adapter で EUserReviewsReviewType に変換する。CLI 入力の文字列は ParseReviewType で解析し、JSON 出力は FormatReviewType で all/positive/negative に戻す。未知の数値は出力時も拒否する。ゼロ値は全評価なので、空の Collection の options.review_type も all とする。

@@ -63,3 +63,13 @@ Go の名前付き数値型自体は任意の整数から作れる。0・1・2�
 統一後の `bash scripts/check-app.sh` が成功した。整形・vet・通常テスト7パッケージ、lint（0 issues）、Git 非依存3条件、race 付き結合テストを含む7パッケージ、本番イメージの HTTP・MCP・PORT・シグナル終了と設定異常を確認した。image ID は `sha256:3f87a31f1b2580237ae20a4e8aeaa33a471365caa70da554fc2ccaf3ae3dad91`。
 
 再検索で文字列の ReviewType 型と steamReviewTypeCode の実装・呼び出しが残っていないこと、内部の取得・収集条件が同じ列挙型であること、外部の文字列が CLI・MCP・JSON の境界に限定されていることを確認した。既存の HTTP 送信・CLI/MCP の入力拒否・条件伝播・部分失敗と SDK の検証も成功した。実フック・Go ツールの独立検証は設定と実装に変更がないため前回の成功を再利用し、今回の必須コミットフックと区別する。CI と mutation は実行していない。
+
+## 内部の ReviewType の再利用
+
+ユーザーが指した既存の enum は、Issue #33 の ReviewType と3定数の構成だった。内部の取得条件を公式型で置き換える前節の方針を改め、type ReviewType EUserReviewsReviewType による独立した数値列挙型を使う。ReviewTypeAll・ReviewTypePositive・ReviewTypeNegative の値は公式定数を ReviewType に変換して定義した。公式型の公開用別名ではなく、内部の取得条件の値として使う。HTTP adapter の入力 DTO だけが EUserReviewsReviewType を持ち、検査後に明示的に変換する。
+
+Issue #43 と ADR-0012 にこの境界を記録してから、関連テストの型を steam.ReviewType に変更した。`docker compose run --rm --no-deps -T verify go test -count=1 ./internal/steam ./internal/jsonoutput ./internal/reviewcli ./internal/reviewmcp` は未定義の steam.ReviewType によって Red となった。プロダクションコードの型・定数・Parse/Format・取得条件・HTTP の変換だけを変更し、同じコマンドで4パッケージの Green を確認した。HTTP の送信値0/1/2、文字列との相互変換、正規化・出力の未知値拒否は既存の期待結果を維持した。
+
+公式型と3数値定数は api_types.go に集約し、内部型とその定数・文字列変換は review_type.go に置いた。再検索で、取得・収集・保存・CLI・MCP・JSON の内部契約に EUserReviewsReviewType が残っていないことを確認した。仕様・ADR-0004・ADR-0012・ユースケース・PR 本文案を最終構成に合わせた。
+
+再利用後の `bash scripts/check-app.sh` が成功した。整形・vet・全7パッケージの通常テスト、lint（0 issues）、Git 非依存3条件、race 付き結合テストを含む全7パッケージ、本番イメージの HTTP・MCP・PORT・シグナル終了・不正設定を確認した。image ID は `sha256:d834191eda9f234d91ac0e327fd63326a03a1dbbf0eeb52f37744228294785e6`。AI のセルフレビューで内部と HTTP 入力の型・定数の対応と差分を確認した。coverage 閾値・分岐・mutation/Stryker は引き続き未導入・未実行であり、実 CI・実 Steam 取得・配置・人によるレビューは実施していない。

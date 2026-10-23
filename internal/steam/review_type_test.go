@@ -10,8 +10,8 @@ import (
 func TestReviewTypeNormalization(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
-		input   steam.EUserReviewsReviewType
-		want    steam.EUserReviewsReviewType
+		input   steam.ReviewType
+		want    steam.ReviewType
 		invalid bool
 	}{
 		{"ゼロ値は全評価", 0, 0, false},

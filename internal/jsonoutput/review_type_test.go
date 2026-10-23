@@ -13,7 +13,7 @@ import (
 func TestMarshalCollectionReviewType(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
-		kind    steam.EUserReviewsReviewType
+		kind    steam.ReviewType
 		want    string
 		reason  steam.StopReason
 		reviews []steam.Review
@@ -54,7 +54,7 @@ func TestMarshalCollectionReviewType(t *testing.T) {
 func TestMarshalCollectionReviewTypeBoundary(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
-		kind    steam.EUserReviewsReviewType
+		kind    steam.ReviewType
 		invalid bool
 	}{
 		{"空の結果のゼロ値も全評価の文字列で返す", 0, false},

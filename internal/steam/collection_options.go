@@ -10,7 +10,7 @@ const MaxCollectionPages = 100
 
 // CollectionOptions は収集条件を表す。ゼロ値は全評価・英語・100件/ページ・1000件・100ページとなる。
 type CollectionOptions struct {
-	ReviewType EUserReviewsReviewType
+	ReviewType ReviewType
 	Language   string
 	PageSize   int
 	MaxReviews int

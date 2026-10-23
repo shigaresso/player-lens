@@ -12,7 +12,7 @@ import (
 func TestCollectReviewsReviewType(t *testing.T) {
 	for _, tt := range []struct {
 		name string
-		kind steam.EUserReviewsReviewType
+		kind steam.ReviewType
 		fail bool
 	}{
 		{"全評価を次のページへ維持する", steam.ReviewTypeAll, false},

@@ -55,3 +55,11 @@ coverage 閾値・分岐・mutation/Stryker は未導入であり、実行して
 - 旧 TestSteamReviewTypeCode は廃止した変換関数とともに除いた。代わりに Parse/Format の直接テスト、既存の HTTP 送信テスト、リクエスト型の生成と未知数値の拒否テストが対応する契約を確認する。
 
 Go の名前付き数値型自体は任意の整数から作れる。0・1・2への制限は解析・共通正規化・リクエスト生成・出力で検査する。ゼロ値は全評価なので、空の Collection の options.review_type は以前の空文字から all の明示に変わる。JSON のフィールド名と文字列型は維持する。
+
+### 統一後の検証
+
+出力境界の TestMarshalCollectionReviewTypeBoundary をテストだけ追加し、Compose の `go test -count=1 ./internal/jsonoutput -run '^TestMarshalCollectionReviewTypeBoundary$'` で既存実装の Green を確認した。空の Collection の全評価の文字列表現、負数・3・int32 最大値で JSON を返さず ErrInvalidArgument を保持することを確認し、テストのみの変更として保存した。
+
+統一後の `bash scripts/check-app.sh` が成功した。整形・vet・通常テスト7パッケージ、lint（0 issues）、Git 非依存3条件、race 付き結合テストを含む7パッケージ、本番イメージの HTTP・MCP・PORT・シグナル終了と設定異常を確認した。image ID は `sha256:3f87a31f1b2580237ae20a4e8aeaa33a471365caa70da554fc2ccaf3ae3dad91`。
+
+再検索で文字列の ReviewType 型と steamReviewTypeCode の実装・呼び出しが残っていないこと、内部の取得・収集条件が同じ列挙型であること、外部の文字列が CLI・MCP・JSON の境界に限定されていることを確認した。既存の HTTP 送信・CLI/MCP の入力拒否・条件伝播・部分失敗と SDK の検証も成功した。実フック・Go ツールの独立検証は設定と実装に変更がないため前回の成功を再利用し、今回の必須コミットフックと区別する。CI と mutation は実行していない。

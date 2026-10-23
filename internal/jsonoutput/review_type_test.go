@@ -2,6 +2,7 @@ package jsonoutput_test
 
 import (
 	"encoding/json"
+	"errors"
 	"reflect"
 	"testing"
 
@@ -45,6 +46,44 @@ func TestMarshalCollectionReviewType(t *testing.T) {
 			}
 			if !reflect.DeepEqual(input, before) {
 				t.Fatal("入力を変更した")
+			}
+		})
+	}
+}
+
+func TestMarshalCollectionReviewTypeBoundary(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		kind    steam.EUserReviewsReviewType
+		invalid bool
+	}{
+		{"空の結果のゼロ値も全評価の文字列で返す", 0, false},
+		{"負の数値ではJSONを返さない", -1, true},
+		{"未知の3ではJSONを返さない", 3, true},
+		{"int32最大値ではJSONを返さない", 2147483647, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			input := steam.Collection{Options: steam.CollectionOptions{ReviewType: tc.kind}}
+			data, err := jsonoutput.MarshalCollection(input)
+			if tc.invalid {
+				if data != nil || !errors.Is(err, steam.ErrInvalidArgument) {
+					t.Fatalf("JSON=%s error=%v", data, err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			var got struct {
+				Options struct {
+					ReviewType string `json:"review_type"`
+				} `json:"options"`
+			}
+			if err := json.Unmarshal(data, &got); err != nil {
+				t.Fatal(err)
+			}
+			if got.Options.ReviewType != "all" || input.Options.ReviewType != tc.kind {
+				t.Fatalf("JSON=%s input=%+v", data, input)
 			}
 		})
 	}

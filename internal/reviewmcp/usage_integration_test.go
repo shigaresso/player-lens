@@ -24,8 +24,8 @@ func TestMCPSharedUsageWindows(t *testing.T) {
 			limits Limits
 			code   string
 		}{
-			{"分次の枠を共有する", Limits{RequestsPerMinute: 1, RequestsPerDay: 10, MaxConcurrent: 1}, "rate_limited"},
-			{"日次の枠を共有する", Limits{RequestsPerMinute: 10, RequestsPerDay: 1, MaxConcurrent: 1}, "daily_limit_reached"},
+			{"分次の枠を共有する", testLimits(t, LimitsConfig{RequestsPerMinute: 1, RequestsPerDay: 10, MaxConcurrent: 1}), "rate_limited"},
+			{"日次の枠を共有する", testLimits(t, LimitsConfig{RequestsPerMinute: 10, RequestsPerDay: 1, MaxConcurrent: 1}), "daily_limit_reached"},
 		} {
 			t.Run(version+"の別セッションと異なる版で"+tc.name, func(t *testing.T) {
 				var calls atomic.Int32
@@ -88,7 +88,7 @@ func TestMCPSharedConcurrentSlots(t *testing.T) {
 					}
 				}
 				return steam.ReviewPage{}, nil
-			}), Limits{RequestsPerMinute: 2, RequestsPerDay: 2, MaxConcurrent: 1}, nil)
+			}), testLimits(t, LimitsConfig{RequestsPerMinute: 2, RequestsPerDay: 2, MaxConcurrent: 1}), nil)
 			if err != nil {
 				t.Fatal(err)
 			}

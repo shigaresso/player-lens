@@ -47,13 +47,13 @@ func (l *limiter) acquire() (func(), usageRejectionReason) {
 	now := l.now()
 	l.minute.reset(now, time.Minute)
 	l.day.reset(now, 24*time.Hour)
-	if l.day.count >= l.limits.RequestsPerDay {
+	if l.day.count >= l.limits.config.RequestsPerDay {
 		return nil, usageDailyLimitReached
 	}
-	if l.minute.count >= l.limits.RequestsPerMinute {
+	if l.minute.count >= l.limits.config.RequestsPerMinute {
 		return nil, usageMinuteLimitReached
 	}
-	if l.active >= l.limits.MaxConcurrent {
+	if l.active >= l.limits.config.MaxConcurrent {
 		return nil, usageConcurrentLimitReached
 	}
 	l.minute.count++

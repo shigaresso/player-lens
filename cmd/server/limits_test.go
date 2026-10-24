@@ -10,16 +10,16 @@ func TestReadMCPLimits(t *testing.T) {
 	for _, tc := range []struct {
 		name   string
 		values map[string]string
-		want   reviewmcp.Limits
+		want   reviewmcp.LimitsConfig
 		valid  bool
 	}{
-		{"未指定なら既定値", nil, reviewmcp.Limits{RequestsPerMinute: 6, RequestsPerDay: 100, MaxConcurrent: 2}, true},
-		{"指定した上限を使う", map[string]string{"MCP_REQUESTS_PER_MINUTE": "3", "MCP_REQUESTS_PER_DAY": "20", "MCP_MAX_CONCURRENT": "1"}, reviewmcp.Limits{RequestsPerMinute: 3, RequestsPerDay: 20, MaxConcurrent: 1}, true},
-		{"先頭のゼロを正規化する", map[string]string{"MCP_REQUESTS_PER_MINUTE": "006"}, reviewmcp.Limits{RequestsPerMinute: 6, RequestsPerDay: 100, MaxConcurrent: 2}, true},
+		{"未指定なら既定値", nil, reviewmcp.LimitsConfig{RequestsPerMinute: 6, RequestsPerDay: 100, MaxConcurrent: 2}, true},
+		{"指定した上限を使う", map[string]string{"MCP_REQUESTS_PER_MINUTE": "3", "MCP_REQUESTS_PER_DAY": "20", "MCP_MAX_CONCURRENT": "1"}, reviewmcp.LimitsConfig{RequestsPerMinute: 3, RequestsPerDay: 20, MaxConcurrent: 1}, true},
+		{"先頭のゼロを正規化する", map[string]string{"MCP_REQUESTS_PER_MINUTE": "006"}, reviewmcp.LimitsConfig{RequestsPerMinute: 6, RequestsPerDay: 100, MaxConcurrent: 2}, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			limits, err := readMCPLimits(func(key string) string { return tc.values[key] })
-			if err != nil || limits != tc.want {
+			if err != nil || limits.Config() != tc.want {
 				t.Fatalf("limits=%+v err=%v", limits, err)
 			}
 		})

@@ -8,14 +8,14 @@ import (
 )
 
 func readMCPLimits(getenv func(string) string) (reviewmcp.Limits, error) {
-	limits := reviewmcp.DefaultLimits()
+	config := reviewmcp.DefaultLimits().Config()
 	for _, item := range []struct {
 		key    string
 		target *int
 	}{
-		{"MCP_REQUESTS_PER_MINUTE", &limits.RequestsPerMinute},
-		{"MCP_REQUESTS_PER_DAY", &limits.RequestsPerDay},
-		{"MCP_MAX_CONCURRENT", &limits.MaxConcurrent},
+		{"MCP_REQUESTS_PER_MINUTE", &config.RequestsPerMinute},
+		{"MCP_REQUESTS_PER_DAY", &config.RequestsPerDay},
+		{"MCP_MAX_CONCURRENT", &config.MaxConcurrent},
 	} {
 		value := getenv(item.key)
 		if value == "" {
@@ -27,8 +27,5 @@ func readMCPLimits(getenv func(string) string) (reviewmcp.Limits, error) {
 		}
 		*item.target = int(number)
 	}
-	if err := limits.Validate(); err != nil {
-		return reviewmcp.Limits{}, err
-	}
-	return limits, nil
+	return reviewmcp.NewLimits(config)
 }

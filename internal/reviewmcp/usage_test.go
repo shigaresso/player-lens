@@ -15,8 +15,8 @@ func TestCollectionUsageBudget(t *testing.T) {
 		limits Limits
 		code   string
 	}{
-		{"分次の拒否は取得せず条件と空の結果を返す", Limits{RequestsPerMinute: 1, RequestsPerDay: 10, MaxConcurrent: 1}, "rate_limited"},
-		{"日次の拒否は取得せず条件と空の結果を返す", Limits{RequestsPerMinute: 10, RequestsPerDay: 1, MaxConcurrent: 1}, "daily_limit_reached"},
+		{"分次の拒否は取得せず条件と空の結果を返す", testLimits(t, LimitsConfig{RequestsPerMinute: 1, RequestsPerDay: 10, MaxConcurrent: 1}), "rate_limited"},
+		{"日次の拒否は取得せず条件と空の結果を返す", testLimits(t, LimitsConfig{RequestsPerMinute: 10, RequestsPerDay: 1, MaxConcurrent: 1}), "daily_limit_reached"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			gate := newLimiter(tc.limits, time.Now)
@@ -48,7 +48,7 @@ func TestCollectionUsageBudget(t *testing.T) {
 		{"開始前のキャンセルは受付回数に含めない", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			gate := newLimiter(Limits{RequestsPerMinute: 1, RequestsPerDay: 1, MaxConcurrent: 1}, time.Now)
+			gate := newLimiter(testLimits(t, LimitsConfig{RequestsPerMinute: 1, RequestsPerDay: 1, MaxConcurrent: 1}), time.Now)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			input := json.RawMessage(`{"app_id":440}`)

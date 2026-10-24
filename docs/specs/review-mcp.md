@@ -35,6 +35,12 @@ HTTP 本文は16 KiBまでとし、SDK が超過を413で拒否する。シリ�
 
 ツールの期限は8秒。短い呼び出し側の期限・キャンセルを優先する。旧プロトコルを含め、元の HTTP リクエストと SDK の context のキャンセルを収集へ伝える。サーバーを HTTP リクエストごとに組み立て、stateless transport が一時セッションを閉じる。タイマー・context の連携 callback はハンドラーで解放する。HTTP クライアントと接続プールは main が組み立て、終了時に idle 接続を閉じる。再試行は追加しない。
 
+### ツール登録と実行の境界（Issue #50）
+
+`newServer` は Server の生成・対応プロトコルの設定・ツール登録を担当する。`collection_definition.go` の `collectReviewsDefinition` がツール名・説明・入出力 schema・annotations を構築する。各生成の可変データは独立させ、ほかの Server の定義に変更を共有しない。定義の生成では通信・収集を行わない。
+
+`collection_handler.go` の `newCollectReviewsHandler` は、HTTP リクエストの context・取得依存・共有 limiter を受け取り、SDK から呼ばれる実行 handler を作る。呼び出し時に HTTP の context を親とする context を作り、SDK のキャンセルも連携させて `collect` へ渡す。終了時に連携 callback を停止して所有 context をキャンセルする。呼び出し側の context はキャンセルしない。Server と定義は HTTP ごとに作り、limiter は `NewHandler` で一度だけ作って共有する寿命を維持する。
+
 ### 結果変換の境界（Issue #40）
 
 `collect` は入力検査、利用枠と実行期限、収集の呼び出しを担当する。`failure.go` の `toolFailureInfo` は公開するコードと説明文を持つ情報型で、元のエラーは別途保持する。`collectionFailure` は収集エラーをこの公開情報へ変換し、`usageFailure` は limiter の拒否理由を公開コードと説明文へ変換する。複合原因ではキャンセル・期限・取得失敗の順を維持する。

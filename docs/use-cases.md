@@ -27,7 +27,7 @@ MCP の `reviewmcp.NewHandler` は `collect_reviews` の入力と HTTP 制限、
 
 Issue #50 で、`newServer` から `collectReviewsDefinition`（公開する説明・schema・annotations）と `newCollectReviewsHandler`（HTTP／SDK のキャンセル連携と終了時の解放、`collect` の呼び出し）を分離した。`newServer` は Server の生成・設定・登録を担当する。同じ MCP adapter 内の責務を整理したもので、収集ユースケースや新しい通信境界は増やさない。
 
-Issue #52 で、`parseInput` の JSON 読み取りを `decodeToolInput`、MCP 用の既定値・上限と共通正規化による収集条件の構築を `normalizeToolInput` に分離した。`parseInput` は両処理を順に呼び、既存の結果と失敗時のゼロ値・原因を維持する。いずれも MCP の入力変換であり、通信や利用枠の操作を含まない。MCP の小さい上限を収集ユースケースや CLI へ移さない。
+Issue #52 で、JSON 読み取りを MCP 受信型の `toolInput.UnmarshalJSON`、MCP 用の既定値・上限と共通正規化による収集条件の構築を `normalizeToolInput` に分離した。許可する項目名は受信型の JSON タグから取得する。`parseInput` は標準 `json.Unmarshal` と条件構築を順に呼び、既存の結果と失敗時のゼロ値・原因を維持する。いずれも MCP の入力変換であり、通信や利用枠の操作を含まない。MCP の小さい上限を収集ユースケースや CLI へ移さない。
 
 MCP の開始回数と同時数は handler が所有する入口の制限とし、収集操作・CLI へ混ぜない。limiter は受付可否と型付きの拒否理由を返し、failure.go の usageFailure が MCP の公開コードと説明文へ変換する。[利用制限仕様](specs/mcp-usage-limits.md) と [ADR-0008](adr/0008-mcp-usage-limits.md) に従う。
 

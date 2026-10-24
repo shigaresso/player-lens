@@ -27,7 +27,9 @@
 
 `parseInput` は JSON の読み取りと収集条件の構築を順に行い、成功時は AppID と正規化した CollectionOptions、失敗時はゼロ値と `steam.ErrInvalidArgument` を保持する既存のエラーを返す。
 
-`input_decode.go` の `decodeToolInput` は JSON のオブジェクト・正確な項目名・null・型・型に収まる数値・末尾を検査して `toolInput` を返す。入力全体の JSON 構文と末尾は最初の `json.Unmarshal` で検査し、2回目の `Decode` による末尾検査は重ねない。未知・大文字の項目名の拒否は、正確な許可名を列挙した `switch` が担当する。部分的に読み取れた不正入力は返さない。読み取り段階では既定値・MCP 上限・言語や評価種別の条件を適用せず、形式上読み取れる値は保持する。
+`tool_input.go` の `toolInput.UnmarshalJSON` が JSON のオブジェクト・正確な項目名・null・型・型に収まる数値を検査する。許可する項目名は `toolInput` の明示した JSON タグから初期化時に一度だけ取得し、以後は変更しない。項目名の別の一覧や `switch` を持たない。受信型への読み取りであり、steam の領域型へ JSON 処理を追加しない。
+
+`parseInput` は標準の `json.Unmarshal` で読み取ってから条件を構築する。JSON 構文と末尾の不正は標準 Unmarshal が拒否し、メソッド内部も入力全体を検査する。2回目の Decode や DisallowUnknownFields の設定は置かない。メソッドを持たない同じフィールドの一時値へ読み、成功時だけ受信先へ反映する。失敗時は受信先を変更せず、省略項目は以前の値を引き継がずゼロ値にする。標準 Unmarshal が先に構文エラーを返す場合も、`parseInput` は既存と同じゼロ値と `steam.ErrInvalidArgument` を保持するエラーへ変換する。読み取り段階では既定値・MCP 上限・言語や評価種別の条件を適用しない。
 
 `input_options.go` の `normalizeToolInput` は `toolInput` を値で受け、App ID と MCP の件数・ページ上限を検査し、MCP 用の既定値を適用する。評価種別の文字列を `steam.ParseReviewType` で変換し、共通の `steam.NormalizeCollectionOptions` で言語・ページ件数などを正規化する。呼び出し側の入力は変更せず、失敗時はゼロ値と `steam.ErrInvalidArgument` を返す。両処理は通信・時刻・利用制限に依存しない。`collect` による `invalid_input` 応答と、不正入力時に取得・利用枠を消費しない順序を維持する。
 

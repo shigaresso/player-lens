@@ -7,7 +7,7 @@ import (
 	"github.com/shigaresso/player-lens/internal/steam"
 )
 
-func TestDecodeToolInput(t *testing.T) {
+func TestToolInputUnmarshalJSON(t *testing.T) {
 	for _, tc := range []struct {
 		name  string
 		input string
@@ -19,7 +19,8 @@ func TestDecodeToolInput(t *testing.T) {
 		{"形式上読める値は条件を正規化せずに保持する", `{"app_id":0,"review_type":"MIXED","language":"日本語","page_size":-1,"max_reviews":101,"max_pages":6}`, toolInput{ReviewType: "MIXED", Language: "日本語", PageSize: -1, MaxReviews: 101, MaxPages: 6}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := decodeToolInput([]byte(tc.input))
+			var got toolInput
+			err := got.UnmarshalJSON([]byte(tc.input))
 			if err != nil || got != tc.want {
 				t.Fatalf("input = %+v, err = %v; want %+v", got, err, tc.want)
 			}
@@ -50,7 +51,8 @@ func TestDecodeToolInput(t *testing.T) {
 		{"int の範囲を超える件数", `{"app_id":440,"max_reviews":9223372036854775808}`},
 	} {
 		t.Run(tc.name+"をゼロ値と原因付きエラーで拒否する", func(t *testing.T) {
-			got, err := decodeToolInput([]byte(tc.input))
+			var got toolInput
+			err := got.UnmarshalJSON([]byte(tc.input))
 			if !errors.Is(err, steam.ErrInvalidArgument) || got != (toolInput{}) {
 				t.Fatalf("input = %+v, err = %v", got, err)
 			}

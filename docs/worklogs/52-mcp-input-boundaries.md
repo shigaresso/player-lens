@@ -8,9 +8,9 @@
 
 ## 変更内容
 
-- `input_decode.go` の `decodeToolInput` が JSON の形式を検査して `toolInput` を返し、読み取り段階で既定値や MCP の上限を適用しない構成にした。
+- `tool_input.go` の `toolInput.UnmarshalJSON` が JSON の形式と正確な項目名を検査し、許可名を型の JSON タグから取得する構成にした。既定値や MCP 上限は読み取りで適用しない。
 - `input_options.go` の `normalizeToolInput` が MCP の既定値・上限を適用し、評価種別の変換と共通正規化により収集条件を作る構成にした。
-- `parseInput` は両処理を順に呼び、既存の正常結果と失敗時のゼロ値・`ErrInvalidArgument` を保持するエラーを返す境界にした。
+- `parseInput` は標準 json.Unmarshal と収集条件の構築を順に呼び、既存の正常結果と失敗時のゼロ値・`ErrInvalidArgument` を保持するエラーを返す境界にした。委譲だけになる decodeToolInput は残していない。
 - 各処理の直接回帰テストを追加し、既存の `parseInput` の失敗テストで `errors.Is` による原因の識別も確認した。
 - MCP 仕様とユースケースの文書へ責務の境界を記載した。
 - 追加対応で、最初の `json.Unmarshal` と重複していた2回目の `Decode` による末尾検査と、不要になった `io` import を削除した。
@@ -67,6 +67,14 @@ JSON の検査順序・toolInput の型とタグ・正確な項目名と null �
 既存テストを変更せず、`docker compose run --rm --no-deps -T verify go test -count=1 ./internal/reviewmcp -run '^Test(DecodeToolInput|ParseInput|ParseInputReviewType)$' -v` が成功した。TestDecodeToolInput の未知／大文字の項目名、TestParseInput の未知項目・大文字の未定義／追加項目が、削除後もゼロ値と `ErrInvalidArgument` を返すことを確認した。正常入力・評価種別の既存テストも成功した。動作を維持する削除のため、形式上の Red は作っていない。
 
 削除後の `bash scripts/check-app.sh` が成功し、整形・vet・通常テスト全7パッケージ、lint（0 issues）、Git 非依存3条件、race 付き通常／結合テスト全7パッケージを確認した。本番用 image ID sha256:45733e06c3739e89519cc8d3a6d5e1a0729664a04f279a1b0b7ce5f320330e82 で HTTP/MCP・不正設定拒否・SIGTERM/SIGINT 正常終了も確認した。設定1行の削除と対応文書だけが差分であり、先行する検査・型変換・利用枠・収集に変更がないことを AI のセルフレビューで確認した。
+
+### JSON 読み取りの型への集約（追加対応）
+
+ユーザーの追加指示により、JSON の読み取りを `toolInput.UnmarshalJSON` に集約した。許可名は標準 reflect で JSON タグから初期化時に一度だけ取得する。手書きの項目名一覧と `decodeToolInput` を削除し、`parseInput` は標準 `json.Unmarshal` を呼ぶ構成にした。`normalizeToolInput` と MCP の公開入力・schema・エラー・利用枠の契約は維持した。
+
+TestToolInputJSONDecoding を先に追加し、標準 Unmarshal 経由では未知項目・大文字の項目名・null オブジェクト・null 項目の4状況がエラーにならず失敗する Red を確認した。コマンドは `docker compose run --rm --no-deps -T verify go test -count=1 ./internal/reviewmcp -run '^TestToolInputJSONDecoding$'`。実装後に同じ verify で `go test -count=1 ./internal/reviewmcp` が成功し、新しい読み取り契約と既存 MCP ユニットテストの Green を確認した。
+
+既存23状況の読み取りテストは、対象 API の削除に伴いファイル・Test 名と呼び出し先をメソッドへ機械的に更新した。入力・期待値は変更していない。メソッドは一時値へ読み、成功時だけ受信先を更新する。標準 Unmarshal がメソッド呼び出し前に返す構文エラーも、parseInput の境界で従来どおりの原因へ変換する。
 
 ## 参照仕様・ADR
 

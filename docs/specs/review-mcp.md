@@ -27,7 +27,7 @@
 
 `parseInput` は JSON の読み取りと収集条件の構築を順に行い、成功時は AppID と正規化した CollectionOptions、失敗時はゼロ値と `steam.ErrInvalidArgument` を保持する既存のエラーを返す。
 
-`input_decode.go` の `decodeToolInput` は JSON のオブジェクト・正確な項目名・null・型・型に収まる数値・末尾を検査して `toolInput` を返す。部分的に読み取れた不正入力は返さない。読み取り段階では既定値・MCP 上限・言語や評価種別の条件を適用せず、形式上読み取れる値は保持する。
+`input_decode.go` の `decodeToolInput` は JSON のオブジェクト・正確な項目名・null・型・型に収まる数値・末尾を検査して `toolInput` を返す。入力全体の JSON 構文と末尾は最初の `json.Unmarshal` で検査し、2回目の `Decode` による末尾検査は重ねない。部分的に読み取れた不正入力は返さない。読み取り段階では既定値・MCP 上限・言語や評価種別の条件を適用せず、形式上読み取れる値は保持する。
 
 `input_options.go` の `normalizeToolInput` は `toolInput` を値で受け、App ID と MCP の件数・ページ上限を検査し、MCP 用の既定値を適用する。評価種別の文字列を `steam.ParseReviewType` で変換し、共通の `steam.NormalizeCollectionOptions` で言語・ページ件数などを正規化する。呼び出し側の入力は変更せず、失敗時はゼロ値と `steam.ErrInvalidArgument` を返す。両処理は通信・時刻・利用制限に依存しない。`collect` による `invalid_input` 応答と、不正入力時に取得・利用枠を消費しない順序を維持する。
 

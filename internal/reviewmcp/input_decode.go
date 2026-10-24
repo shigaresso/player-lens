@@ -3,7 +3,6 @@ package reviewmcp
 import (
 	"bytes"
 	"encoding/json"
-	"io"
 
 	"github.com/shigaresso/player-lens/internal/steam"
 )
@@ -38,9 +37,6 @@ func decodeToolInput(data []byte) (toolInput, error) {
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&input); err != nil {
-		return toolInput{}, steam.ErrInvalidArgument
-	}
-	if err := decoder.Decode(new(any)); err != io.EOF {
 		return toolInput{}, steam.ErrInvalidArgument
 	}
 	return input, nil

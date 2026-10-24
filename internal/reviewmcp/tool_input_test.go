@@ -34,3 +34,35 @@ func TestToolInputJSONDecoding(t *testing.T) {
 		})
 	}
 }
+
+func TestToolInputJSONReceiver(t *testing.T) {
+	initial := toolInput{AppID: 440, ReviewType: "positive", Language: "japanese", PageSize: 10, MaxReviews: 20, MaxPages: 2}
+	for _, tc := range []struct {
+		name    string
+		input   string
+		want    toolInput
+		invalid bool
+	}{
+		{"成功時は省略項目を以前の値で補わない", `{"app_id":570}`, toolInput{AppID: 570}, false},
+		{"空オブジェクトで以前の値をすべて置き換える", `{}`, toolInput{}, false},
+		{"未知項目の拒否時は受信先を変更しない", `{"app_id":570,"cursor":"*"}`, initial, true},
+		{"大文字の拒否時は受信先を変更しない", `{"APP_ID":570}`, initial, true},
+		{"null の拒否時は受信先を変更しない", `null`, initial, true},
+		{"途中の型違いで受信先を部分的に書き換えない", `{"app_id":570,"max_pages":"bad"}`, initial, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := initial
+			err := json.Unmarshal([]byte(tc.input), &got)
+			if tc.invalid {
+				if !errors.Is(err, steam.ErrInvalidArgument) {
+					t.Fatalf("err = %v", err)
+				}
+			} else if err != nil {
+				t.Fatal(err)
+			}
+			if got != tc.want {
+				t.Fatalf("input = %+v; want %+v", got, tc.want)
+			}
+		})
+	}
+}

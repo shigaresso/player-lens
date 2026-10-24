@@ -76,6 +76,14 @@ TestToolInputJSONDecoding を先に追加し、標準 Unmarshal 経由では未�
 
 既存23状況の読み取りテストは、対象 API の削除に伴いファイル・Test 名と呼び出し先をメソッドへ機械的に更新した。入力・期待値は変更していない。メソッドは一時値へ読み、成功時だけ受信先を更新する。標準 Unmarshal がメソッド呼び出し前に返す構文エラーも、parseInput の境界で従来どおりの原因へ変換する。
 
+型への集約・標準 JSON 経由の5状況・既存テストの機械的な移動と対応文書を 190a55d にまとめた。その必須 pre-commit（規約ツール177テスト・静的検査・index の整形）と commit-msg が成功した。
+
+続けて TestToolInputJSONReceiver を追加し、同じ verify で `go test -count=1 ./internal/reviewmcp -run '^TestToolInputJSONReceiver$'` が成功した。6状況で、成功時に省略項目を以前の値で補わないことと、未知項目・大文字・null・途中の型違いによる失敗時に既存の受信値を変更しないことを確認した。このテストは実装済みの契約で最初から Green となり、追加の実装変更や形式上の Red は作っていない。
+
+型への集約後の `bash scripts/check-app.sh` が成功し、整形・vet・通常テスト全7パッケージ、lint（0 issues）、Git 非依存3条件、race 付き通常／結合テスト全7パッケージを確認した。本番用 image ID sha256:8f0fcc9264a4fe56504cad83ad299675e47e278e10b77a5c077fbdbd78315af9 で HTTP/MCP・不正設定拒否・SIGTERM/SIGINT 正常終了も確認した。
+
+許可名は受信型のタグからだけ作り、初期化後は参照だけ行うことを確認した。既存の toolInput のフィールドとタグ、MCP の公開 schema、条件構築、収集操作・CLI・依存モジュールには変更がない。別の名前付き型へ読み取ることで UnmarshalJSON の再帰を避け、成功時だけ受信先を更新することを差分と標準 JSON 経由のテストで確認した。受信先テスト追加後の差分はテストと記録だけであることも AI のセルフレビューで確認した。
+
 ## 参照仕様・ADR
 
 - docs/specs/review-mcp.md「接続と入力」「入力変換の境界」「結果・失敗・資源」「デバッグと検証」と ADR-0007「決定」

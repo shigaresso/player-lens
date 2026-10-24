@@ -15,7 +15,7 @@ const maxRequestBodyBytes = 16 * 1024
 
 // NewHandler は読み取り専用のレビュー収集を Streamable HTTP で公開する。
 // fetcher はキャンセル・期限を尊重する取得依存とする。nil はエラーとする。
-// limits は正の整数で指定し、このハンドラーの全呼び出しで共有する。
+// limits は NewLimits または DefaultLimits で生成し、ゼロ値はエラーとする。
 // 利用回数はメモリ内に保持し、ハンドラーの作り直しでは引き継がない。
 // HTTP クライアントと接続プールの終了は呼び出し側が担当する。
 // access が nil ならローカル専用、指定時は許可 Host から認証なしで受け付ける。
@@ -23,8 +23,8 @@ func NewHandler(fetcher steam.PageFetcher, limits Limits, access *mcpaccess.Acce
 	if fetcher == nil {
 		return nil, fmt.Errorf("prepare review MCP handler: %w", steam.ErrInvalidArgument)
 	}
-	if err := limits.Validate(); err != nil {
-		return nil, err
+	if limits == (Limits{}) {
+		return nil, fmt.Errorf("prepare review MCP handler: limits are required: %w", steam.ErrInvalidArgument)
 	}
 	gate := newLimiter(limits, time.Now)
 	handler := mcp.NewStreamableHTTPHandler(func(request *http.Request) *mcp.Server {

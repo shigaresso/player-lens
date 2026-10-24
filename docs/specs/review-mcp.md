@@ -65,6 +65,8 @@ HTTP の読み書き10秒・終了待機10秒は維持する。遅い本文の�
 
 Issue #27 で1分6回・24時間100回・同時2件の制限を導入した。1つの handler の状態を HTTP ごとの Server と複数セッション・4版で共有する。拒否は `rate_limited`・`daily_limit_reached`・`busy` と空の結果を返し、Steam を呼ばない。開始回数の消費、枠の返却、固定窓と設定・再起動・複数台の制約は [利用制限仕様](mcp-usage-limits.md) と [ADR-0008](../adr/0008-mcp-usage-limits.md) に従う。
 
+Issue #54 で `NewHandler` の設定は `NewLimits` または `DefaultLimits` で生成した値を受け取る構成にした。各上限の検証は生成側へ集約し、`NewHandler` は未初期化のゼロ値を拒否する。handler ごとの可変状態の所有と共有範囲は変更しない。
+
 ## デバッグと検証
 
 ローカルの手順は [MCP デバッグ](../mcp-debug.md) を参照する。ChatGPT 設定は自動変更しない。Render 配置、クラウドからのトンネル、バックエンドの AI 実行用パスは未導入とする。公開 MCP は OAuth を使用せず、実 ChatGPT の公開接続は未確認とする。

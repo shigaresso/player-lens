@@ -31,6 +31,8 @@ Issue #52 で、JSON 読み取りを MCP 受信型の `toolInput.UnmarshalJSON`�
 
 MCP の開始回数と同時数は handler が所有する入口の制限とし、収集操作・CLI へ混ぜない。limiter は受付可否と型付きの拒否理由を返し、failure.go の usageFailure が MCP の公開コードと説明文へ変換する。[利用制限仕様](specs/mcp-usage-limits.md) と [ADR-0008](adr/0008-mcp-usage-limits.md) に従う。
 
+Issue #54 で、利用制限の設定は未検証の `LimitsConfig` から `NewLimits` で生成する構成にした。環境変数の解析は main 側、正数検査と設定値のコピー保持は生成 API が担当し、`NewHandler` は未初期化のゼロ値だけを拒否する。生成済みの設定と handler の可変な受付状態を区別する。設定の生成・取得は通信や利用枠の操作を行わず、新たな収集ユースケースではない。
+
 Issue #40 で MCP の公開用失敗情報と結果生成を収集の実行手順から分離した。`failure.go` が原因の分類と案内、`result.go` が JSON・分析ガイド・応答量・原因保持を担当する。入力検査、context、利用枠と収集の順序は `collect` に残し、収集ユースケースや新しい通信境界は増やさない。
 
 Issue #35 の `analysis_guide` は MCP の案内と結果変換の責務であり、新たな分析ユースケースではない。共通本文をバイナリへ埋め込み、収集結果とともに提供する。steam・CLI・保存先へ分析方針を混ぜず、分析は接続元の AI、採否は人間に残す。[レビュー分析仕様](specs/review-analysis.md) に従う。

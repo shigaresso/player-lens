@@ -12,7 +12,7 @@ import (
 )
 
 func TestLimiterConcurrentAdmission(t *testing.T) {
-	gate := newLimiter(Limits{RequestsPerMinute: 100, RequestsPerDay: 100, MaxConcurrent: 3}, time.Now)
+	gate := newLimiter(testLimits(t, LimitsConfig{RequestsPerMinute: 100, RequestsPerDay: 100, MaxConcurrent: 3}), time.Now)
 	type admission struct {
 		release func()
 		reason  usageRejectionReason
@@ -50,7 +50,7 @@ func TestLimiterConcurrentAdmission(t *testing.T) {
 }
 
 func TestLimiterBusyDoesNotConsumeBudget(t *testing.T) {
-	gate := newLimiter(Limits{RequestsPerMinute: 4, RequestsPerDay: 10, MaxConcurrent: 2}, time.Now)
+	gate := newLimiter(testLimits(t, LimitsConfig{RequestsPerMinute: 4, RequestsPerDay: 10, MaxConcurrent: 2}), time.Now)
 	first, reason := gate.acquire()
 	if reason != usageNotRejected {
 		t.Fatal(reason)
@@ -94,7 +94,7 @@ func TestCollectionReleasesSlotAfterFailure(t *testing.T) {
 		{"応答量超過でも枠を返却し開始回数は戻さない", "response_too_large"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			gate := newLimiter(Limits{RequestsPerMinute: 2, RequestsPerDay: 10, MaxConcurrent: 1}, time.Now)
+			gate := newLimiter(testLimits(t, LimitsConfig{RequestsPerMinute: 2, RequestsPerDay: 10, MaxConcurrent: 1}), time.Now)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			first := true
@@ -146,7 +146,7 @@ func TestCollectionReleasesSlotAfterFailure(t *testing.T) {
 }
 
 func TestCollectionBusyResponse(t *testing.T) {
-	gate := newLimiter(Limits{RequestsPerMinute: 10, RequestsPerDay: 10, MaxConcurrent: 1}, time.Now)
+	gate := newLimiter(testLimits(t, LimitsConfig{RequestsPerMinute: 10, RequestsPerDay: 10, MaxConcurrent: 1}), time.Now)
 	release, reason := gate.acquire()
 	if reason != usageNotRejected {
 		t.Fatal(reason)

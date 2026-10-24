@@ -2,75 +2,23 @@
 package reviewmcp
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 
 	"github.com/shigaresso/player-lens/internal/steam"
 )
-
-const (
-	defaultReviews = 20
-	maxReviews     = 100
-	defaultPages   = 3
-	maxPages       = 5
-)
-
-type toolInput struct {
-	ReviewType string      `json:"review_type"`
-	AppID      steam.AppID `json:"app_id"`
-	Language   string      `json:"language"`
-	PageSize   int         `json:"page_size"`
-	MaxReviews int         `json:"max_reviews"`
-	MaxPages   int         `json:"max_pages"`
-}
 
 func parseInput(data []byte) (steam.AppID, steam.CollectionOptions, error) {
 	invalid := func() (steam.AppID, steam.CollectionOptions, error) {
 		return 0, steam.CollectionOptions{}, fmt.Errorf("invalid MCP collection input: %w", steam.ErrInvalidArgument)
 	}
-	var fields map[string]json.RawMessage
-	if err := json.Unmarshal(data, &fields); err != nil || fields == nil {
-		return invalid()
-	}
-	for name, value := range fields {
-		switch name {
-		case "app_id", "review_type", "language", "page_size", "max_reviews", "max_pages":
-		default:
-			return invalid()
-		}
-		if bytes.Equal(bytes.TrimSpace(value), []byte("null")) {
-			return invalid()
-		}
-	}
 	var input toolInput
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	if err := decoder.Decode(&input); err != nil {
+	if err := json.Unmarshal(data, &input); err != nil {
 		return invalid()
 	}
-	if err := decoder.Decode(new(any)); err != io.EOF {
-		return invalid()
-	}
-	if input.AppID == 0 || input.MaxReviews < 0 || input.MaxReviews > maxReviews || input.MaxPages < 0 || input.MaxPages > maxPages {
-		return invalid()
-	}
-	if input.MaxReviews == 0 {
-		input.MaxReviews = defaultReviews
-	}
-	if input.MaxPages == 0 {
-		input.MaxPages = defaultPages
-	}
-	reviewType, err := steam.ParseReviewType(input.ReviewType)
+	appID, options, err := normalizeToolInput(input)
 	if err != nil {
 		return invalid()
 	}
-	options, err := steam.NormalizeCollectionOptions(steam.CollectionOptions{
-		ReviewType: reviewType, Language: input.Language, PageSize: input.PageSize, MaxReviews: input.MaxReviews, MaxPages: input.MaxPages,
-	})
-	if err != nil {
-		return invalid()
-	}
-	return input.AppID, options, nil
+	return appID, options, nil
 }

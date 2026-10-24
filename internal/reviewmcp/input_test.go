@@ -1,6 +1,7 @@
 package reviewmcp
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/shigaresso/player-lens/internal/steam"
@@ -40,7 +41,7 @@ func TestParseInput(t *testing.T) {
 	} {
 		t.Run(name+"ため拒否する", func(t *testing.T) {
 			appID, options, err := parseInput([]byte(input))
-			if err == nil || appID != 0 || options != (steam.CollectionOptions{}) {
+			if !errors.Is(err, steam.ErrInvalidArgument) || appID != 0 || options != (steam.CollectionOptions{}) {
 				t.Fatalf("不正入力の結果 = %d, %+v, %v", appID, options, err)
 			}
 		})

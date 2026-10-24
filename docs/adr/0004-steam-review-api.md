@@ -18,6 +18,10 @@
 
 既定は全評価を維持し、JSON の options.review_type は schema_version=1 の追加項目とする。収集・JSON 出力・MCP エラー結果でも条件を引き継ぐ。並び順・期間などの別条件は今回拡張しない。
 
+## 名前付き数値型（Issue #43）
+
+ID・時刻と API の3列挙値の型、recommendationid の0の受理と数値化、外部 JSON との変換は [ADR-0012](0012-steam-domain-types.md) を採用する。内部は既存の ReviewType を数値列挙型に変更し、値を公式定数から定義する。HTTP adapter で公式型 EUserReviewsReviewType に変換し、外部の文字列入力・出力との変換は CLI・MCP・JSON の境界に集約する。Issue #33 の文字列型を内部へ伝播する方針をここで置き換える。
+
 ## 利点と制約
 
 現行仕様に合わせて取得条件と結果を明示できる。キーなしの応答は最大10分キャッシュされ、共有の制限で429になり得る。全作品・全言語の成功や常に最新の応答を保証しない。実 API の1件の読取で `response` wrapper と文字列 ID を確認したが、通常テスト・CI は制御したローカル通信で契約を検証する。

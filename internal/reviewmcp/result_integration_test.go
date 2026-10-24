@@ -31,14 +31,14 @@ func TestMCPResultResponse(t *testing.T) {
 		} {
 			t.Run(version+"で"+tc.name, func(t *testing.T) {
 				var calls atomic.Int32
-				handler, err := NewHandler(fetchFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
+				handler, err := NewHandler(fetchFunc(func(context.Context, steam.AppID, steam.PageOptions) (steam.ReviewPage, error) {
 					call := calls.Add(1)
 					if tc.code == "response_too_large" {
-						return steam.ReviewPage{Reviews: []steam.Review{{ID: "large", Text: strings.Repeat("x", 70000)}}, NextCursor: "next"}, nil
+						return steam.ReviewPage{Reviews: []steam.Review{{RecommendationID: 10, Text: strings.Repeat("x", 70000)}}, NextCursor: "next"}, nil
 					}
 					if tc.code == "fetch_failed" {
 						if call == 1 {
-							return steam.ReviewPage{Reviews: []steam.Review{{ID: "partial", Text: "取得済み"}}, NextCursor: "next"}, nil
+							return steam.ReviewPage{Reviews: []steam.Review{{RecommendationID: 11, Text: "取得済み"}}, NextCursor: "next"}, nil
 						}
 						return steam.ReviewPage{}, errors.New("secret internal error")
 					}
@@ -71,7 +71,7 @@ func TestMCPResultResponse(t *testing.T) {
 				if len(data) > 128*1024 || strings.Contains(string(data), "secret") {
 					t.Fatal("上限または内部情報の契約が失われた")
 				}
-				if tc.count == 1 && out.Collection.Reviews[0].ID != "partial" {
+				if tc.count == 1 && out.Collection.Reviews[0].RecommendationID != "11" {
 					t.Fatal(out)
 				}
 			})

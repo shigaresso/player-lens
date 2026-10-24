@@ -11,9 +11,9 @@ import (
 	"github.com/shigaresso/player-lens/internal/steam"
 )
 
-type fetcherFunc func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error)
+type fetcherFunc func(context.Context, steam.AppID, steam.PageOptions) (steam.ReviewPage, error)
 
-func (f fetcherFunc) FetchReviewsPage(ctx context.Context, id uint32, options steam.PageOptions) (steam.ReviewPage, error) {
+func (f fetcherFunc) FetchReviewsPage(ctx context.Context, id steam.AppID, options steam.PageOptions) (steam.ReviewPage, error) {
 	return f(ctx, id, options)
 }
 
@@ -44,7 +44,7 @@ func TestRunArguments(t *testing.T) {
 		{"ページ上限が負数", []string{"--app-id=440", "--max-pages=-1"}, reviewcli.ErrUsage},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			fetcher := fetcherFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
+			fetcher := fetcherFunc(func(context.Context, steam.AppID, steam.PageOptions) (steam.ReviewPage, error) {
 				t.Fatal("入力不正で通信した")
 				return steam.ReviewPage{}, nil
 			})
@@ -60,7 +60,7 @@ func TestRunWithInjectedSaver(t *testing.T) {
 	for _, test := range []struct {
 		name     string
 		args     []string
-		id       uint32
+		id       steam.AppID
 		options  steam.CollectionOptions
 		fetchErr error
 		saveErr  error
@@ -72,7 +72,7 @@ func TestRunWithInjectedSaver(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			test.options.ReviewType = steam.ReviewTypeAll
 			calls, saves := 0, 0
-			fetcher := fetcherFunc(func(_ context.Context, id uint32, options steam.PageOptions) (steam.ReviewPage, error) {
+			fetcher := fetcherFunc(func(_ context.Context, id steam.AppID, options steam.PageOptions) (steam.ReviewPage, error) {
 				calls++
 				if id != test.id || options.Language != test.options.Language || options.PageSize != test.options.PageSize || options.Cursor != steam.FirstPageCursor {
 					t.Fatalf("取得入力: id=%d options=%+v", id, options)

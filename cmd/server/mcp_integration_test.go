@@ -18,11 +18,11 @@ type requestFetcher struct {
 	release chan struct{}
 }
 
-func (f requestFetcher) FetchReviewsPage(ctx context.Context, _ uint32, _ steam.PageOptions) (steam.ReviewPage, error) {
+func (f requestFetcher) FetchReviewsPage(ctx context.Context, _ steam.AppID, _ steam.PageOptions) (steam.ReviewPage, error) {
 	close(f.started)
 	select {
 	case <-f.release:
-		return steam.ReviewPage{Reviews: []steam.Review{{ID: "finish", Text: "取得完了"}}, NextCursor: "next"}, nil
+		return steam.ReviewPage{Reviews: []steam.Review{{RecommendationID: 12, Text: "取得完了"}}, NextCursor: "next"}, nil
 	case <-ctx.Done():
 		return steam.ReviewPage{}, ctx.Err()
 	}

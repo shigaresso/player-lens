@@ -22,14 +22,14 @@ func TestRunReviewType(t *testing.T) {
 		{"全評価を指定する", []string{"--review-type=all"}, steam.ReviewTypeAll, false},
 		{"おすすめを指定する", []string{"--review-type", "positive"}, steam.ReviewTypePositive, false},
 		{"非おすすめを指定する", []string{"--review-type=negative"}, steam.ReviewTypeNegative, false},
-		{"未知値は通信と保存前に拒否する", []string{"--review-type=mixed"}, "", true},
-		{"大文字は拒否する", []string{"--review-type=Positive"}, "", true},
-		{"前後空白は拒否する", []string{"--review-type= negative "}, "", true},
-		{"値の欠落は拒否する", []string{"--review-type"}, "", true},
+		{"未知値は通信と保存前に拒否する", []string{"--review-type=mixed"}, 0, true},
+		{"大文字は拒否する", []string{"--review-type=Positive"}, 0, true},
+		{"前後空白は拒否する", []string{"--review-type= negative "}, 0, true},
+		{"値の欠落は拒否する", []string{"--review-type"}, 0, true},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			calls, saves := 0, 0
-			fetcher := fetcherFunc(func(_ context.Context, id uint32, options steam.PageOptions) (steam.ReviewPage, error) {
+			fetcher := fetcherFunc(func(_ context.Context, id steam.AppID, options steam.PageOptions) (steam.ReviewPage, error) {
 				calls++
 				if tt.invalid || id != 440 || options.ReviewType != tt.want {
 					t.Fatalf("取得条件=%+v", options)

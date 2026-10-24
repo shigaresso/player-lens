@@ -33,7 +33,6 @@ func TestFetchReviewsPageInvalidResponse(t *testing.T) {
 		{"配列のwrapperを拒否する", `{"response":[]}`},
 		{"数値のIDを拒否する", `{"response":{"reviews":[{"recommendationid":1}],"cursor":"x"}}`},
 		{"空のIDを拒否する", `{"response":{"reviews":[{}],"cursor":"x"}}`},
-		{"ゼロIDを拒否する", `{"response":{"reviews":[{"recommendationid":"0"}],"cursor":"x"}}`},
 		{"負のIDを拒否する", `{"response":{"reviews":[{"recommendationid":"-1"}],"cursor":"x"}}`},
 		{"符号付きIDを拒否する", `{"response":{"reviews":[{"recommendationid":"+1"}],"cursor":"x"}}`},
 		{"uint64を超えるIDを拒否する", `{"response":{"reviews":[{"recommendationid":"18446744073709551616"}],"cursor":"x"}}`},

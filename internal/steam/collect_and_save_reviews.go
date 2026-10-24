@@ -19,7 +19,7 @@ type CollectionSaver interface {
 // 途中失敗でも部分結果を保存し、収集と保存の両方の原因を保持する。
 // 保存は親の値を維持し、キャンセル・期限から独立した最大5秒の context を渡す。
 // 保存実装が期限を尊重する責務を持ち、操作が派生 context を解放する。
-func CollectAndSaveReviews(ctx context.Context, fetcher PageFetcher, saver CollectionSaver, appID uint32, options CollectionOptions) (Collection, error) {
+func CollectAndSaveReviews(ctx context.Context, fetcher PageFetcher, saver CollectionSaver, appID AppID, options CollectionOptions) (Collection, error) {
 	if saver == nil {
 		return Collection{}, fmt.Errorf("collection saver is required: %w", ErrInvalidArgument)
 	}

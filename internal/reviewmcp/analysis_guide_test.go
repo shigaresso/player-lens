@@ -27,7 +27,7 @@ func TestAnalysisGuideResult(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			collection := steam.Collection{AppID: 440, StopReason: steam.StopExhausted}
 			if tc.text != "" {
-				collection.Reviews = []steam.Review{{ID: "evidence", Text: tc.text}}
+				collection.Reviews = []steam.Review{{RecommendationID: 13, Text: tc.text}}
 			}
 			result, err := encodeResult(collection, tc.code, "状態の説明", 0)
 			if err != nil {
@@ -43,7 +43,7 @@ func TestAnalysisGuideResult(t *testing.T) {
 			if out.ErrorCode != tc.code || result.IsError != (tc.code != "") || out.Collection.AppID != 440 || out.Collection.StopReason != steam.StopExhausted || out.ReturnedCount != len(collection.Reviews) {
 				t.Fatal("既存の結果とエラーを変更した")
 			}
-			if tc.text != "" && (out.Collection.Reviews[0].ID != "evidence" || out.Collection.Reviews[0].Text != tc.text) {
+			if tc.text != "" && (out.Collection.Reviews[0].RecommendationID != "13" || out.Collection.Reviews[0].Text != tc.text) {
 				t.Fatal("根拠のレビューを変更した")
 			}
 		})

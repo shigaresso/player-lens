@@ -18,9 +18,9 @@ func (f collectionSaverFunc) SaveCollection(ctx context.Context, result steam.Co
 func TestCollectAndSaveReviews(t *testing.T) {
 	var events []string
 	var saved steam.Collection
-	fetcher := pageFetcherFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
+	fetcher := pageFetcherFunc(func(context.Context, steam.AppID, steam.PageOptions) (steam.ReviewPage, error) {
 		events = append(events, "fetch")
-		return steam.ReviewPage{Reviews: collectionReviews("1"), NextCursor: "next"}, nil
+		return steam.ReviewPage{Reviews: collectionReviews(1), NextCursor: "next"}, nil
 	})
 	saver := collectionSaverFunc(func(_ context.Context, result steam.Collection) error {
 		events = append(events, "save")
@@ -36,7 +36,7 @@ func TestCollectAndSaveReviews(t *testing.T) {
 func TestCollectAndSaveReviewsInvalidInput(t *testing.T) {
 	for _, test := range []struct {
 		name     string
-		appID    uint32
+		appID    steam.AppID
 		options  steam.CollectionOptions
 		nilSaver bool
 	}{
@@ -45,7 +45,7 @@ func TestCollectAndSaveReviewsInvalidInput(t *testing.T) {
 		{"保存先がnilならI/Oしない", 440, steam.CollectionOptions{}, true},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			fetcher := pageFetcherFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
+			fetcher := pageFetcherFunc(func(context.Context, steam.AppID, steam.PageOptions) (steam.ReviewPage, error) {
 				t.Fatal("入力不正で取得した")
 				return steam.ReviewPage{}, nil
 			})

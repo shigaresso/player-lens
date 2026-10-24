@@ -18,12 +18,12 @@ func TestMCPReviewType(t *testing.T) {
 	for _, version := range []string{"2026-07-28", "2025-11-25", "2025-06-18", "2025-03-26"} {
 		t.Run(version+"で評価種別と非消費と拒否結果を確認する", func(t *testing.T) {
 			var calls atomic.Int32
-			handler, err := NewHandler(fetchFunc(func(_ context.Context, id uint32, options steam.PageOptions) (steam.ReviewPage, error) {
+			handler, err := NewHandler(fetchFunc(func(_ context.Context, id steam.AppID, options steam.PageOptions) (steam.ReviewPage, error) {
 				calls.Add(1)
 				if id != 440 {
 					t.Errorf("AppID=%d", id)
 				}
-				return steam.ReviewPage{Reviews: []steam.Review{{ID: "1", Recommended: options.ReviewType == steam.ReviewTypePositive}}, NextCursor: "next"}, nil
+				return steam.ReviewPage{Reviews: []steam.Review{{RecommendationID: 1, Recommended: options.ReviewType == steam.ReviewTypePositive}}, NextCursor: "next"}, nil
 			}), Limits{RequestsPerMinute: 3, RequestsPerDay: 10, MaxConcurrent: 1}, nil)
 			if err != nil {
 				t.Fatal(err)

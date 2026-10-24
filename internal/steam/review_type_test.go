@@ -14,14 +14,12 @@ func TestReviewTypeNormalization(t *testing.T) {
 		want    steam.ReviewType
 		invalid bool
 	}{
-		{"省略は全評価", "", steam.ReviewTypeAll, false},
-		{"全評価を保持する", steam.ReviewTypeAll, steam.ReviewTypeAll, false},
-		{"おすすめを保持する", steam.ReviewTypePositive, steam.ReviewTypePositive, false},
-		{"非おすすめを保持する", steam.ReviewTypeNegative, steam.ReviewTypeNegative, false},
-		{"未知値を拒否する", "mixed", "", true},
-		{"大文字を拒否する", "Positive", "", true},
-		{"前後空白を拒否する", " negative ", "", true},
-		{"数値表記を拒否する", "1", "", true},
+		{"ゼロ値は全評価", 0, 0, false},
+		{"おすすめを保持する", 1, 1, false},
+		{"非おすすめを保持する", 2, 2, false},
+		{"負の数値を拒否する", -1, 0, true},
+		{"未知の3を拒否する", 3, 0, true},
+		{"int32最大値を拒否する", 2147483647, 0, true},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			pageInput := steam.PageOptions{ReviewType: tt.input}

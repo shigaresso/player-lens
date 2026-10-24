@@ -14,7 +14,7 @@ var ErrCursorCycle = errors.New("steam review cursor cycle")
 // 渡された context のキャンセルと期限を尊重する。
 // 通信と応答 Body の解放は実装側、接続プールの終了は組み立てた呼び出し側が担当する。
 type PageFetcher interface {
-	FetchReviewsPage(context.Context, uint32, PageOptions) (ReviewPage, error)
+	FetchReviewsPage(context.Context, AppID, PageOptions) (ReviewPage, error)
 }
 
 // StopReason は収集の終了理由を表す。上限到達は全件の取得完了を意味しない。
@@ -34,7 +34,7 @@ const (
 // Collection は収集結果を表す。Reviews は同じ ID の最初の本文を取得順に保持する。
 // PagesFetched は空ページを含む取得成功ページ数で、失敗したページは含まない。
 type Collection struct {
-	AppID        uint32
+	AppID        AppID
 	Options      CollectionOptions
 	Reviews      []Review
 	PagesFetched int
@@ -45,7 +45,7 @@ type Collection struct {
 // fetcher は有効な取得依存を渡す。入力不正ではゼロ値と ErrInvalidArgument を返す。
 // 呼び出し側の短い期限を優先し、収集全体を最大2分とする。
 // 取得・循環・context の失敗では部分結果と StopFailed、原因を保持したエラーを返す。
-func CollectReviews(ctx context.Context, fetcher PageFetcher, appID uint32, options CollectionOptions) (Collection, error) {
+func CollectReviews(ctx context.Context, fetcher PageFetcher, appID AppID, options CollectionOptions) (Collection, error) {
 	if fetcher == nil || appID == 0 {
 		return Collection{}, fmt.Errorf("page fetcher and positive AppID are required: %w", ErrInvalidArgument)
 	}
@@ -56,7 +56,7 @@ func CollectReviews(ctx context.Context, fetcher PageFetcher, appID uint32, opti
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
 	result := Collection{AppID: appID, Options: options, Reviews: []Review{}}
-	seenIDs := make(map[string]bool)
+	seenIDs := make(map[RecommendationID]bool)
 	seenCursors := map[string]bool{FirstPageCursor: true}
 	cursor := FirstPageCursor
 	for result.PagesFetched < options.MaxPages {
@@ -76,8 +76,8 @@ func CollectReviews(ctx context.Context, fetcher PageFetcher, appID uint32, opti
 			return result, nil
 		}
 		for _, review := range page.Reviews {
-			if !seenIDs[review.ID] {
-				seenIDs[review.ID] = true
+			if !seenIDs[review.RecommendationID] {
+				seenIDs[review.RecommendationID] = true
 				result.Reviews = append(result.Reviews, review)
 			}
 		}

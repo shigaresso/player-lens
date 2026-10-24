@@ -36,9 +36,9 @@ func TestPublicMCPProtocolsAndSharedBudget(t *testing.T) {
 				t.Fatal(err)
 			}
 			var calls atomic.Int32
-			handler, err := NewHandler(fetchFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
+			handler, err := NewHandler(fetchFunc(func(context.Context, steam.AppID, steam.PageOptions) (steam.ReviewPage, error) {
 				calls.Add(1)
-				return steam.ReviewPage{Reviews: []steam.Review{{ID: "public", Text: "分析用の本文"}}, NextCursor: "next"}, nil
+				return steam.ReviewPage{Reviews: []steam.Review{{RecommendationID: 16, Text: "分析用の本文"}}, NextCursor: "next"}, nil
 			}), Limits{RequestsPerMinute: 1, RequestsPerDay: 10, MaxConcurrent: 1}, access)
 			if err != nil {
 				t.Fatal(err)
@@ -103,7 +103,7 @@ func TestPublicMCPProtocolsAndSharedBudget(t *testing.T) {
 				t.Fatalf("result=%+v err=%v", result, err)
 			}
 			out := decodeOutput(t, result)
-			if out.ReturnedCount != 1 || out.Collection.Reviews[0].ID != "public" || calls.Load() != 1 {
+			if out.ReturnedCount != 1 || out.Collection.Reviews[0].RecommendationID != "16" || calls.Load() != 1 {
 				t.Fatalf("out=%+v calls=%d", out, calls.Load())
 			}
 			result, err = second.CallTool(ctx, params)

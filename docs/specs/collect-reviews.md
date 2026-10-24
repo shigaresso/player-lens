@@ -14,7 +14,7 @@
 
 | 項目 | 既定値 | 有効範囲 |
 | --- | --- | --- |
-| ReviewType | all | all・positive・negative（空は all） |
+| ReviewType | ReviewTypeAll（0） | ReviewTypeAll・ReviewTypePositive・ReviewTypeNegative（CLI・MCP の文字列の空は all） |
 | Language | english | `NormalizePageOptions` と同じ API コード構文 |
 | PageSize | 100 | 1〜`MaxPageSize`（100） |
 | MaxReviews | 1000 | 1〜`MaxCollectionReviews`（10000） |
@@ -26,7 +26,7 @@
 
 - `FirstPageCursor` から始め、取得した `NextCursor` を加工せず次の入力へ渡す。
 - 1ページの要求件数は `min(PageSize, MaxReviews - 重複除外後の件数)` とする。
-- ID が同じレビューは1回の収集内で一度だけ返し、最初に取得した本文・時刻などの値と取得順を保持する。短いページや重複だけのページでも、終了条件に達していなければ続ける。
+- `RecommendationID` の数値が同じレビューは1回の収集内で一度だけ返し、最初に取得した本文・時刻などの値と取得順を保持する。短いページや重複だけのページでも、終了条件に達していなければ続ける。
 - `Collection` は AppID、正規化した元の Options、Reviews、PagesFetched、StopReason を保持する。PagesFetched は空ページを含む成功ページ数で、失敗したページは含めない。成功したレビューが0件でも Reviews は空配列とする。
 
 終了の判定順序は空ページ、レビュー件数上限、カーソル循環、ページ上限とする。循環判定は取得に使った全カーソルとの比較で行う。
@@ -54,3 +54,5 @@
 DB、取得時刻・本文版の永続化、ジョブ・再開、再試行・待機・並列取得、Web の入口、バックエンドの分析は未導入とする。MCP の入口は Issue #25 で追加し、[MCP 仕様](review-mcp.md) のより小さい上限で同じ操作を使う。検証履歴は [作業記録](../worklogs/21-collect-reviews.md) に残す。
 
 Issue #23 で [収集 CLI](review-cli.md) と保存先を注入する別の操作を導入した。CollectReviews の取得のみの契約は維持し、部分結果を保存する順序・複合失敗・保存期限はその操作に分離する。
+
+Issue #43 では AppID とレビューの ID・時刻を名前付き数値型で受け渡す。0001 と 1 のように同じ数値を表す ID は同一とし、0も通常の ID として重複排除する。

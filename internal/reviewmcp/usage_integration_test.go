@@ -29,7 +29,7 @@ func TestMCPSharedUsageWindows(t *testing.T) {
 		} {
 			t.Run(version+"の別セッションと異なる版で"+tc.name, func(t *testing.T) {
 				var calls atomic.Int32
-				handler, err := NewHandler(fetchFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
+				handler, err := NewHandler(fetchFunc(func(context.Context, steam.AppID, steam.PageOptions) (steam.ReviewPage, error) {
 					calls.Add(1)
 					return steam.ReviewPage{}, nil
 				}), tc.limits, nil)
@@ -78,7 +78,7 @@ func TestMCPSharedConcurrentSlots(t *testing.T) {
 			unblock := sync.OnceFunc(func() { close(proceed) })
 			defer unblock()
 			var calls atomic.Int32
-			handler, err := NewHandler(fetchFunc(func(ctx context.Context, _ uint32, _ steam.PageOptions) (steam.ReviewPage, error) {
+			handler, err := NewHandler(fetchFunc(func(ctx context.Context, _ steam.AppID, _ steam.PageOptions) (steam.ReviewPage, error) {
 				if calls.Add(1) == 1 {
 					close(started)
 					select {

@@ -99,7 +99,7 @@ func TestCollectionReleasesSlotAfterFailure(t *testing.T) {
 			defer cancel()
 			first := true
 			calls := 0
-			fetcher := fetchFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
+			fetcher := fetchFunc(func(context.Context, steam.AppID, steam.PageOptions) (steam.ReviewPage, error) {
 				calls++
 				if !first {
 					return steam.ReviewPage{}, nil
@@ -107,7 +107,7 @@ func TestCollectionReleasesSlotAfterFailure(t *testing.T) {
 				switch tc.code {
 				case "fetch_failed":
 					if calls == 1 {
-						return steam.ReviewPage{Reviews: []steam.Review{{ID: "partial"}}, NextCursor: "next"}, nil
+						return steam.ReviewPage{Reviews: []steam.Review{{RecommendationID: 11}}, NextCursor: "next"}, nil
 					}
 					return steam.ReviewPage{}, errors.New("fetch failed")
 				case "cancelled":
@@ -116,7 +116,7 @@ func TestCollectionReleasesSlotAfterFailure(t *testing.T) {
 				case "deadline_exceeded":
 					return steam.ReviewPage{}, context.DeadlineExceeded
 				default:
-					return steam.ReviewPage{Reviews: []steam.Review{{ID: "large", Text: strings.Repeat("x", 70000)}}, NextCursor: "next"}, nil
+					return steam.ReviewPage{Reviews: []steam.Review{{RecommendationID: 10, Text: strings.Repeat("x", 70000)}}, NextCursor: "next"}, nil
 				}
 			})
 			count := 2
@@ -152,7 +152,7 @@ func TestCollectionBusyResponse(t *testing.T) {
 		t.Fatal(code)
 	}
 	defer release()
-	result, err := collect(context.Background(), fetchFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
+	result, err := collect(context.Background(), fetchFunc(func(context.Context, steam.AppID, steam.PageOptions) (steam.ReviewPage, error) {
 		t.Fatal("同時枠のない呼び出しで取得した")
 		return steam.ReviewPage{}, nil
 	}), json.RawMessage(`{"app_id":440}`), gate)

@@ -31,7 +31,7 @@ func TestCollectReviewsContextDeadline(t *testing.T) {
 			defer cancel()
 			start := time.Now()
 			var captured context.Context
-			fetcher := pageFetcherFunc(func(ctx context.Context, appID uint32, options steam.PageOptions) (steam.ReviewPage, error) {
+			fetcher := pageFetcherFunc(func(ctx context.Context, appID steam.AppID, options steam.PageOptions) (steam.ReviewPage, error) {
 				captured = ctx
 				deadline, ok := ctx.Deadline()
 				if !ok {
@@ -47,7 +47,7 @@ func TestCollectReviewsContextDeadline(t *testing.T) {
 				if ctx.Value(collectionContextKey{}) != "trace" {
 					t.Error("呼び出し側の context 値を失った")
 				}
-				return steam.ReviewPage{AppID: appID, Options: options, Reviews: collectionReviews("1"), NextCursor: "A"}, nil
+				return steam.ReviewPage{AppID: appID, Options: options, Reviews: collectionReviews(1), NextCursor: "A"}, nil
 			})
 			got, err := steam.CollectReviews(parent, fetcher, 440, steam.CollectionOptions{MaxReviews: 1})
 			if err != nil || got.StopReason != steam.StopReviewLimit {
@@ -79,7 +79,7 @@ func TestCollectReviewsStoppedContext(t *testing.T) {
 				ctx, cancel = context.WithDeadline(context.Background(), time.Now().Add(-time.Second))
 				defer cancel()
 			}
-			fetcher := pageFetcherFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
+			fetcher := pageFetcherFunc(func(context.Context, steam.AppID, steam.PageOptions) (steam.ReviewPage, error) {
 				t.Fatal("終了済み context で取得した")
 				return steam.ReviewPage{}, nil
 			})
@@ -96,17 +96,17 @@ func TestCollectReviewsCancellationBetweenPages(t *testing.T) {
 	defer cancel()
 	calls := 0
 	var captured context.Context
-	fetcher := pageFetcherFunc(func(pageCtx context.Context, appID uint32, options steam.PageOptions) (steam.ReviewPage, error) {
+	fetcher := pageFetcherFunc(func(pageCtx context.Context, appID steam.AppID, options steam.PageOptions) (steam.ReviewPage, error) {
 		calls++
 		if calls > 1 {
 			t.Fatal("キャンセル後に次のページを取得した")
 		}
 		captured = pageCtx
 		cancel()
-		return steam.ReviewPage{AppID: appID, Options: options, Reviews: collectionReviews("1"), NextCursor: "A"}, nil
+		return steam.ReviewPage{AppID: appID, Options: options, Reviews: collectionReviews(1), NextCursor: "A"}, nil
 	})
 	got, err := steam.CollectReviews(ctx, fetcher, 440, steam.CollectionOptions{PageSize: 1, MaxReviews: 2})
-	if !errors.Is(err, context.Canceled) || got.StopReason != steam.StopFailed || got.PagesFetched != 1 || calls != 1 || !reflect.DeepEqual(got.Reviews, collectionReviews("1")) || captured == nil || !errors.Is(captured.Err(), context.Canceled) {
+	if !errors.Is(err, context.Canceled) || got.StopReason != steam.StopFailed || got.PagesFetched != 1 || calls != 1 || !reflect.DeepEqual(got.Reviews, collectionReviews(1)) || captured == nil || !errors.Is(captured.Err(), context.Canceled) {
 		t.Fatalf("result=%#v calls=%d error=%v", got, calls, err)
 	}
 }

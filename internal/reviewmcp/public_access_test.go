@@ -15,7 +15,7 @@ func TestPublicMCPAccess(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	handler, err := NewHandler(fetchFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
+	handler, err := NewHandler(fetchFunc(func(context.Context, steam.AppID, steam.PageOptions) (steam.ReviewPage, error) {
 		t.Fatal("受付検査でSteamに接続した")
 		return steam.ReviewPage{}, nil
 	}), DefaultLimits(), access)

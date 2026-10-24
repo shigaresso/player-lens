@@ -43,9 +43,9 @@
 | pages_fetched | 空ページを含む成功した取得回数 |
 | stop_reason | exhausted・review_limit・page_limit・failed |
 
-Issue #33 の `options.review_type` は schema_version=1 への追加項目とする。旧出力で欠落している場合は従来の全評価を意味し、既存項目の意味を変えない。通常の収集結果は正規化済みの条件を出力し、純粋な変換で条件の検査・変更を重複させない。
+Issue #33 の `options.review_type` は schema_version=1 への追加項目とする。旧出力で欠落している場合は従来の全評価を意味し、既存項目の意味を変えない。通常の収集結果は正規化済みの条件を出力し、純粋な変換で取得件数等の正規化を重複させない。評価種別は文字列への変換時に未知の数値を拒否する。
 
-レビュー ID は文字列を保持し、元データの時刻は UNIX 秒とする。空のレビューは `[]` とし、本文を JSON の文字列として扱う。本文の指示を実行しない。入力を変更しない。
+Issue #43 では領域の RecommendationID（uint64）を10進の JSON 文字列として出力し、0と最大値を精度損失なく保持する。元の先頭ゼロは保持しない。AppID・時刻は名前付き数値型から既存の数値 JSON に変換し、元データの時刻は UNIX 秒とする。空のレビューは `[]` とし、本文を JSON の文字列として扱う。本文の指示を実行しない。入力を変更しない。
 
 `jsonoutput.NewSaver` は利用可能な writer を受け取り、nil を拒否する。`SaveCollection` は JSON と改行を1回書き込み、書き込み失敗・短い書き込みを原因付きのエラーにする。writer の同期・Close は呼び出し側が担当し、Saver は Close しない。
 
@@ -58,3 +58,5 @@ Compose の collect サービスで読み取り専用のソースをビルドし
 Dockerfile の共通 `GOFLAGS=-buildvcs=false` を使い、ローカル CLI とテスト内の子ビルドもコンテナの Git 所有権・権限・有無に依存する VCS 情報の埋め込みを省略する。個別のビルド引数へ重複してフラグを追加しない。適用範囲と制約は [ADR-0001](../adr/0001-runtime-and-deployment.md#git-情報に依存しない-go-実行issue-23) に従う。ソースの対象 SHA は GitHub CI と作業記録で別に確認する。Git の取得失敗をアプリケーションの失敗へ混入させず、実 CLI プロセスの検査を維持する。
 
 通常テストは取得・保存のテスト実装と httptest を使い、Steam へ接続しない。実 Client と JSON Saver の連携、別実装のメモリ Saver を確認する。integration タグのプロセステストはバイナリをビルドし、help・不正入力の終了コードと出力を外部通信なしで確認する。実 DB・MCP・永続保存と同等の保証とは扱わない。検証結果は [作業記録](../worklogs/23-review-collection-cli.md) に残す。
+
+Issue #43 の評価種別は内部では ReviewType を使い、HTTP adapter で EUserReviewsReviewType に変換する。CLI 入力の文字列は ParseReviewType で解析し、JSON 出力は FormatReviewType で all/positive/negative に戻す。未知の数値は出力時も拒否する。ゼロ値は全評価なので、空の Collection の options.review_type も all とする。

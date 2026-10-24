@@ -21,7 +21,7 @@ func TestCollectionUsageBudget(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gate := newLimiter(tc.limits, time.Now)
 			calls := 0
-			fetcher := fetchFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
+			fetcher := fetchFunc(func(context.Context, steam.AppID, steam.PageOptions) (steam.ReviewPage, error) {
 				calls++
 				return steam.ReviewPage{}, nil
 			})
@@ -57,7 +57,7 @@ func TestCollectionUsageBudget(t *testing.T) {
 			} else {
 				cancel()
 			}
-			fetcher := fetchFunc(func(context.Context, uint32, steam.PageOptions) (steam.ReviewPage, error) {
+			fetcher := fetchFunc(func(context.Context, steam.AppID, steam.PageOptions) (steam.ReviewPage, error) {
 				return steam.ReviewPage{}, nil
 			})
 			result, err := collect(ctx, fetcher, input, gate)

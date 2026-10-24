@@ -3,37 +3,70 @@ package steam
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
+	"strconv"
 	"testing"
 )
 
-func TestValidReviewID(t *testing.T) {
+func TestParseRecommendationID(t *testing.T) {
 	for _, tc := range []struct {
-		name  string
-		value string
-		want  bool
+		name    string
+		value   string
+		want    RecommendationID
+		wantErr error
 	}{
-		{"最小の正数を受け付ける", "1", true},
-		{"uint64の最大値を受け付ける", "18446744073709551615", true},
-		{"先頭にゼロがある正の数字列を受け付ける", "0001", true},
-		{"空文字を拒否する", "", false},
-		{"ゼロを拒否する", "0", false},
-		{"ゼロだけの数字列を拒否する", "000", false},
-		{"負の符号を拒否する", "-1", false},
-		{"正の符号を拒否する", "+1", false},
-		{"uint64の最大値を超える数字列を拒否する", "18446744073709551616", false},
-		{"小数を拒否する", "1.0", false},
-		{"指数表記を拒否する", "1e2", false},
-		{"十六進表記を拒否する", "0x10", false},
-		{"数字以外を含む値を拒否する", "1a", false},
-		{"先頭の空白を拒否する", " 1", false},
-		{"末尾の空白を拒否する", "1 ", false},
-		{"末尾の改行を拒否する", "1\n", false},
-		{"全角の数字を拒否する", "１", false},
+		{"ゼロを受け付ける", "0", 0, nil},
+		{"最小の正数を受け付ける", "1", 1, nil},
+		{"uint64の最大値を保持する", "18446744073709551615", 18446744073709551615, nil},
+		{"先頭ゼロを数値に正規化する", "0001", 1, nil},
+		{"ゼロだけの数字列を受け付ける", "000", 0, nil},
+		{"空文字を拒否する", "", 0, strconv.ErrSyntax},
+		{"負の符号を拒否する", "-1", 0, strconv.ErrSyntax},
+		{"正の符号を拒否する", "+1", 0, strconv.ErrSyntax},
+		{"uint64の範囲超過ではゼロ値を返す", "18446744073709551616", 0, strconv.ErrRange},
+		{"小数を拒否する", "1.0", 0, strconv.ErrSyntax},
+		{"指数表記を拒否する", "1e2", 0, strconv.ErrSyntax},
+		{"十六進表記を拒否する", "0x10", 0, strconv.ErrSyntax},
+		{"数字以外を含む値を拒否する", "1a", 0, strconv.ErrSyntax},
+		{"先頭の空白を拒否する", " 1", 0, strconv.ErrSyntax},
+		{"末尾の空白を拒否する", "1 ", 0, strconv.ErrSyntax},
+		{"末尾の改行を拒否する", "1\n", 0, strconv.ErrSyntax},
+		{"全角の数字を拒否する", "１", 0, strconv.ErrSyntax},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := validReviewID(tc.value); got != tc.want {
-				t.Fatalf("validReviewID(%q)=%v want=%v", tc.value, got, tc.want)
+			got, err := parseRecommendationID(tc.value)
+			if got != tc.want || !errors.Is(err, tc.wantErr) {
+				t.Fatalf("id=%d error=%v want=%d wantError=%v", got, err, tc.want, tc.wantErr)
+			}
+			if tc.wantErr != nil {
+				var cause *strconv.NumError
+				if !errors.As(err, &cause) {
+					t.Fatalf("数値変換の原因を失った: %v", err)
+				}
+			}
+		})
+	}
+}
+
+func TestDecodeReviewPageRecommendationIDErrorCause(t *testing.T) {
+	for _, tc := range []struct {
+		name, value string
+		wantErr     error
+	}{
+		{"空のIDの構文エラーを保持する", "", strconv.ErrSyntax},
+		{"不正なIDの構文エラーを保持する", "bad", strconv.ErrSyntax},
+		{"uint64の範囲超過の原因を保持する", "18446744073709551616", strconv.ErrRange},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			body := fmt.Sprintf(`{"response":{"reviews":[{"recommendationid":"1"},{"recommendationid":%q}],"cursor":"next"}}`, tc.value)
+			got, err := decodeReviewPage(440, PageOptions{PageSize: 2}, []byte(body))
+			if !errors.Is(err, ErrInvalidResponse) || !errors.Is(err, tc.wantErr) || !reflect.DeepEqual(got, ReviewPage{}) {
+				t.Fatalf("page=%#v error=%v", got, err)
+			}
+			var cause *strconv.NumError
+			if !errors.As(err, &cause) || cause.Num != tc.value {
+				t.Fatalf("数値変換の原因を失った: %v", err)
 			}
 		})
 	}
@@ -54,11 +87,12 @@ func TestDecodeReviewPageSuccess(t *testing.T) {
 				{"recommendationid":"0001","review":"改善してほしい","language":"english","voted_up":false,"timestamp_created":0,"timestamp_updated":2}
 			],"cursor":"次+/=&?"}}`,
 			reviews: []Review{
-				{ID: "18446744073709551615", Text: "面白いゲーム", Language: "japanese", Recommended: true, CreatedAt: 1, UpdatedAt: 4294967295},
-				{ID: "0001", Text: "改善してほしい", Language: "english", Recommended: false, CreatedAt: 0, UpdatedAt: 2},
+				{RecommendationID: 18446744073709551615, Text: "面白いゲーム", Language: "japanese", Recommended: true, TimestampCreated: 1, TimestampUpdated: 4294967295},
+				{RecommendationID: 1, Text: "改善してほしい", Language: "english", Recommended: false, TimestampCreated: 0, TimestampUpdated: 2},
 			},
 			nextCursor: "次+/=&?",
 		},
+		{name: "ゼロIDを数値として受け付ける", body: `{"response":{"reviews":[{"recommendationid":"0"}],"cursor":"next"}}`, reviews: []Review{{RecommendationID: RecommendationID(0)}}, nextCursor: "next"},
 		{name: "空配列と省略されたカーソルを受け付ける", body: `{"response":{"reviews":[]}}`, reviews: []Review{}},
 		{name: "nullのレビューを空配列へ正規化する", body: `{"response":{"reviews":null}}`, reviews: []Review{}},
 		{name: "省略されたレビューを空配列へ正規化する", body: `{"response":{}}`, reviews: []Review{}},
@@ -78,12 +112,14 @@ func TestDecodeReviewPageInvalidResponse(t *testing.T) {
 	options := PageOptions{ReviewType: ReviewTypeAll, Language: "english", Cursor: FirstPageCursor, PageSize: 2}
 	for _, tc := range []struct{ name, body string }{
 		{"wrapper欠落ではゼロ値と不正応答エラーを返す", `{}`},
+		{"ID欠落をゼロと区別して拒否する", `{"response":{"reviews":[{}],"cursor":"next"}}`},
+		{"nullのIDをゼロと区別して拒否する", `{"response":{"reviews":[{"recommendationid":null}],"cursor":"next"}}`},
 		{"nullの本文ではゼロ値と不正応答エラーを返す", `null`},
 		{"nullのwrapperではゼロ値と不正応答エラーを返す", `{"response":null}`},
 		{"要求件数超過ではゼロ値と不正応答エラーを返す", `{"response":{"reviews":[{"recommendationid":"1"},{"recommendationid":"2"},{"recommendationid":"3"}],"cursor":"next"}}`},
 		{"非空ページのカーソル欠落ではゼロ値と不正応答エラーを返す", `{"response":{"reviews":[{"recommendationid":"1"}]}}`},
 		{"非空ページの空カーソルではゼロ値と不正応答エラーを返す", `{"response":{"reviews":[{"recommendationid":"1"}],"cursor":""}}`},
-		{"不正IDではゼロ値と不正応答エラーを返す", `{"response":{"reviews":[{"recommendationid":"0"}],"cursor":"next"}}`},
+		{"不正IDではゼロ値と不正応答エラーを返す", `{"response":{"reviews":[{"recommendationid":""}],"cursor":"next"}}`},
 		{"後続レビューのIDが不正なら先行レビューも返さない", `{"response":{"reviews":[{"recommendationid":"1"},{"recommendationid":"bad"}],"cursor":"next"}}`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

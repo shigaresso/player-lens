@@ -17,7 +17,7 @@ func TestFetchReviewsPageReviewType(t *testing.T) {
 		wantType    int
 		recommended bool
 	}{
-		{"省略は全評価を要求する", "", 0, true},
+		{"省略は全評価を要求する", 0, 0, true},
 		{"全評価を明示できる", steam.ReviewTypeAll, 0, false},
 		{"おすすめだけを要求する", steam.ReviewTypePositive, 1, true},
 		{"非おすすめだけを要求する", steam.ReviewTypeNegative, 2, false},
@@ -49,9 +49,6 @@ func TestFetchReviewsPageReviewType(t *testing.T) {
 				t.Fatalf("page=%+v calls=%d err=%v", got, calls, err)
 			}
 			want := tt.input
-			if want == "" {
-				want = steam.ReviewTypeAll
-			}
 			if got.Options.ReviewType != want {
 				t.Fatalf("条件を失った: %+v", got.Options)
 			}

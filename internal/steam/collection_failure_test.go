@@ -27,7 +27,7 @@ func TestCollectReviewsFailure(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			calls := 0
-			fetcher := pageFetcherFunc(func(_ context.Context, _ uint32, options steam.PageOptions) (steam.ReviewPage, error) {
+			fetcher := pageFetcherFunc(func(_ context.Context, _ steam.AppID, options steam.PageOptions) (steam.ReviewPage, error) {
 				calls++
 				if calls > tt.failOn {
 					t.Fatal("失敗後に再取得した")
@@ -35,13 +35,13 @@ func TestCollectReviewsFailure(t *testing.T) {
 				if calls == tt.failOn {
 					return steam.ReviewPage{}, errors.Join(tt.cause, tt.otherCause)
 				}
-				return steam.ReviewPage{AppID: 440, Options: options, Reviews: collectionReviews("1"), NextCursor: "A"}, nil
+				return steam.ReviewPage{AppID: 440, Options: options, Reviews: collectionReviews(1), NextCursor: "A"}, nil
 			})
 			options := steam.CollectionOptions{PageSize: 1, MaxReviews: 3, MaxPages: 4}
 			got, err := steam.CollectReviews(context.Background(), fetcher, 440, options)
 			want := []steam.Review{}
 			if tt.failOn > 1 {
-				want = collectionReviews("1")
+				want = collectionReviews(1)
 			}
 			if calls != tt.failOn || got.AppID != 440 || got.Options.Language != "english" || got.Options.PageSize != 1 || got.Options.MaxReviews != 3 || got.Options.MaxPages != 4 || got.PagesFetched != tt.failOn-1 || got.StopReason != steam.StopFailed || !reflect.DeepEqual(got.Reviews, want) || !errors.Is(err, tt.cause) {
 				t.Fatalf("result=%#v calls=%d error=%v", got, calls, err)

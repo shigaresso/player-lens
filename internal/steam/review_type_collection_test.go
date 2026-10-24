@@ -23,7 +23,7 @@ func TestCollectReviewsReviewType(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			calls := 0
-			fetcher := pageFetcherFunc(func(_ context.Context, id uint32, options steam.PageOptions) (steam.ReviewPage, error) {
+			fetcher := pageFetcherFunc(func(_ context.Context, id steam.AppID, options steam.PageOptions) (steam.ReviewPage, error) {
 				calls++
 				cursor := steam.FirstPageCursor
 				if calls == 2 {
@@ -35,11 +35,11 @@ func TestCollectReviewsReviewType(t *testing.T) {
 				if calls == 2 && tt.fail {
 					return steam.ReviewPage{}, io.ErrUnexpectedEOF
 				}
-				idText := "1"
+				recommendationID := steam.RecommendationID(1)
 				if calls == 2 {
-					idText = "2"
+					recommendationID = 2
 				}
-				return steam.ReviewPage{Reviews: []steam.Review{{ID: idText, Recommended: tt.kind == steam.ReviewTypePositive}}, NextCursor: "next"}, nil
+				return steam.ReviewPage{Reviews: []steam.Review{{RecommendationID: recommendationID, Recommended: tt.kind == steam.ReviewTypePositive}}, NextCursor: "next"}, nil
 			})
 			result, err := steam.CollectReviews(t.Context(), fetcher, 440, steam.CollectionOptions{ReviewType: tt.kind, PageSize: 1, MaxReviews: 2, MaxPages: 2})
 			wantCount, wantReason := 2, steam.StopReviewLimit

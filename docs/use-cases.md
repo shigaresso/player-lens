@@ -31,7 +31,7 @@ Issue #40 で MCP の公開用失敗情報と結果生成を収集の実行手�
 
 Issue #35 の `analysis_guide` は MCP の案内と結果変換の責務であり、新たな分析ユースケースではない。共通本文をバイナリへ埋め込み、収集結果とともに提供する。steam・CLI・保存先へ分析方針を混ぜず、分析は接続元の AI、採否は人間に残す。[レビュー分析仕様](specs/review-analysis.md) に従う。
 
-公開 MCP の `mcpaccess.Access` は公開 URL の検査と HTTP の許可 Host・cross-origin 保護だけを担当する。main が組み立て、`reviewmcp.NewHandler` へ渡す。未指定はローカル専用、指定時は匿名公開とし、認証・JWT・OAuth metadata は提供しない。収集ユースケース・CLI へ公開設定を混ぜない。[公開 MCP 仕様](specs/mcp-public-access.md) と [ADR-0009](adr/0009-public-mcp-access.md) に従う。
+`mcpaccess` は HTTP の許可 Host・cross-origin 保護を担当する。公開 URL の検査と公開時の保護は `Access`、ローカル専用時の保護は Issue #48 の `ProtectLocal` に分離する。main が公開設定を組み立てて `reviewmcp.NewHandler` へ渡し、`NewHandler` がモードに応じた保護を選ぶ。未指定はローカル専用、指定時は匿名公開とし、認証・JWT・OAuth metadata は提供しない。収集ユースケース・CLI へ公開設定を混ぜない。[公開 MCP 仕様](specs/mcp-public-access.md) と [ADR-0009](adr/0009-public-mcp-access.md) に従う。
 
 ## 評価種別（Issue #33）
 

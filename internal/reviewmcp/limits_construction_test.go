@@ -37,3 +37,37 @@ func TestNewLimits(t *testing.T) {
 		})
 	}
 }
+
+func TestLimitsConfigIsolation(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		changeCopy bool
+	}{
+		{"生成元の設定の変更を引き継がない", false},
+		{"取得した設定のコピーの変更を引き継がない", true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			want := reviewmcp.LimitsConfig{RequestsPerMinute: 3, RequestsPerDay: 20, MaxConcurrent: 1}
+			config := want
+			limits, err := reviewmcp.NewLimits(config)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if tc.changeCopy {
+				config = limits.Config()
+			}
+			config.RequestsPerMinute = 0
+			config.RequestsPerDay = 0
+			config.MaxConcurrent = 0
+			if got := limits.Config(); got != want {
+				t.Fatalf("生成済みの上限が変更された: %+v; want %+v", got, want)
+			}
+		})
+	}
+	t.Run("未初期化の値からはゼロ設定を返す", func(t *testing.T) {
+		var limits reviewmcp.Limits
+		if config := limits.Config(); config != (reviewmcp.LimitsConfig{}) {
+			t.Fatalf("未初期化の設定 = %+v", config)
+		}
+	})
+}

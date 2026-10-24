@@ -28,11 +28,29 @@
 
 `bash scripts/check-go.sh format-fix` で固定版 Compose による整形を行い、同じ verify の `go test -tags=integration -race -count=1 ./cmd/server ./internal/reviewmcp` が成功した。通常テストに加え、SDK・公開設定・共有予算・同時枠・HTTP 切断・待ち受け前の失敗などの既存結合テストを確認した。
 
+生成 API・参照の移行と対応文書を 236a168 にまとめた。その必須 pre-commit（規約ツール177テスト・静的検査・index の整形）と commit-msg が成功した。
+
+### 設定値のコピー
+
+外部パッケージの TestLimitsConfigIsolation を追加し、同じ verify の `go test -count=1 ./internal/reviewmcp -run '^TestLimitsConfigIsolation$'` が成功した。生成元の設定変更と Config のコピー変更が生成済みの値へ影響しない2状況、および未初期化の値からゼロ設定を返す状況を確認した。実装済みの契約で最初から Green となり、追加の実装変更や形式上の Red は作っていない。
+
+### 全体の検証
+
+テストを固定版 Compose で整形した後、`bash scripts/check-app.sh` が成功した。整形・vet・通常テスト全7パッケージ、integration タグを含む lint（0 issues）、Git 非依存3条件、race 付き通常／結合テスト全7パッケージを確認した。
+
+同じ本番用 image ID sha256:9205f9854ed14f96e73752b6da96276b31e78191801ff498db7c6c8c31e35f32 で、ローカル／公開設定の HTTP/MCP、Host・Origin 拒否、PORT、不正な公開 URL・利用制限の非0終了、SIGTERM/SIGINT 正常終了を確認した。実 Steam・実 LLM には接続していない。実 ChatGPT 接続と配置は公開動作を変えないローカルの責務整理のため今回実行していない。
+
+検査ツール・Docker・CI・フック設定は、前回検証した 1dadd48 と今回の起点に差分がないことを確認した。同じ作業環境で前回成功した隔離した実フック全8テストの結果を再利用し、今回の再実行とは区別する。コミット時の必須フックは通常どおり実行する。
+
+push 前のため今回のコード CI と、PR 作成 CLI の送信済み head/base を用いた検査は未実施。ローカルのコミット範囲・差分・PR 用本文を検査する。coverage の閾値・分岐・mutation（Stryker を含む）は未導入であり、現在の検査成功を品質目標の達成とは扱わない。
+
 ### AI のセルフレビュー
 
 NewLimits が旧 Validate と同じ順序・正数条件・エラー原因を保持し、環境変数の解析と起動順序を変更していないことを確認した。NewHandler の残る拒否は外部で作成できる未初期化値に対するものであり、生成済みの各上限の再検査ではない。DefaultLimits は固定の有効値を直接返す。
 
 limiter の本文は設定値の参照先以外で変更がないことを読み取りスクリプトでも確認した。nil の取得依存、収集・JSON 読み取り・CLI・依存モジュールに変更がないことも確認した。人によるレビューは未実施。
+
+コピーのテストは外部パッケージから公開 API を通して確認し、生成済みの設定と可変な利用回数の状態を混ぜていないことを確認した。テスト追加後の差分がテストと作業記録だけであることも確認した。
 
 ## 参照仕様・ADR
 

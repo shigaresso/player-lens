@@ -1,5 +1,7 @@
 # レビュー収集 MCP
 
+reviewmcp の内部は domain（上限と受付）、application（期限・枠と収集）、adapter（HTTP/SDK・入力・応答）に分ける。以下の入力・結果の非公開関数は adapter 内を指す。 配置は [ADR-0013](../adr/0013-domain-folder-layers.md) に従う。
+
 ## 目的と状態
 
 [Issue #25](https://github.com/shigaresso/player-lens/issues/25) で `/tools` を導入する。ChatGPT が分析を担当し、Go は収集結果をメモリから返す。LLM API キー、LLM 呼び出し、レビューのファイル・DB 保存は使用しない。ChatGPT の会話保存は PlayerLens の保存処理と別である。実装・検証の状態は [作業記録](../worklogs/25-review-mcp.md) に残す。
@@ -21,17 +23,17 @@
 
 評価種別は入力 schema に enum と説明を掲載し、共通の正規化で検査する。null・文字列以外・大文字・空白・未知値は利用回数を消費する前に拒否する。正常・部分失敗・利用制限の応答にも指定した評価種別を保持する。
 
-負数・型違い・範囲外・未知の項目・非オブジェクトは `invalid_input` とし、Steam 通信を行わない。カーソル・重複・終了条件は `steam.CollectReviews` に任せる。MCP のより小さい上限は入口で適用し、CLI と収集操作の既存の上限は変えない。
+負数・型違い・範囲外・未知の項目・非オブジェクトは `invalid_input` とし、Steam 通信を行わない。カーソル・重複・終了条件は `steamapplication.CollectReviews` に任せる。MCP のより小さい上限は入口で適用し、CLI と収集操作の既存の上限は変えない。
 
 ### 入力変換の境界（Issue #52）
 
-`parseInput` は JSON の読み取りと収集条件の構築を順に行い、成功時は AppID と正規化した CollectionOptions、失敗時はゼロ値と `steam.ErrInvalidArgument` を保持する既存のエラーを返す。
+`parseInput` は JSON の読み取りと収集条件の構築を順に行い、成功時は AppID と正規化した CollectionOptions、失敗時はゼロ値と `steamdomain.ErrInvalidArgument` を保持する既存のエラーを返す。
 
 `tool_input.go` の `toolInput.UnmarshalJSON` が JSON のオブジェクト・正確な項目名・null・型・型に収まる数値を検査する。許可する項目名は `toolInput` の明示した JSON タグから初期化時に一度だけ取得し、以後は変更しない。項目名の別の一覧や `switch` を持たない。受信型への読み取りであり、steam の領域型へ JSON 処理を追加しない。
 
-`parseInput` は標準の `json.Unmarshal` で読み取ってから条件を構築する。JSON 構文と末尾の不正は標準 Unmarshal が拒否し、メソッド内部も入力全体を検査する。2回目の Decode や DisallowUnknownFields の設定は置かない。メソッドを持たない同じフィールドの一時値へ読み、成功時だけ受信先へ反映する。失敗時は受信先を変更せず、省略項目は以前の値を引き継がずゼロ値にする。標準 Unmarshal が先に構文エラーを返す場合も、`parseInput` は既存と同じゼロ値と `steam.ErrInvalidArgument` を保持するエラーへ変換する。読み取り段階では既定値・MCP 上限・言語や評価種別の条件を適用しない。
+`parseInput` は標準の `json.Unmarshal` で読み取ってから条件を構築する。JSON 構文と末尾の不正は標準 Unmarshal が拒否し、メソッド内部も入力全体を検査する。2回目の Decode や DisallowUnknownFields の設定は置かない。メソッドを持たない同じフィールドの一時値へ読み、成功時だけ受信先へ反映する。失敗時は受信先を変更せず、省略項目は以前の値を引き継がずゼロ値にする。標準 Unmarshal が先に構文エラーを返す場合も、`parseInput` は既存と同じゼロ値と `steamdomain.ErrInvalidArgument` を保持するエラーへ変換する。読み取り段階では既定値・MCP 上限・言語や評価種別の条件を適用しない。
 
-`input_options.go` の `normalizeToolInput` は `toolInput` を値で受け、App ID と MCP の件数・ページ上限を検査し、MCP 用の既定値を適用する。評価種別の文字列を `steam.ParseReviewType` で変換し、共通の `steam.NormalizeCollectionOptions` で言語・ページ件数などを正規化する。呼び出し側の入力は変更せず、失敗時はゼロ値と `steam.ErrInvalidArgument` を返す。両処理は通信・時刻・利用制限に依存しない。`collect` による `invalid_input` 応答と、不正入力時に取得・利用枠を消費しない順序を維持する。
+`input_options.go` の `normalizeToolInput` は `toolInput` を値で受け、App ID と MCP の件数・ページ上限を検査し、MCP 用の既定値を適用する。評価種別の文字列を `steamdomain.ParseReviewType` で変換し、共通の `steamdomain.NormalizeCollectionOptions` で言語・ページ件数などを正規化する。呼び出し側の入力は変更せず、失敗時はゼロ値と `steamdomain.ErrInvalidArgument` を返す。両処理は通信・時刻・利用制限に依存しない。`collect` による `invalid_input` 応答と、不正入力時に取得・利用枠を消費しない順序を維持する。
 
 ## 結果・失敗・資源
 
@@ -57,7 +59,7 @@ HTTP 本文は16 KiBまでとし、SDK が超過を413で拒否する。シリ�
 
 `result.go` の `encodeResult` と `marshalToolResult` は公開情報を toolFailureInfo のまま受け取り、コードと説明文を別引数へ分解しない。`marshalToolResult` は Collection・公開情報・ガイドを同じ JSON の構造化結果・テキストへ変換する。`encodeResult` は省略件数を引数に受け取らず、SDK の通常応答と省略応答のサイズを判定する。`encodeOversizedResult` は省略件数を数えて本文を除いた応答を作り、`encodeResult` を再び呼ばない。`encodeCollectionResult` が取得の原因をサーバー側へ保持し、応答量超過の原因も失わせない。変換は通信・時計・保存に依存しない。利用枠は応答変換まで保持し、`collect` の defer が返却する。
 
-公開 URL が未指定なら HTTP Host は localhost またはループバック IP に限定する。Issue #29 で、明示した公開 URL の Host からも認証なしで利用する設定を追加した。Issue #48 でローカル用の保護を `mcpaccess.ProtectLocal` へ移し、`NewHandler` は公開設定の有無で `Access.Protect` と選び分ける構成にした。許可されない Host は403で拒否する。[公開 MCP 仕様](mcp-public-access.md) に従う。Docker 転送では SDK の接続先アドレスによる自動 localhost 判定が働かない場合があるため、Host を明示的に検査する。cross-origin 保護と併用する。
+公開 URL が未指定なら HTTP Host は localhost またはループバック IP に限定する。Issue #29 で、明示した公開 URL の Host からも認証なしで利用する設定を追加した。Issue #48 でローカル用の保護を `mcpaccess/adapter.ProtectLocal` へ移し、`NewHandler` は公開設定の有無で `mcpaccess/adapter.Protect` と選び分ける構成にした。許可されない Host は403で拒否する。[公開 MCP 仕様](mcp-public-access.md) に従う。Docker 転送では SDK の接続先アドレスによる自動 localhost 判定が働かない場合があるため、Host を明示的に検査する。cross-origin 保護と併用する。
 
 HTTP の読み書き10秒・終了待機10秒は維持する。遅い本文の送信時間も HTTP の10秒に含まれるため、常に8秒の実行時間を使い切れるとは保証しない。JSON 応答であり長時間の SSE 接続を要求しない。
 

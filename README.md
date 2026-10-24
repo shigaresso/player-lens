@@ -101,10 +101,12 @@ bash scripts/check-go.sh format-fix
 
 - `cmd/server/`：HTTP 応答、設定、サーバー起動・終了とテストを管理する。
 - `cmd/collect-reviews/`：ローカル CLI の依存と出力・終了コードを組み立てる。
-- `internal/steam/`：取得・収集と、保存先を注入する収集・保存操作を管理する。
-- `internal/jsonoutput/`：JSON の純粋変換と writer への保存実装を管理する。
-- `internal/reviewcli/`：CLI の入力検査と共通操作への接続を管理する。
-- `internal/reviewmcp/`：MCP の入力・応答・HTTP の制限と共通収集操作への接続を管理する。
+- `internal/steam/`：domain に型と条件、application に収集・収集保存、adapter に HTTP を置く。
+- `internal/reviewmcp/`：domain に利用制限、application に制限付き収集、adapter に HTTP/SDK・入力・応答を置く。
+- `internal/reviewcli/adapter/`：CLI の入力と共通操作への接続を管理する。
+- `internal/jsonoutput/adapter/`：公開 JSON の変換と writer 出力を管理する。
+- `internal/mcpaccess/`：domain に公開設定と Host の照合、adapter に HTTP 保護を置く。
+- 各 cmd は入口を維持し、I/O と表示をそれぞれの adapter に置く。[ADR-0013](docs/adr/0013-domain-folder-layers.md) に配置の判断を記載する。
 - `compose.yaml`：開発用サーバーと検証用 Go 環境を管理する。
 - `Dockerfile`：development と production を分け、Go・実行用のベースイメージを digest で固定する。
 - `scripts/`：開発用の起動と共通検査、Issue・PR・Release の作成手順を管理する。

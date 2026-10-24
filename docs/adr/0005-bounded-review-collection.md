@@ -4,6 +4,8 @@
 
 採用。[Issue #21](https://github.com/shigaresso/player-lens/issues/21) の `steam.CollectReviews` に適用する。契約は [収集仕様](../specs/collect-reviews.md)、操作の境界は [ユースケース](../use-cases.md) を参照する。
 
+配置の決定は [ADR-0013](0013-domain-folder-layers.md) で部分的に置き換えた。以下の収集・保存・失敗・資源の振る舞いは維持する。現在の配置は各領域内の domain・application・adapter とする。
+
 ## 背景と比較
 
 1ページ取得 adapter だけでは件数・時間・ページ数の上限、重複や途中失敗を管理できない。Steam の公開 API は1ページ最大100件で、続きのカーソルを使って取得する。

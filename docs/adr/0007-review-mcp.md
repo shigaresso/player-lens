@@ -14,7 +14,7 @@ API キーなしで ChatGPT アプリから収集結果を分析したい。独�
 - ChatGPT の入力欄の `/mcp` コマンドと区別しやすくするため、URL のパスを `/tools` とする。ツール名とプロトコルは変更せず、旧 `/mcp` は公開しない。
 - 同じ HTTP サーバーに `/tools` を追加し、stateless・JSON の Streamable HTTP を使う。永続セッション、サーバーからの sampling・elicitation・roots 要求を使わない。
 - SDK の新旧プロトコルを利用し、旧版でも HTTP 切断を収集へ伝える。HTTP リクエストごとにサーバーとツールを組み立て、呼び出し context を共有可変状態へ格納しない。
-- `steam.CollectReviews` を直接使い、純粋な `jsonoutput.MarshalCollection` を結果変換へ再利用する。保存ユースケースと CLI 出力は経由しない。
+- `reviewmcp/application.CollectReviews` から `steam/application.CollectReviews` を Go で直接呼び、純粋な `jsonoutput.MarshalCollection` を結果変換へ再利用する。保存ユースケースと CLI 出力は経由しない。
 - 数値上限、8秒の実行期限、部分失敗と応答量超過は [MCP 仕様](../specs/review-mcp.md) に従う。HTTP の10秒の期限は変更しない。
 - 分析を行うのは接続元の ChatGPT とする。将来バックエンドで LLM API を呼ぶ場合は別の HTTP 操作として決定し、この段階で API キーや空の分析層を追加しない。
 
@@ -23,3 +23,5 @@ API キーなしで ChatGPT アプリから収集結果を分析したい。独�
 公式クライアントでプロトコル連携を検証でき、収集の責務を共通化できる。短時間・少量のデバッグ用途であり、大規模分析・再開・永続的な根拠管理を実現しない。認証なしのローカル接続を対象にし、SDK の localhost 保護と Go の cross-origin 保護に加え、Docker 転送時にも localhost またはループバック IP の Host だけを受け付ける。Issue #27 と [ADR-0008](0008-mcp-usage-limits.md) で1プロセスの開始回数・同時実行数を制限した。Issue #29 と [ADR-0009](0009-public-mcp-access.md) で、明示した公開 URL への認証なしの接続と許可 Host 検査を追加した。バックエンド分析の利用コード・期限と共有予算は別 Issue で扱う。
 
 ChatGPT の実接続はアプリの設定・対応版に依存する。SDK 連携の成功だけで ChatGPT の分析結果を確認済みと扱わない。開発・検証の依存は Go のモジュールキャッシュへ置き、実行用イメージは引き続き CGO 不要のバイナリと証明書だけを含める。
+
+配置は [ADR-0013](0013-domain-folder-layers.md) に従い、reviewmcp 内の domain・application・adapter に分類した。期限と利用枠は application、SDK と公開用入出力は adapter が担当する。

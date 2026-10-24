@@ -60,3 +60,19 @@ AI のセルフレビューで、limiter に公開コードの文字列が残っ
 動作を変えない引数整理のため、新しいテストや形式上の Red は追加していない。既存テストは呼び出しの引数だけを機械的に更新し、期待するコード・説明文・ガイド・本文と省略・入力の不変性を維持した。`bash scripts/check-app.sh` が成功し、整形・vet・通常テスト7パッケージ、lint（0 issues）、Git 非依存3条件、race付き結合テストを含む7パッケージ、本番イメージの HTTP・MCP・PORT・SIGTERM/SIGINT・不正設定を確認した。最新の image ID は sha256:c57a68b7b1f5d090e20233aad7b8187536fd069aea6f770969c0ae4b3029b69a。
 
 AI のセルフレビューで引数の分解が残っていないこと、公開情報・元の原因・同時枠の返却・入出力の契約が維持されることを確認した。検査コード・設定・依存に変更がない実フックと実 Go ツールの独立検証は以前の成功結果を再利用した。必須コミットフックは変更の確定時に実行する。
+
+## 応答サイズの判定と本文省略の手順
+
+ユーザーとの確認に従い、encodeResult に通常応答・省略応答のサイズ判定を集約し、encodeOversizedResult は本文を除いた応答を作る責務に限定した。省略件数は省略処理が数え、入口の encodeResult から omitted 引数を除いた。本文省略は最大1回とし、省略後も128 KiBを超える場合は結果を返さず errResponseTooLarge を保持した変換エラーで終了する。現在のガイドと有効入力では省略後の応答は小さいが、内部の変換単体でも大きいメタデータを有限に扱う契約とした。
+
+終了条件のテストでは、レビューなし／ありの両方で大きいメタデータを渡した。公開入力では言語の長さを制限しており、この入力は内部の変換単体の終了条件を確認するためのものとした。新しい2引数の encodeResult を先にテストへ記述し、`docker compose run --rm --no-deps -T verify go test -timeout=15s -count=1 ./internal/reviewmcp -run '^Test(ResponseSize|EncodeResultRejectsOversizedMetadata)$'` で引数変更の未実装によるコンパイル失敗を確認した。旧再帰処理を大きな入力で実行してはいない。プロダクションコードだけを変更し、同じテストの Green を確認した。
+
+次に、収集失敗と応答生成失敗の複合原因を保持するテストを追加した。省略後も大きい場合と既存の JSON 変換失敗について、`go test -timeout=15s -count=1 ./internal/reviewmcp -run '^TestEncodeCollectionResultEncodingFailureCause$'` が収集原因を失う理由で Red となった。toolResultEncodingError が固定の公開用文言を返し、errors.Join による変換・収集の両原因を Unwrap で保持するよう実装した。MCP SDK v1.8.0 の callTool がハンドラーの戻りエラーをそのまま伝えることをソースで確認し、戻りエラーの表示文字列にも内部の収集原因を含めない形にした。
+
+同テストと既存の本文省略・複合失敗を含む関連テストの Green を確認した。通常の省略応答の公開コード・説明文・条件・件数・ガイド・元の原因保持と、入力の不変性は維持する。新しい公開コード・パッケージ・interface は追加していない。
+
+### サイズ判定の整理後の検証
+
+`bash scripts/check-app.sh` が成功した。整形・vet・通常テスト7パッケージ、lint（0 issues）、Git 非依存3条件、race付き結合テストを含む7パッケージ、本番イメージの HTTP・MCP・PORT・SIGTERM/SIGINT・不正設定を確認した。最新の image ID は sha256:3b83e4d9a1152602742325693a7f54fff59a776f7aa618968aafae8291c81b01。
+
+AI のセルフレビューで encodeOversizedResult から encodeResult を呼ばないこと、入口の呼び出し元が省略件数を渡さないこと、SDK の結果全体の上限判定と一度だけの省略を encodeResult が所有することを確認した。通常の応答・省略応答・部分失敗の公開情報は既存テストで確認し、新しい変換失敗では結果を返さず両原因を保持し、表示から内部の収集原因を除くことを直接テストした。検査コード・設定・依存は変更していないため、実フックと実 Go ツールの独立検証は以前の成功結果を再利用した。

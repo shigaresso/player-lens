@@ -18,13 +18,13 @@ func collect(ctx context.Context, fetcher steam.PageFetcher, input json.RawMessa
 			code:    "invalid_input",
 			message: "取得条件が不正です。app_id とツールの入力上限を確認してください。",
 		}
-		return encodeResult(steam.Collection{}, failure, 0)
+		return encodeResult(steam.Collection{}, failure)
 	}
 	if ctx.Err() == nil {
 		release, reason := gate.acquire()
 		if reason != usageNotRejected {
 			failure := usageFailure(reason)
-			return encodeResult(steam.Collection{AppID: appID, Options: options, StopReason: steam.StopFailed}, failure, 0)
+			return encodeResult(steam.Collection{AppID: appID, Options: options, StopReason: steam.StopFailed}, failure)
 		}
 		defer release()
 	}

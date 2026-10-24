@@ -23,12 +23,27 @@ const maxResultBytes = 128 * 1024
 
 var errResponseTooLarge = errors.New("MCP collection response exceeds size limit")
 
-// encodeCollectionResult は公開用の失敗情報へ変換し、内部の原因を結果へ保持する。
+// toolResultEncodingError は公開する文言と内部の原因を分けた応答生成エラー。
+type toolResultEncodingError struct {
+	cause error
+}
+
+// Error は内部の原因を含まない固定の説明を返す。
+func (e *toolResultEncodingError) Error() string {
+	return "MCP の収集結果を生成できませんでした。"
+}
+
+// Unwrap は変換と収集の原因を errors.Is・errors.As で追跡できる形で返す。
+func (e *toolResultEncodingError) Unwrap() error {
+	return e.cause
+}
+
+// encodeCollectionResult は公開用の失敗情報へ変換し、内部の原因を結果または戻りエラーへ保持する。
 func encodeCollectionResult(collection steam.Collection, collectErr error) (*mcp.CallToolResult, error) {
 	failure := collectionFailure(collectErr)
-	result, err := encodeResult(collection, failure, 0)
+	result, err := encodeResult(collection, failure)
 	if err != nil {
-		return nil, err
+		return nil, &toolResultEncodingError{cause: errors.Join(err, collectErr)}
 	}
 	if collectErr != nil {
 		result.SetError(errors.Join(result.GetError(), collectErr))
@@ -36,22 +51,45 @@ func encodeCollectionResult(collection steam.Collection, collectErr error) (*mcp
 	return result, nil
 }
 
-// encodeResult は SDK の結果全体の JSON サイズを計測し、超過時は本文を省略する。
-func encodeResult(collection steam.Collection, failure toolFailureInfo, omitted int) (*mcp.CallToolResult, error) {
-	result, err := marshalToolResult(collection, failure, omitted)
+// encodeResult は通常応答のサイズを判定し、超過時は本文を一度だけ省略する。
+// 省略後も上限を超える場合は結果を返さず、errResponseTooLarge を保持したエラーを返す。
+func encodeResult(collection steam.Collection, failure toolFailureInfo) (*mcp.CallToolResult, error) {
+	result, err := marshalToolResult(collection, failure, 0)
 	if err != nil {
 		return nil, err
 	}
-	serialized, err := json.Marshal(result)
+	withinLimit, err := toolResultWithinLimit(result)
 	if err != nil {
-		return nil, fmt.Errorf("measure MCP result: %w", err)
+		return nil, err
 	}
-	if len(serialized) <= maxResultBytes {
+	if withinLimit {
 		return result, nil
 	}
-	return encodeOversizedResult(collection)
+	result, err = encodeOversizedResult(collection)
+	if err != nil {
+		return nil, err
+	}
+	withinLimit, err = toolResultWithinLimit(result)
+	if err != nil {
+		return nil, err
+	}
+	if !withinLimit {
+		return nil, fmt.Errorf("encode MCP result after omitting reviews: %w", errResponseTooLarge)
+	}
+	return result, nil
 }
 
+// toolResultWithinLimit は SDK の結果全体を JSON 化し、応答量の上限内かを返す。
+func toolResultWithinLimit(result *mcp.CallToolResult) (bool, error) {
+	serialized, err := json.Marshal(result)
+	if err != nil {
+		return false, fmt.Errorf("measure MCP result: %w", err)
+	}
+	return len(serialized) <= maxResultBytes, nil
+}
+
+// encodeOversizedResult は本文を除き、省略件数と公開情報を設定した応答を生成する。
+// サイズの判定と生成手順は encodeResult が担当する。
 func encodeOversizedResult(collection steam.Collection) (*mcp.CallToolResult, error) {
 	count := len(collection.Reviews)
 	collection.Reviews = nil
@@ -59,7 +97,7 @@ func encodeOversizedResult(collection steam.Collection) (*mcp.CallToolResult, er
 		code:    "response_too_large",
 		message: "応答量の上限を超えたためレビュー本文を返せません。max_reviews を減らしてください。",
 	}
-	result, err := encodeResult(collection, failure, count)
+	result, err := marshalToolResult(collection, failure, count)
 	if err != nil {
 		return nil, err
 	}

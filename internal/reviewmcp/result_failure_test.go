@@ -79,3 +79,28 @@ func TestCollectOversizedFailure(t *testing.T) {
 		t.Fatal("応答量または内部エラーの非公開の契約を満たさなかった")
 	}
 }
+
+func TestEncodeCollectionResultEncodingFailureCause(t *testing.T) {
+	cause := errors.New("secret: upstream details")
+	for _, tc := range []struct {
+		name       string
+		collection steam.Collection
+		wantErr    error
+	}{
+		{"省略後も大きい場合に変換と収集の原因を保持する", steam.Collection{Options: steam.CollectionOptions{Language: strings.Repeat("x", maxResultBytes+1)}}, errResponseTooLarge},
+		{"JSON変換が失敗した場合も変換と収集の原因を保持する", steam.Collection{Options: steam.CollectionOptions{ReviewType: steam.ReviewType(3)}}, steam.ErrInvalidArgument},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := encodeCollectionResult(tc.collection, cause)
+			if result != nil || !errors.Is(err, tc.wantErr) {
+				t.Fatalf("result=%+v error=%v", result, err)
+			}
+			if !errors.Is(err, cause) {
+				t.Fatalf("収集の原因を失った: %v", err)
+			}
+			if strings.Contains(err.Error(), "secret") {
+				t.Fatalf("内部の収集原因を表示文言に含めた: %v", err)
+			}
+		})
+	}
+}

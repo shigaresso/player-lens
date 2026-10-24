@@ -2,6 +2,7 @@ package reviewmcp
 
 import (
 	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 
@@ -20,7 +21,7 @@ func TestResponseSize(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			collection := steam.Collection{AppID: 440, Options: steam.CollectionOptions{Language: "english", PageSize: 100, MaxReviews: 20, MaxPages: 3}, Reviews: []steam.Review{{RecommendationID: 10, Text: strings.Repeat("x", tc.length)}}, PagesFetched: 1, StopReason: steam.StopReviewLimit}
-			result, err := encodeResult(collection, toolFailureInfo{}, 0)
+			result, err := encodeResult(collection, toolFailureInfo{})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -47,6 +48,28 @@ func TestResponseSize(t *testing.T) {
 			}
 			if len(collection.Reviews) != 1 || len(collection.Reviews[0].Text) != tc.length {
 				t.Fatal("入力を変更した")
+			}
+		})
+	}
+}
+
+func TestEncodeResultRejectsOversizedMetadata(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		reviews []steam.Review
+	}{
+		{"本文が最初からなくても大きいメタデータを拒否して終了する", nil},
+		{"本文を省略しても大きいメタデータを拒否して終了する", []steam.Review{{RecommendationID: 1, Text: "保持する本文"}}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			collection := steam.Collection{
+				AppID:   440,
+				Options: steam.CollectionOptions{Language: strings.Repeat("x", maxResultBytes+1)},
+				Reviews: tc.reviews,
+			}
+			result, err := encodeResult(collection, toolFailureInfo{})
+			if result != nil || !errors.Is(err, errResponseTooLarge) {
+				t.Fatalf("result=%+v error=%v", result, err)
 			}
 		})
 	}

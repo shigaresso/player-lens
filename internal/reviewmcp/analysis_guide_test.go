@@ -29,7 +29,7 @@ func TestAnalysisGuideResult(t *testing.T) {
 			if tc.text != "" {
 				collection.Reviews = []steam.Review{{RecommendationID: 13, Text: tc.text}}
 			}
-			result, err := encodeResult(collection, tc.code, "状態の説明", 0)
+			result, err := encodeResult(collection, toolFailureInfo{code: tc.code, message: "状態の説明"}, 0)
 			if err != nil {
 				t.Fatal(err)
 			}

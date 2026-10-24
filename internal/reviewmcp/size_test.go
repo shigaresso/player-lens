@@ -20,7 +20,7 @@ func TestResponseSize(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			collection := steam.Collection{AppID: 440, Options: steam.CollectionOptions{Language: "english", PageSize: 100, MaxReviews: 20, MaxPages: 3}, Reviews: []steam.Review{{RecommendationID: 10, Text: strings.Repeat("x", tc.length)}}, PagesFetched: 1, StopReason: steam.StopReviewLimit}
-			result, err := encodeResult(collection, "", "", 0)
+			result, err := encodeResult(collection, toolFailureInfo{}, 0)
 			if err != nil {
 				t.Fatal(err)
 			}

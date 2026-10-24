@@ -14,13 +14,17 @@ const toolTimeout = 8 * time.Second
 func collect(ctx context.Context, fetcher steam.PageFetcher, input json.RawMessage, gate *limiter) (*mcp.CallToolResult, error) {
 	appID, options, err := parseInput(input)
 	if err != nil {
-		return encodeResult(steam.Collection{}, "invalid_input", "取得条件が不正です。app_id とツールの入力上限を確認してください。", 0)
+		failure := toolFailureInfo{
+			code:    "invalid_input",
+			message: "取得条件が不正です。app_id とツールの入力上限を確認してください。",
+		}
+		return encodeResult(steam.Collection{}, failure, 0)
 	}
 	if ctx.Err() == nil {
 		release, reason := gate.acquire()
 		if reason != usageNotRejected {
 			failure := usageFailure(reason)
-			return encodeResult(steam.Collection{AppID: appID, Options: options, StopReason: steam.StopFailed}, failure.code, failure.message, 0)
+			return encodeResult(steam.Collection{AppID: appID, Options: options, StopReason: steam.StopFailed}, failure, 0)
 		}
 		defer release()
 	}

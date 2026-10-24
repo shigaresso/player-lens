@@ -3,9 +3,7 @@ package reviewmcp
 import (
 	"context"
 	"fmt"
-	"net"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -39,25 +37,7 @@ func NewHandler(fetcher steam.PageFetcher, limits Limits, access *mcpaccess.Acce
 	if access != nil {
 		return access.Protect(handler)
 	}
-	protected := http.NewCrossOriginProtection().Handler(handler)
-	return http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
-		if !localHost(request.Host) {
-			http.Error(w, "ローカルの Host のみ利用できます", http.StatusForbidden)
-			return
-		}
-		protected.ServeHTTP(w, request)
-	}), nil
-}
-
-func localHost(host string) bool {
-	if name, _, err := net.SplitHostPort(host); err == nil {
-		host = name
-	}
-	if strings.EqualFold(host, "localhost") {
-		return true
-	}
-	ip := net.ParseIP(strings.Trim(host, "[]"))
-	return ip != nil && ip.IsLoopback()
+	return mcpaccess.ProtectLocal(handler), nil
 }
 
 func newServer(fetcher steam.PageFetcher, requestContext context.Context, gate *limiter) *mcp.Server {

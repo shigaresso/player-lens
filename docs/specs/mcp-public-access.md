@@ -15,6 +15,12 @@ Issue #29 で、公開 MCP を OAuth なしで提供する。Go はレビュー�
 - Authorization ヘッダーを必要とせず、初期処理・ツール一覧・呼び出しを匿名で受け付ける。OAuth の metadata・challenge は公開せず、`/.well-known/oauth-protected-resource/tools` は404とする。
 - `/tools` 以外のルートと `/healthz` は従来の契約を維持する。Host 検査は本人確認ではない。
 
+### 保護の組み立ての境界
+
+ローカル専用モードは `mcpaccess.ProtectLocal(next)`、公開モードは `Access.Protect(next)` が HTTP の保護を担当する。`reviewmcp.NewHandler` は設定に応じてどちらかを選び、SDK の組み立てと共有する利用枠の所有を担当する。公開モードだけ SDK の localhost 保護を無効にする設定は維持する。
+
+`ProtectLocal` の next は、呼び出し側が有効な非 nil の handler を渡す。従来の localhost/loopback の判定を使い、Host の検査、Go の cross-origin 保護、next の順に処理する。Host の不許可では403と「ローカルの Host のみ利用できます」の説明文を返す。Host または cross-origin で拒否した場合は next を呼ばず、許可時は next の応答を返す。構築時に通信・時計・新しい状態を必要とせず、公開側の authority 正規化へ判定を統一しない。
+
 ## 資源・共有範囲
 
 [レビュー収集 MCP](review-mcp.md) と [利用制限](mcp-usage-limits.md) の件数・ページ・8秒・16 KiB本文・128 KiB応答・失敗・キャンセル・再試行なしを維持する。1つの handler の全クライアント・セッション・対応4版で同じ開始回数・同時枠（既定2件）を使う。1プロセスのメモリ内制限は再起動で消える。複数台の共有予算・本人確認・請求上限・拒否トラフィックの負荷対策を保証しない。

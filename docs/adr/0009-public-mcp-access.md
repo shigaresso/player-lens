@@ -16,6 +16,8 @@ MCP は公開 Steam レビューの収集のみを担当し、クライアント
 
 公開 URL が未指定なら従来の localhost 専用、HTTPS の `/tools` を指定した場合は認証なしで公開する。main で設定を検査し、HTTP adapter に注入する。許可 Host と Go の cross-origin 保護を受付前に適用する。SDK の localhost 保護は公開モードだけ独自検査へ置き換える。詳細は [公開 MCP 仕様](../specs/mcp-public-access.md) に記載する。
 
+Issue #48 では、HTTP の受付判断を `mcpaccess` にまとめるため、ローカル用の判定を `ProtectLocal` へ分離する。`reviewmcp.NewHandler` は SDK と共有する利用枠を組み立て、設定に応じて `ProtectLocal` または `Access.Protect` を適用する。公開側とローカル側で既存の判定と検査順序を維持し、authority の正規化や nil 設定の意味は統一しない。保護単体を MCP SDK・収集依存から独立して検証できることを優先する。
+
 ADR-0007 のローカル専用の適用範囲に公開モードを追加し、ADR-0008 の1プロセスの共有制限・既定値・解放責務は維持する。CLI と収集操作へ公開設定を混ぜず、空の Web adapter や将来用の DB・認証依存を追加しない。
 
 ## 利点と制約

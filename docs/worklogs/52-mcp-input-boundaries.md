@@ -14,6 +14,7 @@
 - 各処理の直接回帰テストを追加し、既存の `parseInput` の失敗テストで `errors.Is` による原因の識別も確認した。
 - MCP 仕様とユースケースの文書へ責務の境界を記載した。
 - 追加対応で、最初の `json.Unmarshal` と重複していた2回目の `Decode` による末尾検査と、不要になった `io` import を削除した。
+- 先行する項目名の許可リストと重複する `DisallowUnknownFields()` の設定も、追加対応で削除した。
 
 ## 検証
 
@@ -58,6 +59,14 @@ JSON の検査順序・toolInput の型とタグ・正確な項目名と null �
 テストを変更せず、`docker compose run --rm --no-deps -T verify go test -count=1 ./internal/reviewmcp -run '^Test(DecodeToolInput|ParseInput)$' -v` が成功した。特に TestDecodeToolInput の「後ろに追加の JSON」と TestParseInput の「JSONの後に値があった」の状況で、余計な値を拒否し、ゼロ値と `ErrInvalidArgument` を返すことを確認した。正常な単一オブジェクトの読み取りも引き続き成功した。動作を維持する削除のため、形式上の Red は作っていない。
 
 削除後の `bash scripts/check-app.sh` も成功した。整形・vet・通常テスト全7パッケージ、lint（0 issues）、Git 非依存3条件、race 付き通常／結合テスト全7パッケージを確認した。本番用 image ID sha256:a1511b693d5b4f645e2b85e46750d304fb343ba1f7942aee06c2c538edfa92fa で HTTP/MCP・不正設定拒否・SIGTERM/SIGINT 正常終了も確認した。差分が重複検査・未使用 import の削除と対応文書だけであることを AI のセルフレビューで確認した。
+
+### 重複した未知項目検査の削除（追加対応）
+
+先行する `switch` が許可した項目名以外をすべて拒否するため、後続の `DisallowUnknownFields()` を削除した。大文字の表記を含めて正確な項目名を検査する責務は `switch` に残し、型と値の読み取りは既存の `Decode` が担当する。削除対象はこの設定1行だけとし、入力として許可する値とエラーの契約を維持した。
+
+既存テストを変更せず、`docker compose run --rm --no-deps -T verify go test -count=1 ./internal/reviewmcp -run '^Test(DecodeToolInput|ParseInput|ParseInputReviewType)$' -v` が成功した。TestDecodeToolInput の未知／大文字の項目名、TestParseInput の未知項目・大文字の未定義／追加項目が、削除後もゼロ値と `ErrInvalidArgument` を返すことを確認した。正常入力・評価種別の既存テストも成功した。動作を維持する削除のため、形式上の Red は作っていない。
+
+削除後の `bash scripts/check-app.sh` が成功し、整形・vet・通常テスト全7パッケージ、lint（0 issues）、Git 非依存3条件、race 付き通常／結合テスト全7パッケージを確認した。本番用 image ID sha256:45733e06c3739e89519cc8d3a6d5e1a0729664a04f279a1b0b7ce5f320330e82 で HTTP/MCP・不正設定拒否・SIGTERM/SIGINT 正常終了も確認した。設定1行の削除と対応文書だけが差分であり、先行する検査・型変換・利用枠・収集に変更がないことを AI のセルフレビューで確認した。
 
 ## 参照仕様・ADR
 

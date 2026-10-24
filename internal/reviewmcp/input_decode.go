@@ -35,7 +35,6 @@ func decodeToolInput(data []byte) (toolInput, error) {
 	}
 	var input toolInput
 	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&input); err != nil {
 		return toolInput{}, steam.ErrInvalidArgument
 	}

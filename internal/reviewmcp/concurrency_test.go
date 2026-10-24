@@ -15,24 +15,24 @@ func TestLimiterConcurrentAdmission(t *testing.T) {
 	gate := newLimiter(Limits{RequestsPerMinute: 100, RequestsPerDay: 100, MaxConcurrent: 3}, time.Now)
 	type admission struct {
 		release func()
-		code    string
+		reason  usageRejectionReason
 	}
 	results := make(chan admission, 80)
 	start := make(chan struct{})
 	for range 80 {
 		go func() {
 			<-start
-			release, code := gate.acquire()
-			results <- admission{release, code}
+			release, reason := gate.acquire()
+			results <- admission{release, reason}
 		}()
 	}
 	close(start)
 	var accepted []func()
 	for range 80 {
 		result := <-results
-		if result.code == "" {
+		if result.reason == usageNotRejected {
 			accepted = append(accepted, result.release)
-		} else if result.code != "busy" || result.release != nil {
+		} else if result.reason != usageConcurrentLimitReached || result.release != nil {
 			t.Fatalf("拒否=%+v", result)
 		}
 	}
@@ -42,44 +42,44 @@ func TestLimiterConcurrentAdmission(t *testing.T) {
 	for _, release := range accepted {
 		release()
 	}
-	release, code := gate.acquire()
-	if code != "" {
-		t.Fatal(code)
+	release, reason := gate.acquire()
+	if reason != usageNotRejected {
+		t.Fatal(reason)
 	}
 	release()
 }
 
 func TestLimiterBusyDoesNotConsumeBudget(t *testing.T) {
 	gate := newLimiter(Limits{RequestsPerMinute: 4, RequestsPerDay: 10, MaxConcurrent: 2}, time.Now)
-	first, code := gate.acquire()
-	if code != "" {
-		t.Fatal(code)
+	first, reason := gate.acquire()
+	if reason != usageNotRejected {
+		t.Fatal(reason)
 	}
-	second, code := gate.acquire()
-	if code != "" {
-		t.Fatal(code)
+	second, reason := gate.acquire()
+	if reason != usageNotRejected {
+		t.Fatal(reason)
 	}
-	if release, code := gate.acquire(); release != nil || code != "busy" {
-		t.Fatalf("拒否=%q", code)
+	if release, reason := gate.acquire(); release != nil || reason != usageConcurrentLimitReached {
+		t.Fatalf("拒否=%v", reason)
 	}
 	first()
 	first()
-	third, code := gate.acquire()
-	if code != "" {
-		t.Fatal("busy が予算を消費した", code)
+	third, reason := gate.acquire()
+	if reason != usageNotRejected {
+		t.Fatal("busy が予算を消費した", reason)
 	}
-	if release, code := gate.acquire(); release != nil || code != "busy" {
-		t.Fatalf("二重返却で枠が増えた: %q", code)
+	if release, reason := gate.acquire(); release != nil || reason != usageConcurrentLimitReached {
+		t.Fatalf("二重返却で枠が増えた: %v", reason)
 	}
 	second()
 	third()
-	fourth, code := gate.acquire()
-	if code != "" {
-		t.Fatal(code)
+	fourth, reason := gate.acquire()
+	if reason != usageNotRejected {
+		t.Fatal(reason)
 	}
 	defer fourth()
-	if release, code := gate.acquire(); release != nil || code != "rate_limited" {
-		t.Fatalf("回数制限=%q", code)
+	if release, reason := gate.acquire(); release != nil || reason != usageMinuteLimitReached {
+		t.Fatalf("回数制限=%v", reason)
 	}
 }
 
@@ -147,9 +147,9 @@ func TestCollectionReleasesSlotAfterFailure(t *testing.T) {
 
 func TestCollectionBusyResponse(t *testing.T) {
 	gate := newLimiter(Limits{RequestsPerMinute: 10, RequestsPerDay: 10, MaxConcurrent: 1}, time.Now)
-	release, code := gate.acquire()
-	if code != "" {
-		t.Fatal(code)
+	release, reason := gate.acquire()
+	if reason != usageNotRejected {
+		t.Fatal(reason)
 	}
 	defer release()
 	result, err := collect(context.Background(), fetchFunc(func(context.Context, steam.AppID, steam.PageOptions) (steam.ReviewPage, error) {

@@ -37,7 +37,7 @@ HTTP 本文は16 KiBまでとし、SDK が超過を413で拒否する。シリ�
 
 ### 結果変換の境界（Issue #40）
 
-`collect` は入力検査、利用枠と実行期限、収集の呼び出しを担当する。`failure.go` の `toolFailureInfo` は公開するコードと説明文を持つ情報型で、元のエラーは別途保持する。`collectionFailure` は収集エラーをこの公開情報へ変換し、`usageFailure` は利用制限の説明文を選ぶ。複合原因ではキャンセル・期限・取得失敗の順を維持する。
+`collect` は入力検査、利用枠と実行期限、収集の呼び出しを担当する。`failure.go` の `toolFailureInfo` は公開するコードと説明文を持つ情報型で、元のエラーは別途保持する。`collectionFailure` は収集エラーをこの公開情報へ変換し、`usageFailure` は limiter の拒否理由を公開コードと説明文へ変換する。複合原因ではキャンセル・期限・取得失敗の順を維持する。
 
 `result.go` の `marshalToolResult` は Collection とガイドを同じ JSON の構造化結果・テキストへ変換する。`encodeResult` は SDK の結果全体を計測し、超過時は `encodeOversizedResult` で本文を省略する。`encodeCollectionResult` が取得の原因をサーバー側へ保持し、応答量超過の原因も失わせない。変換は通信・時計・保存に依存しない。利用枠は応答変換まで保持し、`collect` の defer が返却する。
 

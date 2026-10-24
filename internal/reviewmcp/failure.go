@@ -25,9 +25,19 @@ func collectionFailure(err error) toolFailureInfo {
 	}
 }
 
-func usageFailure(code string) toolFailureInfo {
-	if code == "busy" {
-		return toolFailureInfo{code, "同時実行数の上限に達しました。処理の完了後に再実行してください。"}
+// usageFailure は利用制限の拒否理由を公開情報へ変換する。
+// 拒否なしではゼロ値を返し、未定義の内部値ではプログラミングエラーとして panic する。
+func usageFailure(reason usageRejectionReason) toolFailureInfo {
+	switch reason {
+	case usageNotRejected:
+		return toolFailureInfo{}
+	case usageDailyLimitReached:
+		return toolFailureInfo{"daily_limit_reached", "収集開始回数の上限に達しました。利用枠が戻ってから再実行してください。"}
+	case usageMinuteLimitReached:
+		return toolFailureInfo{"rate_limited", "収集開始回数の上限に達しました。利用枠が戻ってから再実行してください。"}
+	case usageConcurrentLimitReached:
+		return toolFailureInfo{"busy", "同時実行数の上限に達しました。処理の完了後に再実行してください。"}
+	default:
+		panic("unknown usage rejection reason")
 	}
-	return toolFailureInfo{code, "収集開始回数の上限に達しました。利用枠が戻ってから再実行してください。"}
 }

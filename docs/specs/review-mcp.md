@@ -23,6 +23,14 @@
 
 負数・型違い・範囲外・未知の項目・非オブジェクトは `invalid_input` とし、Steam 通信を行わない。カーソル・重複・終了条件は `steam.CollectReviews` に任せる。MCP のより小さい上限は入口で適用し、CLI と収集操作の既存の上限は変えない。
 
+### 入力変換の境界（Issue #52）
+
+`parseInput` は JSON の読み取りと収集条件の構築を順に行い、成功時は AppID と正規化した CollectionOptions、失敗時はゼロ値と `steam.ErrInvalidArgument` を保持する既存のエラーを返す。
+
+`input_decode.go` の `decodeToolInput` は JSON のオブジェクト・正確な項目名・null・型・型に収まる数値・末尾を検査して `toolInput` を返す。部分的に読み取れた不正入力は返さない。読み取り段階では既定値・MCP 上限・言語や評価種別の条件を適用せず、形式上読み取れる値は保持する。
+
+`input_options.go` の `normalizeToolInput` は `toolInput` を値で受け、App ID と MCP の件数・ページ上限を検査し、MCP 用の既定値を適用する。評価種別の文字列を `steam.ParseReviewType` で変換し、共通の `steam.NormalizeCollectionOptions` で言語・ページ件数などを正規化する。呼び出し側の入力は変更せず、失敗時はゼロ値と `steam.ErrInvalidArgument` を返す。両処理は通信・時刻・利用制限に依存しない。`collect` による `invalid_input` 応答と、不正入力時に取得・利用枠を消費しない順序を維持する。
+
 ## 結果・失敗・資源
 
 `structuredContent` と同じ JSON のテキストを返す。`collection` は既存の `jsonoutput.MarshalCollection` の schema_version=1 とし、レビュー ID・本文・言語・評価・UNIX 秒、条件・成功ページ数・終了理由を取得順に返す。Issue #43 の名前付き数値型は共通の JSON 変換で既存形式へ戻し、ID は0・最大値も10進文字列で返す。`returned_count` は返した件数、`omitted_reviews` は応答量超過で返せなかった件数とする。成功時の `error_code`・`message` は空である。件数・ページ上限での正常終了は全件収集を意味しない。

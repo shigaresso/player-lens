@@ -11,6 +11,8 @@ import (
 	"github.com/shigaresso/player-lens/internal/steam"
 )
 
+const maxRequestBodyBytes = 16 * 1024
+
 // NewHandler は読み取り専用のレビュー収集を Streamable HTTP で公開する。
 // fetcher はキャンセル・期限を尊重する取得依存とする。nil はエラーとする。
 // limits は正の整数で指定し、このハンドラーの全呼び出しで共有する。
@@ -31,7 +33,7 @@ func NewHandler(fetcher steam.PageFetcher, limits Limits, access *mcpaccess.Acce
 		Stateless:                    true,
 		JSONResponse:                 true,
 		PropagateRequestCancellation: true,
-		MaxRequestBodyBytes:          16 * 1024,
+		MaxRequestBodyBytes:          maxRequestBodyBytes,
 		DisableLocalhostProtection:   access != nil,
 	})
 	if access != nil {

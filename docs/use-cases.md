@@ -25,6 +25,8 @@ CLI の `reviewcli.Run` は引数の解析と `CollectAndSaveReviews` への接�
 
 MCP の `reviewmcp.NewHandler` は `collect_reviews` の入力と HTTP 制限、実行期限、Collection の応答変換を担当する。`CollectReviews` を直接呼び、JSON の純粋変換だけを再利用する。保存操作は呼ばない。分析は接続元の ChatGPT が担当し、バックエンドの LLM 呼び出しは未導入とする。[MCP 仕様](specs/review-mcp.md) と [ADR-0007](adr/0007-review-mcp.md) に責務を記載する。
 
+Issue #50 で、`newServer` から `collectReviewsDefinition`（公開する説明・schema・annotations）と `newCollectReviewsHandler`（HTTP／SDK のキャンセル連携と終了時の解放、`collect` の呼び出し）を分離した。`newServer` は Server の生成・設定・登録を担当する。同じ MCP adapter 内の責務を整理したもので、収集ユースケースや新しい通信境界は増やさない。
+
 MCP の開始回数と同時数は handler が所有する入口の制限とし、収集操作・CLI へ混ぜない。limiter は受付可否と型付きの拒否理由を返し、failure.go の usageFailure が MCP の公開コードと説明文へ変換する。[利用制限仕様](specs/mcp-usage-limits.md) と [ADR-0008](adr/0008-mcp-usage-limits.md) に従う。
 
 Issue #40 で MCP の公開用失敗情報と結果生成を収集の実行手順から分離した。`failure.go` が原因の分類と案内、`result.go` が JSON・分析ガイド・応答量・原因保持を担当する。入力検査、context、利用枠と収集の順序は `collect` に残し、収集ユースケースや新しい通信境界は増やさない。

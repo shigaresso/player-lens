@@ -32,3 +32,9 @@ collection.go は入力解析、利用枠・context の所有、収集の呼び�
 `git diff 2d4d4c3 HEAD -- scripts .github Dockerfile compose.yaml lefthook.yml .lefthook go.mod go.sum .golangci.yml` が空であることを確認した。verify_go_tools.py の独立検証は同じ検査コード・設定・依存に対する以前の成功結果を再利用し、今回の実行とは区別した。
 
 `python3 scripts/verify_hooks.py` は隔離した一時リポジトリの8テストが成功した。実際の push は行っていない。`python3 scripts/validate.py pr --title 'MCP の結果・エラー変換を収集の実行手順から分離した' --body-file docs/worklogs/40-pr.md --label enhancement` と差分検査も成功した。必須の pre-commit・commit-msg は変更の確定時に回避せず実行する。
+
+## 公開する失敗情報の型名
+
+ユーザーとの確認に基づき、toolFailure を toolFailureInfo に改名した。型は MCP に公開するコードと説明文を表す情報型とし、元の error の保持は呼び出し側に残す。ゼロ値は公開する失敗情報がない状態であることをコメントへ明記した。収集エラーと利用制限の変換の戻り値・構築箇所を同じ名前に揃え、判定順・コード・説明文は変更していない。
+
+動作を変えない改名のため、新しいテストや形式上の Red は追加していない。`bash scripts/check-go.sh unit` が成功し、整形・vet・通常テスト7パッケージを確認した。旧型名のコード参照が残っていないことと差分を確認した。lint・race付き結合テスト・本番イメージ・実フックの独立検証は前節の改名前の結果であり、この改名後の再実行として扱わない。確定時の必須コミットフックは別途実行する。

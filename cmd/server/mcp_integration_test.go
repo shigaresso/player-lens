@@ -9,8 +9,11 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/shigaresso/player-lens/internal/reviewmcp"
-	"github.com/shigaresso/player-lens/internal/steam"
+
+	serveradapter "github.com/shigaresso/player-lens/cmd/server/adapter"
+	reviewmcp "github.com/shigaresso/player-lens/internal/reviewmcp/adapter"
+	mcpdomain "github.com/shigaresso/player-lens/internal/reviewmcp/domain"
+	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
 )
 
 type requestFetcher struct {
@@ -18,13 +21,13 @@ type requestFetcher struct {
 	release chan struct{}
 }
 
-func (f requestFetcher) FetchReviewsPage(ctx context.Context, _ steam.AppID, _ steam.PageOptions) (steam.ReviewPage, error) {
+func (f requestFetcher) FetchReviewsPage(ctx context.Context, _ steamdomain.AppID, _ steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 	close(f.started)
 	select {
 	case <-f.release:
-		return steam.ReviewPage{Reviews: []steam.Review{{RecommendationID: 12, Text: "取得完了"}}, NextCursor: "next"}, nil
+		return steamdomain.ReviewPage{Reviews: []steamdomain.Review{{RecommendationID: 12, Text: "取得完了"}}, NextCursor: "next"}, nil
 	case <-ctx.Done():
-		return steam.ReviewPage{}, ctx.Err()
+		return steamdomain.ReviewPage{}, ctx.Err()
 	}
 }
 
@@ -32,11 +35,11 @@ func TestMCPShutdownWaitsForActiveCollection(t *testing.T) {
 	fetcher := requestFetcher{started: make(chan struct{}), release: make(chan struct{})}
 	release := sync.OnceFunc(func() { close(fetcher.release) })
 	t.Cleanup(release)
-	mcpHandler, err := reviewmcp.NewHandler(fetcher, reviewmcp.DefaultLimits(), nil)
+	mcpHandler, err := reviewmcp.NewHandler(fetcher, mcpdomain.DefaultLimits(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	url, httpClient, cancel, done, closed := startTestServer(t, newHandler(mcpHandler), 2*time.Second)
+	url, httpClient, cancel, done, closed := startTestServer(t, serveradapter.NewHandler(mcpHandler), 2*time.Second)
 	client := mcp.NewClient(&mcp.Implementation{Name: "server-integration", Version: "1"}, nil)
 	ctx, stop := context.WithTimeout(context.Background(), 5*time.Second)
 	defer stop()

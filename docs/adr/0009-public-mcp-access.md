@@ -23,3 +23,5 @@ ADR-0007 のローカル専用の適用範囲に公開モードを追加し、AD
 ## 利点と制約
 
 認証サービスを契約せず、匿名クライアントから上限付きの収集を利用できる。Host は利用者の識別・認証ではなく、誰でも利用枠を消費できる。共有枠の占有や大量の拒否リクエストをこの変更だけで防いだとは扱わない。再起動・複数台の予算・クラウド請求上限は保証しない。実 URL の接続と資源の実測、公開インフラの制限は配置時に確認する。
+
+Issue #56 では [ADR-0013](0013-domain-folder-layers.md) に従い、URL と Host 照合を mcpaccess/domain、HTTP の保護を mcpaccess/adapter に配置した。公開側は receiver の Access.Protect から Protect(access, next) へ変更し、nil・ゼロ値・Host・Origin の契約は維持する。

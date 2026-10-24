@@ -10,7 +10,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/shigaresso/player-lens/internal/reviewmcp"
+	serveradapter "github.com/shigaresso/player-lens/cmd/server/adapter"
+	reviewmcp "github.com/shigaresso/player-lens/internal/reviewmcp/adapter"
 )
 
 func main() {
@@ -24,19 +25,19 @@ func main() {
 }
 
 func run(ctx context.Context, port string) error {
-	address, err := listenAddress(port)
+	address, err := serveradapter.ListenAddress(port)
 	if err != nil {
 		return err
 	}
-	limits, err := readMCPLimits(os.Getenv)
+	limits, err := serveradapter.ReadMCPLimits(os.Getenv)
 	if err != nil {
 		return fmt.Errorf("MCP 利用制限の設定に失敗した: %w", err)
 	}
-	access, err := readMCPAccess(os.Getenv)
+	access, err := serveradapter.ReadMCPAccess(os.Getenv)
 	if err != nil {
 		return fmt.Errorf("MCP 公開設定に失敗した: %w", err)
 	}
-	fetcher, closeIdleConnections, err := newSteamFetcher()
+	fetcher, closeIdleConnections, err := serveradapter.NewSteamFetcher()
 	if err != nil {
 		return fmt.Errorf("レビュー取得クライアントの準備に失敗した: %w", err)
 	}
@@ -50,5 +51,5 @@ func run(ctx context.Context, port string) error {
 		return fmt.Errorf("HTTP の待ち受けに失敗した: %w", err)
 	}
 	log.Printf("HTTP サーバーを起動した: %s", address)
-	return serve(ctx, listener, newHandler(mcpHandler), 10*time.Second)
+	return serveradapter.Serve(ctx, listener, serveradapter.NewHandler(mcpHandler), 10*time.Second)
 }

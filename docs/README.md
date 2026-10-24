@@ -32,14 +32,15 @@
 | [ADR-0002：規約検査の実行環境](adr/0002-conventions-tooling.md) | Python、検査ツール、フック・CI の責務 | 採用。保護設定は現時点の契約では利用できず未設定 |
 | [ADR-0003：Go の整形・リンター](adr/0003-go-format-and-lint.md) | Go の整形、リンター、検証用 Docker、フック・CI | 採用。固定版の解析と index の整形検査を導入した。実 CI の結果は Issue・PR に記録する |
 | [ADR-0004：Steam の公開レビュー API](adr/0004-steam-review-api.md) | Steam API の選択、引数形式、取得 adapter の上限と再試行の責務 | 採用。実装とローカル検証は Issue #17 の作業記録へ記載する |
-| [ADR-0005：上限付き収集と部分結果](adr/0005-bounded-review-collection.md) | 収集操作の依存・上限・途中失敗・重複の判断 | 採用。実装と検証は Issue #21 の作業記録へ記載する |
-| [ADR-0006：収集結果の保存先](adr/0006-collection-output-boundary.md) | 保存先の注入、JSON の境界、部分結果の保存期限・失敗 | 採用。CLI と JSON adapter を導入した。DB は未導入 |
+| [ADR-0005：上限付き収集と部分結果](adr/0005-bounded-review-collection.md) | 収集操作の依存・上限・途中失敗・重複の判断 | 採用。配置を ADR-0013 で部分置換した。実装と検証は Issue #21・#56 に記録する |
+| [ADR-0006：収集結果の保存先](adr/0006-collection-output-boundary.md) | 保存先の注入、JSON の境界、部分結果の保存期限・失敗 | 採用。配置を ADR-0013 で部分置換した。CLI と JSON adapter を導入し、DB は未導入 |
 | [ADR-0007：ローカルのレビュー収集 MCP](adr/0007-review-mcp.md) | SDK、プロトコル、短時間の取得と分析の担当 | 採用。実装・検証の状態は Issue #25 の作業記録へ記載する |
 | [ADR-0008：MCP 利用制限](adr/0008-mcp-usage-limits.md) | 制限の状態所有・受付・返却・固定窓と保証範囲 | 採用。1プロセスで管理する。再起動・複数台の予算保証は持たない |
 | [ADR-0009：認証なしの公開 MCP](adr/0009-public-mcp-access.md) | 公開設定と Host 保護、OAuth を導入しない理由 | 採用。配置と実接続は未確認 |
 | [ADR-0010：Render 配置基盤](adr/0010-render-deployment.md) | 手動の GHCR 公開・Free・資格情報と配置準備の範囲 | 採用。実 CI・registry・配置は未実施 |
 | [ADR-0011：クライアント向け分析ガイド](adr/0011-client-review-analysis-guide.md) | MCP 結果へのガイド添付と分析の担当・制約 | 採用。版付きの本文を埋め込み、クライアントの最終回答は強制しない |
 | [ADR-0012：Steam の名前付き数値型](adr/0012-steam-domain-types.md) | Steam の ID・時刻・API 列挙値、JSON 境界との変換 | 採用。実装・検証は Issue #43 と作業記録に記載する |
+| [ADR-0013：各領域内のレイヤー分類](adr/0013-domain-folder-layers.md) | 既存領域を維持した domain・application・adapter の配置・依存 | 採用。実装・検証は Issue #56 に記録する |
 
 変更が複数の範囲にまたがる場合は、対応する文書をすべて読む。参照した節と ADR、要件に対応する検証を Issue・PR に記録する。ADR を追加・置換するときは、この一覧と適用範囲を更新する。
 

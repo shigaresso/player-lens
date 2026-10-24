@@ -1,5 +1,7 @@
 # MCP レビュー収集の利用制限
 
+LimitsConfig・Limits・NewLimits・DefaultLimits と Limiter は reviewmcp/domain に置く。MCP adapter が状態を所有し、application が確保と defer による返却を担当する。 配置は [ADR-0013](../adr/0013-domain-folder-layers.md) に従う。
+
 ## 目的と適用範囲
 
 [Issue #27](https://github.com/shigaresso/player-lens/issues/27) で、`/tools` の `collect_reviews` を繰り返し呼び出した場合の Steam 通信と実行資源を制限する。分析は接続元のモデルが担当するが、レビュー収集は PlayerLens が担当するため、その利用量は別に管理する。
@@ -18,11 +20,11 @@
 
 ### 設定値の生成と検証（Issue #54）
 
-`LimitsConfig` は公開フィールドを持つ未検証の設定値、`Limits` は非公開フィールドに設定値のコピーを保持する生成済みの値とする。`NewLimits` が各上限の正数検査を担当し、不正時はゼロ値と `steam.ErrInvalidArgument` を保持するエラーを返す。分次・日次は独立した上限であり、日次が分次より小さくても受け付ける。Go API の正数条件は維持し、環境変数の31 bit 制約を生成 API へ一律に追加しない。
+`LimitsConfig` は公開フィールドを持つ未検証の設定値、`Limits` は非公開フィールドに設定値のコピーを保持する生成済みの値とする。`NewLimits` が各上限の正数検査を担当し、不正時はゼロ値と `steamdomain.ErrInvalidArgument` を保持するエラーを返す。分次・日次は独立した上限であり、日次が分次より小さくても受け付ける。Go API の正数条件は維持し、環境変数の31 bit 制約を生成 API へ一律に追加しない。
 
 `readMCPLimits` は環境変数の文字列を解析して `LimitsConfig` を作り、`NewLimits` で生成する。`DefaultLimits` は分6回・24時間100回・同時2件の有効な値を返す。`Limits.Config()` が返すコピーや生成元の設定を変更しても、生成済みの値に影響しない。生成だけでは通信・時計の参照・利用枠の消費は行わない。
 
-`NewHandler` は生成済みの値を受け取り、各上限を再検査しない。Go で作成できる `Limits{}` は未初期化のゼロ値であり、`NewHandler` が `steam.ErrInvalidArgument` として拒否する。型だけでゼロ値の生成まで排除したとは扱わない。生成後の設定値と、handler が所有する利用回数・窓・同時実行数の状態は区別し、状態の寿命と共有範囲は維持する。
+`NewHandler` は生成済みの値を受け取り、各上限を再検査しない。Go で作成できる `Limits{}` は未初期化のゼロ値であり、`NewHandler` が `steamdomain.ErrInvalidArgument` として拒否する。型だけでゼロ値の生成まで排除したとは扱わない。生成後の設定値と、handler が所有する利用回数・窓・同時実行数の状態は区別し、状態の寿命と共有範囲は維持する。
 
 ## 受付と固定窓
 

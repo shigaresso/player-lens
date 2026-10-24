@@ -12,6 +12,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	serveradapter "github.com/shigaresso/player-lens/cmd/server/adapter"
 )
 
 type trackedListener struct {
@@ -99,7 +101,7 @@ func startTestServer(t *testing.T, handler http.Handler, timeout time.Duration) 
 	ctx, cancel := context.WithCancel(t.Context())
 	done := make(chan error, 1)
 	go func() {
-		done <- serve(ctx, tracked, handler, timeout)
+		done <- serveradapter.Serve(ctx, tracked, handler, timeout)
 		close(done)
 	}()
 	transport := &http.Transport{}
@@ -117,7 +119,7 @@ func startTestServer(t *testing.T, handler http.Handler, timeout time.Duration) 
 }
 
 func TestServerHealthAndShutdown(t *testing.T) {
-	url, client, cancel, done, _ := startTestServer(t, newHandler(nil), time.Second)
+	url, client, cancel, done, _ := startTestServer(t, serveradapter.NewHandler(nil), time.Second)
 	response, err := client.Get(url + "/healthz")
 	if err != nil {
 		t.Fatal(err)

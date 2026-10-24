@@ -19,7 +19,7 @@ class MCPGuideTests(unittest.TestCase):
         temporary = tempfile.TemporaryDirectory(prefix='player-lens-guide-test-')
         self.addCleanup(temporary.cleanup)
         root = Path(temporary.name)
-        source = root / 'internal/reviewmcp/analysis_guide.md'
+        source = root / 'internal/reviewmcp/adapter/analysis_guide.md'
         source.parent.mkdir(parents=True)
         self.instructions = '検査用の分析ガイド。根拠のレビュー ID を示してください。'
         source.write_text(self.instructions, encoding='utf-8')

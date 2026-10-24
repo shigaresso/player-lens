@@ -1,5 +1,7 @@
 # レビュー収集 CLI と保存先の契約
 
+CLI の入力処理は reviewcli/adapter、JSON と writer は jsonoutput/adapter に置く。各領域の境界を維持する。 配置は [ADR-0013](../adr/0013-domain-folder-layers.md) に従う。
+
 ## 範囲と責務
 
 [Issue #23](https://github.com/shigaresso/player-lens/issues/23) でローカル用 CLI を導入した。`CollectReviews` は取得のみ、`CollectAndSaveReviews` は収集と結果保存の順序・失敗の扱いを担当する。`CollectionSaver.SaveCollection(context.Context, Collection) error` を操作側で定義し、保存先を注入する。JSON・将来の DB 保存の選択は起動部分で行い、収集処理と CLI の入力処理を変更しない。[ADR-0006](../adr/0006-collection-output-boundary.md) と [操作一覧](../use-cases.md) を参照する。

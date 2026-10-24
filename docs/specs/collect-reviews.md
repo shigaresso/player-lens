@@ -1,8 +1,10 @@
 # Steam レビューの上限付き収集
 
+操作と利用側の interface は steam/application、型と正規化は steam/domain、具体的な HTTP は steam/adapter に置く。 配置は [ADR-0013](../adr/0013-domain-folder-layers.md) に従う。
+
 ## 範囲と依存
 
-[Issue #21](https://github.com/shigaresso/player-lens/issues/21) の `steam.CollectReviews` の契約を定める。[1ページ取得 adapter](steam-review-page.md) を利用し、カーソルの走査・重複排除・終了条件を担当する。操作一覧は [ユースケース](../use-cases.md)、判断は [ADR-0005](../adr/0005-bounded-review-collection.md) を参照する。
+[Issue #21](https://github.com/shigaresso/player-lens/issues/21) の `steamapplication.CollectReviews` の契約を定める。[1ページ取得 adapter](steam-review-page.md) を利用し、カーソルの走査・重複排除・終了条件を担当する。操作一覧は [ユースケース](../use-cases.md)、判断は [ADR-0005](../adr/0005-bounded-review-collection.md) を参照する。
 
 `PageFetcher` は利用側の1メソッドの interface とし、既存の `Client` を渡せる。依存は有効な `ReviewPage` を返す1ページ adapter の契約に従い、context を尊重する。HTTP クライアント・接続プールの組み立てと終了は呼び出し側、応答 Body の解放は adapter が担当する。収集操作内で HTTP クライアントを生成しない。
 

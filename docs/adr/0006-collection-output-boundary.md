@@ -4,6 +4,8 @@
 
 採用。[Issue #23](https://github.com/shigaresso/player-lens/issues/23) の収集 CLI・収集と保存の操作に適用する。[仕様](../specs/review-cli.md) に契約を記載する。DB 製品の採用・永続データ設計は決定しない。
 
+配置の決定は [ADR-0013](0013-domain-folder-layers.md) で部分的に置き換えた。以下の収集・保存・失敗・資源の振る舞いは維持する。現在の配置は各領域内の domain・application・adapter とする。
+
 ## 背景と比較
 
 ユーザーの方針として、JSON と将来の DB 保存を差し替え、収集や CLI の処理を共通で使う。形式の変換だけを差し替える設計では、保存先への I/O と失敗の扱いが入口へ混在する。

@@ -1,5 +1,7 @@
 # 認証なしの公開 MCP と許可 Host
 
+公開 URL と Host の照合は mcpaccess/domain、HTTP の保護は mcpaccess/adapter に置く。adapter.Protect は Access と次の handler を受け取る。 配置は [ADR-0013](../adr/0013-domain-folder-layers.md) に従う。
+
 ## 目的と状態
 
 Issue #29 で、公開 MCP を OAuth なしで提供する。Go はレビュー収集を担当し、分析は接続元のクライアントが行う。LLM API キー・バックエンドの分析・利用コード・DB は導入しない。Issue #31 の作業中にユーザー配置の公開 HTTPS で匿名初期化・一覧・不正入力の拒否を確認した。検証済み digest の配置と実 ChatGPT の公開接続は未確認とする。実装と検証は [作業記録](../worklogs/29-public-mcp-access.md) に残す。
@@ -17,7 +19,7 @@ Issue #29 で、公開 MCP を OAuth なしで提供する。Go はレビュー�
 
 ### 保護の組み立ての境界
 
-ローカル専用モードは `mcpaccess.ProtectLocal(next)`、公開モードは `Access.Protect(next)` が HTTP の保護を担当する。`reviewmcp.NewHandler` は設定に応じてどちらかを選び、SDK の組み立てと共有する利用枠の所有を担当する。公開モードだけ SDK の localhost 保護を無効にする設定は維持する。
+ローカル専用モードは `mcpaccess/adapter.ProtectLocal(next)`、公開モードは `mcpaccess/adapter.Protect(access, next)` が HTTP の保護を担当する。`reviewmcp.NewHandler` は設定に応じてどちらかを選び、SDK の組み立てと共有する利用枠の所有を担当する。公開モードだけ SDK の localhost 保護を無効にする設定は維持する。
 
 `ProtectLocal` の next は、呼び出し側が有効な非 nil の handler を渡す。従来の localhost/loopback の判定を使い、Host の検査、Go の cross-origin 保護、next の順に処理する。Host の不許可では403と「ローカルの Host のみ利用できます」の説明文を返す。Host または cross-origin で拒否した場合は next を呼ばず、許可時は next の応答を返す。構築時に通信・時計・新しい状態を必要とせず、公開側の authority 正規化へ判定を統一しない。
 

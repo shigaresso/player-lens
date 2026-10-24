@@ -5,14 +5,12 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/shigaresso/player-lens/internal/reviewmcp"
-	"github.com/shigaresso/player-lens/internal/steam"
 )
 
 func main() {
@@ -38,12 +36,11 @@ func run(ctx context.Context, port string) error {
 	if err != nil {
 		return fmt.Errorf("MCP 公開設定に失敗した: %w", err)
 	}
-	transport := http.DefaultTransport.(*http.Transport).Clone()
-	defer transport.CloseIdleConnections()
-	fetcher, err := steam.NewClient(&http.Client{Transport: transport, Timeout: 10 * time.Second}, "")
+	fetcher, closeIdleConnections, err := newSteamFetcher()
 	if err != nil {
 		return fmt.Errorf("レビュー取得クライアントの準備に失敗した: %w", err)
 	}
+	defer closeIdleConnections()
 	mcpHandler, err := reviewmcp.NewHandler(fetcher, limits, access)
 	if err != nil {
 		return fmt.Errorf("MCP サーバーの準備に失敗した: %w", err)

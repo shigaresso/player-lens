@@ -18,7 +18,7 @@
 
 Issue #38 で adapter 内のリクエスト変換を分離した。Issue #43 では文字列の評価種別から数値への変換を入力境界へ移した。`newReviewPageRequest`、`encodeReviewPageQuery` は、正規化済みの条件を Steam API の入力とクエリへ変換する通信なしの処理であり、新しいユースケースではない。 Issue #64 で評価種別の検査を FetchReviewsPage が呼ぶ NormalizePageOptions に集約し、newReviewPageRequest は正の App ID と検査後の条件の変換だけを担当する構成にした。private の重複検査と error 戻り値を除き、公開入口で不正入力を通信前に拒否する契約を維持した。
 
-Issue #39 で応答解釈も分離した。`decodeReviewPage` は本文と取得条件からページを作り、Issue #43 の `parseRecommendationID` は ID の文字列を0を含む uint64 に変換する。Issue #66 で、Body の読み取り・サイズ制限・解釈の呼び出し・Close を同じ adapter の `readReviewPageResponse` にまとめた。FetchReviewsPage は送信と context を担当し、応答処理が Close を終えた後で context を解放する。JSON の解釈は decodeReviewPage に維持し、新しいユースケースやレイヤーは増やさない。
+Issue #39 で応答解釈も分離した。`decodeReviewPage` は本文と取得条件からページを作り、Issue #43 の `parseRecommendationID` は ID の文字列を0を含む uint64 に変換する。Issue #66 で、Body の読み取り・サイズ制限・解釈の呼び出し・Close を同じ adapter の `readReviewPageResponse` にまとめた。FetchReviewsPage は送信と context を担当し、応答処理が Close を終えた後で context を解放する。JSON の解釈は decodeReviewPage に維持し、新しいユースケースやレイヤーは増やさない。 Issue #68 で、レビュー1件の ID と項目の変換を convertReview にまとめた。decodeReviewPage はページ全体の検査・変換の呼び出し・組み立てを担当し、変換に失敗したページは部分的に返さない。両処理は同じ adapter 内の純粋な処理とする。
 
 Issue #58 で、重複・カーソル・成功ページ数・終了判断を steam/domain の CollectionState にまとめた。状態生成時に App ID を検査し、生成済みの CollectionOptions から設定のコピーを保持する。条件の検査は Issue #60 で NewCollectionOptions へ移し、状態では繰り返さない。NextPage と AddPage で続行と状態更新を扱う。CollectReviews は取得・期限・キャンセルと失敗の原因、Fail による失敗確定を担当する。Result はレビュー配列もコピーして返す。状態は通信や context を持たず、新しいユースケースではない。[ADR-0014](adr/0014-steam-collection-state.md) に境界を記録する。
 

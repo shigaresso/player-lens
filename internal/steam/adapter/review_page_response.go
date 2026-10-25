@@ -38,12 +38,29 @@ func decodeReviewPage(appID steamdomain.AppID, options steamdomain.PageOptions, 
 		return steamdomain.ReviewPage{}, fmt.Errorf("missing next cursor: %w", ErrInvalidResponse)
 	}
 	reviews := make([]steamdomain.Review, len(result.Response.Reviews))
-	for i, review := range result.Response.Reviews {
-		id, err := parseRecommendationID(review.RecommendationID)
+	for i, input := range result.Response.Reviews {
+		review, err := convertReview(input)
 		if err != nil {
-			return steamdomain.ReviewPage{}, fmt.Errorf("invalid Steam recommendationid: %w", errors.Join(ErrInvalidResponse, err))
+			return steamdomain.ReviewPage{}, err
 		}
-		reviews[i] = steamdomain.Review{RecommendationID: id, Text: review.Text, Language: review.Language, Recommended: review.Recommended, TimestampCreated: review.TimestampCreated, TimestampUpdated: review.TimestampUpdated}
+		reviews[i] = review
 	}
 	return steamdomain.ReviewPage{AppID: appID, Options: options, Reviews: reviews, NextCursor: result.Response.Cursor}, nil
+}
+
+// convertReview は受信したレビュー1件の ID と各項目を内部型へ変換する。
+// 不正な ID ではゼロ値と ErrInvalidResponse・元の数値変換原因を返す。通信・保存は行わない。
+func convertReview(input reviewPageReview) (steamdomain.Review, error) {
+	id, err := parseRecommendationID(input.RecommendationID)
+	if err != nil {
+		return steamdomain.Review{}, fmt.Errorf("invalid Steam recommendationid: %w", errors.Join(ErrInvalidResponse, err))
+	}
+	return steamdomain.Review{
+		RecommendationID: id,
+		Text:             input.Text,
+		Language:         input.Language,
+		Recommended:      input.Recommended,
+		TimestampCreated: input.TimestampCreated,
+		TimestampUpdated: input.TimestampUpdated,
+	}, nil
 }

@@ -36,7 +36,7 @@ HTTP 200 以外はステータスを持つエラーとし、リダイレクト�
 
 ### 応答解釈の境界（Issue #39）
 
-`review_page_response.go` の `decodeReviewPage` が本文の JSON 解析、wrapper・件数・カーソルの検査、空配列の正規化とページ生成を担当する。Issue #43 では専用の受信データから `parseRecommendationID` で ID を10進の uint64 に変換する。省略・null・空・構文不正・範囲超過は拒否し、0は受け付ける。先頭ゼロは数値に正規化する。これらは通信しない。Issue #66 では、HTTP ステータス、Body の読み取り・2 MiB 制限、解釈の呼び出し、Close と複合エラーを `read_review_page_response.go` の `readReviewPageResponse` にまとめた。Do が成功して返した有効な応答と、正の App ID・正規化済みの条件を受け取り、Body を読み取りから Close まで所有する。解釈を終えてから Close し、Close 失敗ではページをゼロ値にして元の原因と併せて返す。読み取り中の同じ goroutine の panic も Close した後に呼び出し側へ伝える。FetchReviewsPage は入力・要求構築・送信と取得用 context を所有し、応答処理が Close を完了してから context を解放する。失敗時のゼロ値と原因保持を維持する。
+`review_page_response.go` の `decodeReviewPage` が本文の JSON 解析、wrapper・件数・カーソルの検査、空配列の正規化とページ生成を担当する。Issue #43 では専用の受信データから `parseRecommendationID` で ID を10進の uint64 に変換する。省略・null・空・構文不正・範囲超過は拒否し、0は受け付ける。先頭ゼロは数値に正規化する。Issue #68 で、受信型 reviewPageReview から1件の内部 Review を作る処理を非公開の convertReview に分離した。ID の数値変換と各項目のコピー、不正時の Review のゼロ値と ErrInvalidResponse・数値変換原因は convertReview が担当する。decodeReviewPage は JSON とページ全体を検査して変換を順に呼び、1件でも失敗した場合は先行レビューも含めて返さず、ページの完全なゼロ値と原因を返す。これらは通信しない。Issue #66 では、HTTP ステータス、Body の読み取り・2 MiB 制限、解釈の呼び出し、Close と複合エラーを `read_review_page_response.go` の `readReviewPageResponse` にまとめた。Do が成功して返した有効な応答と、正の App ID・正規化済みの条件を受け取り、Body を読み取りから Close まで所有する。解釈を終えてから Close し、Close 失敗ではページをゼロ値にして元の原因と併せて返す。読み取り中の同じ goroutine の panic も Close した後に呼び出し側へ伝える。FetchReviewsPage は入力・要求構築・送信と取得用 context を所有し、応答処理が Close を完了してから context を解放する。失敗時のゼロ値と原因保持を維持する。
 
 ## 検証
 

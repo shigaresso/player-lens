@@ -51,7 +51,7 @@ func TestHealthCompletionLog(t *testing.T) {
 			request := httptest.NewRequest(tc.method, "/healthz?token=secret", nil)
 			request.Header.Set("Authorization", "Bearer secret")
 			response := httptest.NewRecorder()
-			NewHandler(nil, logger, now).ServeHTTP(response, request)
+			NewHealthHandler(logger, now).ServeHTTP(response, request)
 			if response.Code != http.StatusOK || response.Body.String() != tc.body || response.Header().Get("Content-Type") != "text/plain; charset=utf-8" {
 				t.Fatalf("応答契約を変更した: status=%d body=%q header=%v", response.Code, response.Body.String(), response.Header())
 			}

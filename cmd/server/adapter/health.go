@@ -11,6 +11,14 @@ type healthHandler struct {
 	now    func() time.Time
 }
 
+// NewHealthHandler は生存確認の HTTP 応答・計測・ログを担当する handler を生成する。
+// logger と now は有効な非 nil かつ並行利用可能な依存を渡す。
+// 生成時には時刻取得やログ出力を行わず、経路登録は呼び出し側が担当する。
+// GET/HEAD /healthz へのメソッドとパスの制限には RegisterRoutes を使う。
+func NewHealthHandler(logger *slog.Logger, now func() time.Time) http.Handler {
+	return healthHandler{logger: logger, now: now}
+}
+
 // ServeHTTP は生存確認の応答と所要時間を記録する。ログの失敗で応答を変更しない。
 // panic は回復せず、request context をそのままログへ渡す。
 func (h healthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

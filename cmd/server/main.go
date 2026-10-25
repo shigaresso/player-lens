@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -53,6 +54,10 @@ func run(ctx context.Context, port string, logger *slog.Logger) error {
 		return fmt.Errorf("MCP サーバーの準備に失敗した: %w", err)
 	}
 
+	healthHandler := serveradapter.NewHealthHandler(logger, time.Now)
+	router := http.NewServeMux()
+	serveradapter.RegisterRoutes(router, healthHandler, mcpHandler)
+
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
 		return fmt.Errorf("HTTP の待ち受けに失敗した: %w", err)
@@ -60,5 +65,5 @@ func run(ctx context.Context, port string, logger *slog.Logger) error {
 
 	logger.InfoContext(ctx, "HTTP サーバーを起動した",
 		slog.String("event", "server.started"), slog.String("address", address))
-	return serveradapter.Serve(ctx, listener, serveradapter.NewHandler(mcpHandler, logger, time.Now), 10*time.Second)
+	return serveradapter.Serve(ctx, listener, router, 10*time.Second)
 }

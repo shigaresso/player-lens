@@ -30,6 +30,20 @@ func (w *failedHealthLogWriter) Write([]byte) (int, error) {
 	return 0, io.ErrClosedPipe
 }
 
+func TestNewHealthHandlerDoesNotProcessRequest(t *testing.T) {
+	var output bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&output, nil))
+	clockCalls := 0
+	now := func() time.Time {
+		clockCalls++
+		return time.Unix(100, 0)
+	}
+	handler := NewHealthHandler(logger, now)
+	if handler == nil || clockCalls != 0 || output.Len() != 0 {
+		t.Fatalf("handlerの生成時に処理を実行した: handler=%v clockCalls=%d log=%q", handler, clockCalls, output.String())
+	}
+}
+
 func TestHealthLogFailurePreservesResponse(t *testing.T) {
 	for _, tc := range []struct {
 		name   string
@@ -43,7 +57,7 @@ func TestHealthLogFailurePreservesResponse(t *testing.T) {
 			output := &failedHealthLogWriter{}
 			logger := slog.New(slog.NewJSONHandler(output, nil))
 			response := httptest.NewRecorder()
-			NewHandler(nil, logger, time.Now).ServeHTTP(response, httptest.NewRequest(tc.method, "/healthz", nil))
+			NewHealthHandler(logger, time.Now).ServeHTTP(response, httptest.NewRequest(tc.method, "/healthz", nil))
 			if response.Code != http.StatusOK || response.Body.String() != tc.body || response.Header().Get("Content-Type") != "text/plain; charset=utf-8" || output.calls != 1 {
 				t.Fatalf("ログの失敗で応答を変更した: status=%d body=%q header=%v logCalls=%d", response.Code, response.Body.String(), response.Header(), output.calls)
 			}
@@ -69,7 +83,7 @@ func TestHealthLogReceivesRequestContext(t *testing.T) {
 			handler := &healthContextHandler{Handler: slog.NewJSONHandler(io.Discard, nil)}
 			logger := slog.New(handler)
 			request := httptest.NewRequest(http.MethodGet, "/healthz", nil).WithContext(ctx)
-			NewHandler(nil, logger, time.Now).ServeHTTP(httptest.NewRecorder(), request)
+			NewHealthHandler(logger, time.Now).ServeHTTP(httptest.NewRecorder(), request)
 			if len(handler.seen) != 1 || handler.seen[0] != ctx || handler.seen[0].Value(healthContextKey{}) != "trace-context" {
 				t.Fatalf("request contextを引き継がなかった: %v", handler.seen)
 			}
@@ -94,7 +108,9 @@ func TestOtherRoutesDoNotEmitHealthLog(t *testing.T) {
 			logger := slog.New(slog.NewJSONHandler(&output, nil))
 			mcp := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusNoContent) })
 			response := httptest.NewRecorder()
-			NewHandler(mcp, logger, time.Now).ServeHTTP(response, httptest.NewRequest(tc.method, tc.path, nil))
+			router := http.NewServeMux()
+			RegisterRoutes(router, NewHealthHandler(logger, time.Now), mcp)
+			router.ServeHTTP(response, httptest.NewRequest(tc.method, tc.path, nil))
 			if response.Code != tc.status || output.Len() != 0 {
 				t.Fatalf("対象外の経路で契約を変更した: status=%d log=%q", response.Code, output.String())
 			}

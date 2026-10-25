@@ -5,6 +5,7 @@ import (
 	"io"
 	"log/slog"
 	"net"
+	"net/http"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -22,7 +23,10 @@ func (l *failedListener) Close() error              { l.closed.Store(true); retu
 func TestServeFailure(t *testing.T) {
 	cause := errors.New("待ち受け資源の故障")
 	listener := &failedListener{cause: cause}
-	err := Serve(t.Context(), listener, NewHandler(nil, slog.New(slog.NewJSONHandler(io.Discard, nil)), time.Now), time.Second)
+	healthHandler := NewHealthHandler(slog.New(slog.NewJSONHandler(io.Discard, nil)), time.Now)
+	router := http.NewServeMux()
+	RegisterRoutes(router, healthHandler, nil)
+	err := Serve(t.Context(), listener, router, time.Second)
 	if !errors.Is(err, cause) {
 		t.Fatalf("原因が保持されなかった: %v", err)
 	}

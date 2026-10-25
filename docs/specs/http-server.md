@@ -11,9 +11,34 @@
 - 起動した HTTP サーバーの応答を確認するものであり、DB・Steam・LLM・MCP の接続や調査の正常性を示さない。収集操作の一覧は [ユースケース](../use-cases.md)、追加した `/tools` の契約は [MCP 仕様](review-mcp.md) を参照する。
 - 応答の書き込みに失敗した場合は操作と安全な原因分類を構造化ログへ記録する。接続へ書き込めない状況で新たな正常応答を作らない。
 
+## 起動時の生成と経路登録（Issue #74）
+
+main は logger とプロセスの context を生成し、run は各 handler とルーターを組み立てる。server adapter の NewHealthHandler(logger, now) は生存確認の handler を生成する。生成時にはリクエスト処理・時刻取得・ログ出力を行わない。MCP の handler は従来どおり reviewmcp.NewHandler で生成する。
+
+run は http.NewServeMux でルーターを生成し、RegisterRoutes(mux, healthHandler, mcpHandler) で経路を登録してから待ち受けを開始する。RegisterRoutes は既存の mux に生成済み handler を登録するだけで、依存や handler・ルーターを生成せず、handler を実行しない。無関係な既存経路は維持する。旧 server adapter の NewHandler は残さない。
+
+RegisterRoutes は GET /healthz（HEAD を含む）と、MCP が非 nil の場合の /tools を登録する。mux と healthHandler は有効な非 nil の値を渡し、登録は受付開始前に行う。競合するパターンは事前に登録しない。重複登録などは標準 ServeMux の panic に従い、独自の検査や復旧は追加しない。各 handler は並行利用可能なものを渡す。
+
+生成は New、既存の対象への登録は Register という名前で区別する。業務操作を持たない生存確認のための application/domain や、生成と登録をまとめ直す互換ラッパーは作らない。
+
+```text
+起動時:
+  main: JSON logger と context を生成 → run へ渡す
+  run: MCP handler と health handler を生成
+       → ルーターを生成 → RegisterRoutes で登録
+       → listener を生成 → Serve で受付と終了を管理
+
+リクエスト時:
+  ルーター → healthHandler.ServeHTTP
+           → 開始時刻 → 応答ヘッダー → GET の本文書き込み
+           → 所要時間と書き込み結果 → healthCheckLog → slog
+```
+
+起動時の組み立てはリクエストごとに実行しない。リクエストのメソッドとパスの制限はルーター、応答と計測は healthHandler、ログ項目とレベル・原因分類は healthCheckLog が担当する。healthz の応答処理完了とクライアントへの配信完了を区別する。
+
 ## 生存確認の構造化ログ（Issue #72）
 
-起動側は slog の JSONHandler で stderr に出力し、service.name=player-lens を付与する。生成した slog.Logger と時刻取得関数を serveradapter.NewHandler に渡し、handler はその依存を共有する。依存は有効な非 nil のものを渡し、同時実行時には並行利用に対応する。グローバル logger の差し替えは行わない。
+起動側は slog の JSONHandler で stderr に出力し、service.name=player-lens を付与する。生成した slog.Logger と時刻取得関数を serveradapter.NewHealthHandler に渡し、handler はその依存を共有する。依存は有効な非 nil のものを渡し、同時実行時には並行利用に対応する。グローバル logger の差し替えは行わない。
 
 GET/HEAD /healthz が通常 return したときに health_check.completed を1回記録する。時刻・level・msg は slog の標準項目とし、msg は「ヘルスチェックを処理した」に固定する。
 
@@ -63,6 +88,8 @@ LogAttrs に request の context をそのまま渡す。キャンセル済み�
 - 起動と healthcheck が成功した URL を表示し、Compose Watch でソース同期・再起動を提供する。ログは `docker compose logs --follow app` で確認する。起動入口は自分が起動した `app` の停止を担当し、Ctrl+C と失敗時に停止する。コンテナ・ネットワークの削除は `docker compose down`、キャッシュ volume は保持する。
 
 ## 検証との対応
+
+生成と登録の境界はユニットテストで確認する。health handler の生成時に時計・ログを実行しないことと、登録時に handler を呼ばないこと、渡した health/MCP handler への委譲、既存経路の保持を確認する。旧ルーター経由の応答テストは生成済み handler と明示的な登録へ移行し、ログの契約は生成済み health handler でも確認する。
 
 設定と HTTP 応答はネットワークを使わないユニットテストで確認する。構造化ログは制御した時計とメモリ上の出力先で正常・書き込み失敗・ログ出力失敗・context の引き継ぎと対象経路を確認する。実 HTTP の GET/HEAD と JSON の接続、実バイナリの起動失敗と stderr・終了コードは integration タグで確認する。実際の待ち受け・応答・処理中の終了・期限超過・bind 失敗は `integration` タグの結合テストで確認し、race detector を実行する。本番用イメージの PORT・不正設定・HTTP 応答・SIGTERM は独立したスモーク検査で確認する。
 

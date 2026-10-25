@@ -48,15 +48,19 @@ func TestProtectLocal(t *testing.T) {
 			if tc.origin != "" {
 				request.Header.Set("Origin", tc.origin)
 			}
+
 			if tc.fetchSite != "" {
 				request.Header.Set("Sec-Fetch-Site", tc.fetchSite)
 			}
+
 			if tc.forwarded != "" {
 				request.Header.Set("Forwarded", tc.forwarded)
 			}
+
 			if tc.forwardedHost != "" {
 				request.Header.Set("X-Forwarded-Host", tc.forwardedHost)
 			}
+
 			response := httptest.NewRecorder()
 			handler.ServeHTTP(response, request)
 
@@ -64,12 +68,15 @@ func TestProtectLocal(t *testing.T) {
 			if tc.status == http.StatusAccepted {
 				wantCalls = 1
 			}
+
 			if response.Code != tc.status || calls != wantCalls {
 				t.Fatalf("status=%d calls=%d; want status=%d calls=%d", response.Code, calls, tc.status, wantCalls)
 			}
+
 			if wantCalls == 1 && (response.Header().Get("X-Next") != "reached" || response.Body.String() != "accepted\n") {
 				t.Fatalf("後続ハンドラーの応答が変わった: header=%v body=%q", response.Header(), response.Body.String())
 			}
+
 			if tc.hostRejected && response.Body.String() != "ローカルの Host のみ利用できます\n" {
 				t.Fatalf("Hostの拒否理由が変わった: %q", response.Body.String())
 			}

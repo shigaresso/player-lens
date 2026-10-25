@@ -16,5 +16,6 @@ func NewSteamFetcher() (*steamadapter.Client, func(), error) {
 		transport.CloseIdleConnections()
 		return nil, nil, err
 	}
+
 	return fetcher, transport.CloseIdleConnections, nil
 }

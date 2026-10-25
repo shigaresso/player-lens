@@ -16,6 +16,7 @@ func ProtectLocal(next http.Handler) http.Handler {
 			http.Error(w, "ローカルの Host のみ利用できます", http.StatusForbidden)
 			return
 		}
+
 		protected.ServeHTTP(w, request)
 	})
 }
@@ -24,9 +25,11 @@ func localHost(host string) bool {
 	if name, _, err := net.SplitHostPort(host); err == nil {
 		host = name
 	}
+
 	if strings.EqualFold(host, "localhost") {
 		return true
 	}
+
 	ip := net.ParseIP(strings.Trim(host, "[]"))
 	return ip != nil && ip.IsLoopback()
 }

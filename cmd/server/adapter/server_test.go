@@ -24,6 +24,7 @@ func TestServeFailure(t *testing.T) {
 	if !errors.Is(err, cause) {
 		t.Fatalf("原因が保持されなかった: %v", err)
 	}
+
 	if !listener.closed.Load() {
 		t.Fatal("listener が解放されなかった")
 	}

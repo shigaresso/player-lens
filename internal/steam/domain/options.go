@@ -34,23 +34,30 @@ func NormalizePageOptions(options PageOptions) (PageOptions, error) {
 	default:
 		return PageOptions{}, fmt.Errorf("invalid Steam review type: %w", ErrInvalidArgument)
 	}
+
 	if options.Language == "" {
 		options.Language = "english"
 	}
+
 	if options.Cursor == "" {
 		options.Cursor = FirstPageCursor
 	}
+
 	if options.PageSize == 0 {
 		options.PageSize = defaultPageSize
 	}
+
 	if options.PageSize < 1 || options.PageSize > MaxPageSize {
 		return PageOptions{}, fmt.Errorf("steam review page size must be between 1 and %d: %w", MaxPageSize, ErrInvalidArgument)
 	}
+
 	if !languagePattern.MatchString(options.Language) {
 		return PageOptions{}, fmt.Errorf("invalid Steam review language code: %w", ErrInvalidArgument)
 	}
+
 	if len(options.Cursor) > maxCursorBytes {
 		return PageOptions{}, fmt.Errorf("steam review cursor exceeds %d bytes: %w", maxCursorBytes, ErrInvalidArgument)
 	}
+
 	return options, nil
 }

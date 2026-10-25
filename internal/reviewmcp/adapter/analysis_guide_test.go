@@ -29,20 +29,25 @@ func TestAnalysisGuideResult(t *testing.T) {
 			if tc.text != "" {
 				collection.Reviews = []steamdomain.Review{{RecommendationID: 13, Text: tc.text}}
 			}
+
 			result, err := encodeResult(collection, toolFailureInfo{code: tc.code, message: "状態の説明"})
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			out := decodeOutput(t, result)
 			if commonInstructions == "" {
 				commonInstructions = out.AnalysisGuide.Instructions
 			}
+
 			if out.AnalysisGuide.Instructions != commonInstructions {
 				t.Fatal("結果や外部本文によりガイドが変わった")
 			}
+
 			if out.ErrorCode != tc.code || result.IsError != (tc.code != "") || out.Collection.AppID != 440 || out.Collection.StopReason != steamdomain.StopExhausted || out.ReturnedCount != len(collection.Reviews) {
 				t.Fatal("既存の結果とエラーを変更した")
 			}
+
 			if tc.text != "" && (out.Collection.Reviews[0].RecommendationID != "13" || out.Collection.Reviews[0].Text != tc.text) {
 				t.Fatal("根拠のレビューを変更した")
 			}

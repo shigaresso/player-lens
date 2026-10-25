@@ -21,6 +21,7 @@ func Serve(ctx context.Context, listener net.Listener, handler http.Handler, tim
 		BaseContext: func(net.Listener) context.Context { return context.WithoutCancel(ctx) },
 	}
 	defer func() { err = errors.Join(err, server.Close()) }()
+
 	done := make(chan error, 1)
 	go func() { done <- server.Serve(listener) }()
 	select {
@@ -29,10 +30,12 @@ func Serve(ctx context.Context, listener net.Listener, handler http.Handler, tim
 	case <-ctx.Done():
 		shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), timeout)
 		defer cancel()
+
 		shutdownErr := server.Shutdown(shutdownCtx)
 		if shutdownErr != nil {
 			shutdownErr = fmt.Errorf("HTTP サーバーの終了待ちに失敗した: %w", shutdownErr)
 		}
+
 		return errors.Join(shutdownErr, serveError(<-done))
 	}
 }
@@ -41,5 +44,6 @@ func serveError(err error) error {
 	if errors.Is(err, http.ErrServerClosed) {
 		return nil
 	}
+
 	return fmt.Errorf("HTTP サーバーの実行に失敗した: %w", err)
 }

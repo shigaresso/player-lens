@@ -30,6 +30,7 @@ func TestLimiterWindows(t *testing.T) {
 				if reason != tc.reasons[i] {
 					t.Fatalf("受付%d 時刻=%v reason=%v want=%v", i, offset, reason, tc.reasons[i])
 				}
+
 				if release != nil {
 					release()
 				}

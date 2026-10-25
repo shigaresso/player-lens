@@ -19,6 +19,7 @@ func NewSaver(writer io.Writer) (*Saver, error) {
 	if writer == nil {
 		return nil, errors.New("JSON output writer is required")
 	}
+
 	return &Saver{writer: writer}, nil
 }
 
@@ -29,20 +30,25 @@ func (s *Saver) SaveCollection(ctx context.Context, result steamdomain.Collectio
 	if err := ctx.Err(); err != nil {
 		return fmt.Errorf("prepare collection JSON output: %w", err)
 	}
+
 	data, err := MarshalCollection(result)
 	if err != nil {
 		return err
 	}
+
 	if err := ctx.Err(); err != nil {
 		return fmt.Errorf("write collection JSON: %w", err)
 	}
+
 	data = append(data, '\n')
 	written, err := s.writer.Write(data)
 	if err != nil {
 		return fmt.Errorf("write collection JSON: %w", err)
 	}
+
 	if written != len(data) {
 		return fmt.Errorf("write collection JSON: %w", io.ErrShortWrite)
 	}
+
 	return nil
 }

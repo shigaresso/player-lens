@@ -32,33 +32,41 @@ func TestCollectFailure(t *testing.T) {
 				if tc.partial && calls == 1 {
 					return steamdomain.ReviewPage{Reviews: []steamdomain.Review{{RecommendationID: 14, Text: "取得済み"}}, NextCursor: "next"}, nil
 				}
+
 				return steamdomain.ReviewPage{}, tc.cause
 			})
 			result, err := collect(context.Background(), fetcher, json.RawMessage(`{"app_id":440,"max_reviews":3}`), mcpdomain.NewLimiter(mcpdomain.DefaultLimits(), time.Now))
 			if err != nil || result == nil || !result.IsError {
 				t.Fatalf("result=%+v err=%v", result, err)
 			}
+
 			if !errors.Is(result.GetError(), tc.cause) {
 				t.Fatal("サーバー側で失敗原因を保持しなかった")
 			}
+
 			out := decodeOutput(t, result)
 			if out.ErrorCode != tc.code || out.Collection.StopReason != steamdomain.StopFailed || out.Message == "" {
 				t.Fatal(out)
 			}
+
 			want := 0
 			if tc.partial {
 				want = 1
 			}
+
 			if out.ReturnedCount != want || len(out.Collection.Reviews) != want || out.Collection.PagesFetched != want || calls != want+1 {
 				t.Fatal(out)
 			}
+
 			if tc.partial && out.Collection.Reviews[0].RecommendationID != "14" {
 				t.Fatal(out)
 			}
+
 			data, marshalErr := json.Marshal(result)
 			if marshalErr != nil {
 				t.Fatal(marshalErr)
 			}
+
 			if strings.Contains(string(data), "secret") {
 				t.Fatal("内部の取得エラーを公開した")
 			}

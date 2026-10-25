@@ -46,11 +46,14 @@ func TestNewAccess(t *testing.T) {
 				if err != nil || (access == nil) != tc.local {
 					t.Fatalf("access=%v err=%v", access, err)
 				}
+
 				return
 			}
+
 			if access != nil || !errors.Is(err, mcpaccess.ErrInvalidConfig) {
 				t.Fatalf("access=%v err=%v", access, err)
 			}
+
 			if strings.Contains(err.Error(), tc.value) {
 				t.Fatal("設定値を診断へ出した")
 			}

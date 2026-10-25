@@ -32,6 +32,7 @@ func TestFetchReviewsPageValidBoundaries(t *testing.T) {
 				if r.URL.Scheme != "https" || r.URL.Host != "api.steampowered.com" || r.URL.Path != "/IUserReviewsService/GetAppReviews/v1/" || len(r.URL.Query()) != 2 {
 					t.Errorf("URL=%s", r.URL)
 				}
+
 				var input struct {
 					AppID     steamdomain.AppID `json:"appid"`
 					Languages []string          `json:"languages"`
@@ -41,14 +42,17 @@ func TestFetchReviewsPageValidBoundaries(t *testing.T) {
 				if err := json.Unmarshal([]byte(r.URL.Query().Get("input_json")), &input); err != nil {
 					t.Error(err)
 				}
+
 				if input.AppID != tt.appID || input.Cursor != tt.options.Cursor || input.PageSize != tt.options.PageSize || !reflect.DeepEqual(input.Languages, []string{tt.options.Language}) {
 					t.Errorf("input=%#v", input)
 				}
+
 				return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(`{"response":{}}`)), Header: make(http.Header)}, nil
 			})}, "")
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			page, err := client.FetchReviewsPage(context.Background(), tt.appID, tt.options)
 			if err != nil || page.AppID != tt.appID || page.Options != tt.options || calls != 1 {
 				t.Fatalf("page=%#v error=%v calls=%d", page, err, calls)
@@ -64,6 +68,7 @@ func TestFetchReviewsPageTransportFailure(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	page, err := client.FetchReviewsPage(context.Background(), 440, steamdomain.PageOptions{})
 	if !errors.Is(err, failure) || calls != 1 || !reflect.DeepEqual(page, steamdomain.ReviewPage{}) {
 		t.Fatalf("page=%#v error=%v calls=%d", page, err, calls)

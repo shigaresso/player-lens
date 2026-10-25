@@ -58,13 +58,16 @@ func TestEncodeReviewPageQuery(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		if len(query) != 2 || !reflect.DeepEqual(query["format"], []string{"json"}) || len(query["input_json"]) != 1 {
 			t.Fatalf("query=%v", query)
 		}
+
 		var got map[string]any
 		if err := json.Unmarshal([]byte(query.Get("input_json")), &got); err != nil {
 			t.Fatal(err)
 		}
+
 		want := map[string]any{
 			"appid": float64(440), "filter": float64(1), "languages": []any{"japanese"},
 			"cursor": "次+/=&?", "num_per_page": float64(7), "review_type": float64(2),

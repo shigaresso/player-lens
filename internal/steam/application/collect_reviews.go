@@ -25,28 +25,34 @@ func CollectReviews(ctx context.Context, fetcher PageFetcher, appID steamdomain.
 	if fetcher == nil {
 		return steamdomain.Collection{}, fmt.Errorf("page fetcher and positive AppID are required: %w", steamdomain.ErrInvalidArgument)
 	}
+
 	state, err := steamdomain.NewCollectionState(appID, options)
 	if err != nil {
 		return steamdomain.Collection{}, fmt.Errorf("prepare Steam review collection: %w", err)
 	}
+
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
+
 	for {
 		next, more := state.NextPage()
 		if !more {
 			return state.Result(), nil
 		}
+
 		if err := ctx.Err(); err != nil {
 			state.Fail()
 			result := state.Result()
 			return result, fmt.Errorf("collect Steam reviews before page %d: %w", result.PagesFetched+1, err)
 		}
+
 		page, err := fetcher.FetchReviewsPage(ctx, appID, next)
 		if err != nil {
 			state.Fail()
 			result := state.Result()
 			return result, fmt.Errorf("collect Steam review page %d: %w", result.PagesFetched+1, err)
 		}
+
 		if err := state.AddPage(page); err != nil {
 			result := state.Result()
 			return result, fmt.Errorf("collect Steam reviews after page %d: %w", result.PagesFetched, err)

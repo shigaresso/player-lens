@@ -49,25 +49,30 @@ func TestRunOutputAndExit(t *testing.T) {
 			if test.outputFail {
 				writer = failedWriter{}
 			}
+
 			saver, err := jsonoutput.NewSaver(writer)
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			calls := 0
 			fetcher := fetcherFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				calls++
 				if calls == 2 && test.fail {
 					return steamdomain.ReviewPage{}, io.ErrUnexpectedEOF
 				}
+
 				if test.cancel {
 					cancel()
 				}
+
 				return steamdomain.ReviewPage{Reviews: []steamdomain.Review{{RecommendationID: 1, Text: "本文"}}, NextCursor: "next"}, nil
 			})
 			code := Run(ctx, test.args, fetcher, saver, &stderr)
 			if code != test.code || calls != test.calls {
 				t.Fatalf("code=%d calls=%d stderr=%q", code, calls, stderr.String())
 			}
+
 			if test.wantJSON {
 				var result struct {
 					Reviews []struct {
@@ -81,12 +86,15 @@ func TestRunOutputAndExit(t *testing.T) {
 			} else if stdout.Len() != 0 {
 				t.Fatalf("JSON以外をstdoutへ出した: %q", stdout.String())
 			}
+
 			if test.code == 0 && test.calls > 0 && stderr.Len() != 0 {
 				t.Fatalf("成功時の診断: %q", stderr.String())
 			}
+
 			if test.code != 0 && stderr.Len() == 0 {
 				t.Fatal("失敗の診断がない")
 			}
+
 			if test.calls == 0 && test.code == 0 && !strings.Contains(stderr.String(), "使用方法") {
 				t.Fatal("helpがない")
 			}

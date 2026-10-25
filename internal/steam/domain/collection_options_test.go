@@ -31,29 +31,36 @@ func TestNewCollectionOptions(t *testing.T) {
 			if !tt.invalid {
 				tt.want.ReviewType = steamdomain.ReviewTypeAll
 			}
+
 			input := tt.input
 			got, err := steamdomain.NewCollectionOptions(input)
 			if errors.Is(err, steamdomain.ErrInvalidArgument) != tt.invalid || (err != nil) != tt.invalid {
 				t.Fatalf("options=%#v error=%v", got, err)
 			}
+
 			if input != tt.input {
 				t.Fatal("入力が変更された")
 			}
+
 			if tt.invalid {
 				if got != (steamdomain.CollectionOptions{}) {
 					t.Fatalf("拒否時の値=%#v", got)
 				}
+
 				return
 			}
+
 			if !reflect.DeepEqual(got.Config(), tt.want) {
 				t.Fatalf("options=%#v; want=%#v", got.Config(), tt.want)
 			}
+
 			again, err := steamdomain.NewCollectionOptions(got.Config())
 			if err != nil || again != got {
 				t.Fatalf("再適用=%#v error=%v", again, err)
 			}
 		})
 	}
+
 	if steamdomain.MaxCollectionReviews != 10000 || steamdomain.MaxCollectionPages != 100 {
 		t.Fatal("収集全体の上限が異なる")
 	}

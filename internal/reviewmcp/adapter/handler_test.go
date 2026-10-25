@@ -20,6 +20,7 @@ func TestHandlerLimits(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	for _, tc := range []struct {
 		name        string
 		origin      string
@@ -38,9 +39,11 @@ func TestHandlerLimits(t *testing.T) {
 			if !tc.knownLength {
 				r.ContentLength = -1
 			}
+
 			if tc.origin != "" {
 				r.Header.Set("Origin", tc.origin)
 			}
+
 			w := httptest.NewRecorder()
 			handler.ServeHTTP(w, r)
 			if w.Code != tc.status {
@@ -65,6 +68,7 @@ func TestLocalHost(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	for _, tc := range []struct {
 		name     string
 		host     string

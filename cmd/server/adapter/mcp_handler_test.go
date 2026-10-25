@@ -30,6 +30,7 @@ func TestMCPRoute(t *testing.T) {
 				if r.URL.Path != "/tools" {
 					t.Fatal(r.URL.Path)
 				}
+
 				w.WriteHeader(202)
 			}))
 			w := httptest.NewRecorder()

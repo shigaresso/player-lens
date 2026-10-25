@@ -27,8 +27,10 @@ func TestListenAddress(t *testing.T) {
 				if err == nil || got != "" {
 					t.Fatalf("不正値を受け付けた: address=%q err=%v", got, err)
 				}
+
 				return
 			}
+
 			if err != nil || got != tt.want {
 				t.Fatalf("address=%q err=%v; want=%q", got, err, tt.want)
 			}

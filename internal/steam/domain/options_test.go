@@ -34,6 +34,7 @@ func TestNormalizePageOptions(t *testing.T) {
 			if !tt.invalid {
 				tt.want.ReviewType = steamdomain.ReviewTypeAll
 			}
+
 			before := tt.input
 			got, err := steamdomain.NormalizePageOptions(tt.input)
 			if tt.invalid {
@@ -43,12 +44,15 @@ func TestNormalizePageOptions(t *testing.T) {
 			} else if err != nil {
 				t.Fatal(err)
 			}
+
 			if got != tt.want {
 				t.Errorf("options=%#v want=%#v", got, tt.want)
 			}
+
 			if tt.input != before {
 				t.Errorf("入力を変更した: %#v", tt.input)
 			}
+
 			if !tt.invalid {
 				again, err := steamdomain.NormalizePageOptions(got)
 				if err != nil || again != got {

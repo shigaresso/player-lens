@@ -41,6 +41,7 @@ func TestParseRecommendationID(t *testing.T) {
 			if got != tc.want || !errors.Is(err, tc.wantErr) {
 				t.Fatalf("id=%d error=%v want=%d wantError=%v", got, err, tc.want, tc.wantErr)
 			}
+
 			if tc.wantErr != nil {
 				var cause *strconv.NumError
 				if !errors.As(err, &cause) {
@@ -66,6 +67,7 @@ func TestDecodeReviewPageRecommendationIDErrorCause(t *testing.T) {
 			if !errors.Is(err, ErrInvalidResponse) || !errors.Is(err, tc.wantErr) || !reflect.DeepEqual(got, steamdomain.ReviewPage{}) {
 				t.Fatalf("page=%#v error=%v", got, err)
 			}
+
 			var cause *strconv.NumError
 			if !errors.As(err, &cause) || cause.Num != tc.value {
 				t.Fatalf("数値変換の原因を失った: %v", err)
@@ -154,6 +156,7 @@ func TestDecodeReviewPageJSONErrorCause(t *testing.T) {
 			if !errors.Is(err, ErrInvalidResponse) || !reflect.DeepEqual(got, steamdomain.ReviewPage{}) {
 				t.Fatalf("page=%#v error=%v", got, err)
 			}
+
 			var syntaxError *json.SyntaxError
 			var typeError *json.UnmarshalTypeError
 			if errors.As(err, &syntaxError) != tc.syntax || errors.As(err, &typeError) == tc.syntax {

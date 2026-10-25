@@ -28,25 +28,31 @@ func TestCollectionStateStopped(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			err = state.AddPage(tc.page)
 			if (err != nil) != tc.cycle || (tc.cycle && !errors.Is(err, steamdomain.ErrCursorCycle)) {
 				t.Fatal(err)
 			}
+
 			if tc.fail {
 				state.Fail()
 			}
+
 			before := state.Result()
 			if before.StopReason != tc.reason {
 				t.Fatalf("初期の終了理由=%s", before.StopReason)
 			}
+
 			state.Fail()
 			if err := state.AddPage(steamdomain.ReviewPage{Reviews: stateReviews(9), NextCursor: "Z"}); err != nil {
 				t.Fatal(err)
 			}
+
 			after := state.Result()
 			if !reflect.DeepEqual(after, before) {
 				t.Fatalf("終了後に変更した: before=%#v after=%#v", before, after)
 			}
+
 			if next, ok := state.NextPage(); ok || next != (steamdomain.PageOptions{}) {
 				t.Fatalf("終了後の next=%#v available=%v", next, ok)
 			}

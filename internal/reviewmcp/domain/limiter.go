@@ -55,24 +55,29 @@ func NewLimiter(limits Limits, now func() time.Time) *Limiter {
 func (l *Limiter) Acquire() (func(), RejectionReason) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
+
 	now := l.now()
 	l.minute.reset(now, time.Minute)
 	l.day.reset(now, 24*time.Hour)
 	if l.day.count >= l.limits.config.RequestsPerDay {
 		return nil, DailyLimitReached
 	}
+
 	if l.minute.count >= l.limits.config.RequestsPerMinute {
 		return nil, MinuteLimitReached
 	}
+
 	if l.active >= l.limits.config.MaxConcurrent {
 		return nil, ConcurrentLimitReached
 	}
+
 	l.minute.count++
 	l.day.count++
 	l.active++
 	return sync.OnceFunc(func() {
 		l.mu.Lock()
 		defer l.mu.Unlock()
+
 		l.active--
 	}), NotRejected
 }

@@ -63,6 +63,7 @@ func TestCollectReviewsHandlerCleanup(t *testing.T) {
 				if httpContext.activeCallbacks == 0 || sdkContext.activeCallbacks == 0 {
 					t.Error("取得中に親のキャンセルへ連携していない")
 				}
+
 				return steamdomain.ReviewPage{}, tc.fetchErr
 			}), httpContext, mcpdomain.NewLimiter(mcpdomain.DefaultLimits(), time.Now))
 			result, err := handler(sdkContext, &mcp.CallToolRequest{
@@ -71,12 +72,15 @@ func TestCollectReviewsHandlerCleanup(t *testing.T) {
 			if err != nil || result == nil {
 				t.Fatalf("result = %+v, err = %v", result, err)
 			}
+
 			if result.IsError != (tc.wantCode != "") || decodeOutput(t, result).ErrorCode != tc.wantCode || calls != tc.wantCalls {
 				t.Fatalf("result = %+v, calls = %d", result, calls)
 			}
+
 			if httpContext.activeCallbacks != 0 || sdkContext.activeCallbacks != 0 {
 				t.Fatalf("終了後に連携を保持している: HTTP=%d, SDK=%d", httpContext.activeCallbacks, sdkContext.activeCallbacks)
 			}
+
 			if passed != nil && passed.Err() != context.Canceled {
 				t.Fatal("取得へ渡した context を解放していない")
 			}
@@ -122,6 +126,7 @@ func TestCollectReviewsHandlerCancellation(t *testing.T) {
 			})
 			go func() {
 				defer close(finished)
+
 				result, handlerErr = handler(sdkContext, &mcp.CallToolRequest{
 					Params: &mcp.CallToolParamsRaw{Arguments: json.RawMessage(`{"app_id":440}`)},
 				})
@@ -134,22 +139,27 @@ func TestCollectReviewsHandlerCancellation(t *testing.T) {
 			case <-time.After(2 * time.Second):
 				t.Fatal("取得が開始しなかった")
 			}
+
 			if tc.cancelHTTP {
 				cancelHTTP()
 			} else {
 				cancelSDK()
 			}
+
 			select {
 			case <-finished:
 			case <-time.After(2 * time.Second):
 				t.Fatal("キャンセルが取得へ伝播しなかった")
 			}
+
 			if handlerErr != nil || result == nil || !result.IsError {
 				t.Fatalf("result = %+v, err = %v", result, handlerErr)
 			}
+
 			if decodeOutput(t, result).ErrorCode != "cancelled" || !errors.Is(result.GetError(), context.Canceled) {
 				t.Fatalf("キャンセルの結果と原因を保持していない: %+v", result)
 			}
+
 			if tc.cancelHTTP && sdkContext.Err() != nil || !tc.cancelHTTP && httpContext.Err() != nil {
 				t.Fatal("handler がもう一方の親 context をキャンセルした")
 			}

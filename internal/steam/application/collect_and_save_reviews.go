@@ -25,14 +25,18 @@ func CollectAndSaveReviews(ctx context.Context, fetcher PageFetcher, saver Colle
 	if saver == nil {
 		return steamdomain.Collection{}, fmt.Errorf("collection saver is required: %w", steamdomain.ErrInvalidArgument)
 	}
+
 	result, collectErr := CollectReviews(ctx, fetcher, appID, options)
 	if result.AppID == 0 {
 		return result, collectErr
 	}
+
 	saveCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
 	defer cancel()
+
 	if err := saver.SaveCollection(saveCtx, result); err != nil {
 		return result, errors.Join(collectErr, fmt.Errorf("save Steam review collection: %w", err))
 	}
+
 	return result, collectErr
 }

@@ -25,6 +25,7 @@ func (p publicHostTransport) RoundTrip(r *http.Request) (*http.Response, error) 
 	if r.Header.Get("Authorization") != "" {
 		return nil, errors.New("匿名接続に認証情報が含まれた")
 	}
+
 	request := r.Clone(r.Context())
 	request.Host = "reviews.example"
 	return p.base.RoundTrip(request)
@@ -37,6 +38,7 @@ func TestPublicMCPProtocolsAndSharedBudget(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			var calls atomic.Int32
 			handler, err := NewHandler(fetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				calls.Add(1)
@@ -45,10 +47,12 @@ func TestPublicMCPProtocolsAndSharedBudget(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			server := httptest.NewServer(handler)
 			t.Cleanup(server.Close)
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
+
 			for _, rejected := range []struct{ name, host, origin string }{
 				{"不許可Host", "evil.example", ""},
 				{"不許可Origin", "reviews.example", "https://evil.example"},
@@ -58,24 +62,29 @@ func TestPublicMCPProtocolsAndSharedBudget(t *testing.T) {
 					if err != nil {
 						t.Fatal(err)
 					}
+
 					request.Host = rejected.host
 					request.Header.Set("Content-Type", "application/json")
 					request.Header.Set("Accept", "application/json, text/event-stream")
 					if rejected.origin != "" {
 						request.Header.Set("Origin", rejected.origin)
 					}
+
 					response, err := server.Client().Do(request)
 					if err != nil {
 						t.Fatal(err)
 					}
+
 					if err := response.Body.Close(); err != nil {
 						t.Fatal(err)
 					}
+
 					if response.StatusCode != 403 || calls.Load() != 0 {
 						t.Fatalf("status=%d calls=%d", response.StatusCode, calls.Load())
 					}
 				})
 			}
+
 			connect := func() *mcp.ClientSession {
 				t.Helper()
 				client := mcp.NewClient(&mcp.Implementation{Name: "public-test", Version: "1"}, nil)
@@ -83,6 +92,7 @@ func TestPublicMCPProtocolsAndSharedBudget(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
+
 				t.Cleanup(func() {
 					if err := session.Close(); err != nil {
 						t.Error(err)
@@ -95,19 +105,23 @@ func TestPublicMCPProtocolsAndSharedBudget(t *testing.T) {
 			if err != nil || len(tools.Tools) != 1 || tools.Tools[0].Name != "collect_reviews" {
 				t.Fatalf("tools=%+v err=%v", tools, err)
 			}
+
 			invalid, err := second.CallTool(ctx, &mcp.CallToolParams{Name: "collect_reviews", Arguments: map[string]any{"app_id": 0}})
 			if err != nil || !invalid.IsError || decodeOutput(t, invalid).ErrorCode != "invalid_input" {
 				t.Fatalf("invalid=%+v err=%v", invalid, err)
 			}
+
 			params := &mcp.CallToolParams{Name: "collect_reviews", Arguments: map[string]any{"app_id": 440, "max_reviews": 1}}
 			result, err := first.CallTool(ctx, params)
 			if err != nil || result.IsError {
 				t.Fatalf("result=%+v err=%v", result, err)
 			}
+
 			out := decodeOutput(t, result)
 			if out.ReturnedCount != 1 || out.Collection.Reviews[0].RecommendationID != "16" || calls.Load() != 1 {
 				t.Fatalf("out=%+v calls=%d", out, calls.Load())
 			}
+
 			result, err = second.CallTool(ctx, params)
 			if err != nil || !result.IsError || decodeOutput(t, result).ErrorCode != "rate_limited" || calls.Load() != 1 {
 				t.Fatalf("result=%+v err=%v calls=%d", result, err, calls.Load())

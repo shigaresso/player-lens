@@ -25,20 +25,25 @@ func TestResponseSize(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			data, err := json.Marshal(result)
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			if len(data) > 128*1024 {
 				t.Fatalf("応答量 %d が上限を超えた", len(data))
 			}
+
 			out := decodeOutput(t, result)
 			if out.ErrorCode != tc.code || result.IsError != (tc.code != "") {
 				t.Fatal(out)
 			}
+
 			if out.Collection.AppID != 440 || out.Collection.Options.MaxReviews != 20 || out.Collection.PagesFetched != 1 || out.Collection.StopReason != steamdomain.StopReviewLimit {
 				t.Fatal(out)
 			}
+
 			if tc.code == "" {
 				if out.ReturnedCount != 1 || len(out.Collection.Reviews) != 1 || out.Collection.Reviews[0].Text != collection.Reviews[0].Text || out.OmittedReviews != 0 {
 					t.Fatal("本文を保持しなかった")
@@ -46,6 +51,7 @@ func TestResponseSize(t *testing.T) {
 			} else if out.ReturnedCount != 0 || len(out.Collection.Reviews) != 0 || out.OmittedReviews != 1 || out.Message == "" {
 				t.Fatal(out)
 			}
+
 			if len(collection.Reviews) != 1 || len(collection.Reviews[0].Text) != tc.length {
 				t.Fatal("入力を変更した")
 			}

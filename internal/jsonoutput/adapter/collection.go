@@ -43,10 +43,12 @@ func MarshalCollection(result steamdomain.Collection) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("prepare review collection JSON: %w", err)
 	}
+
 	reviews := make([]reviewDocument, len(result.Reviews))
 	for i, review := range result.Reviews {
 		reviews[i] = reviewDocument{strconv.FormatUint(uint64(review.RecommendationID), 10), review.Text, review.Language, review.Recommended, review.TimestampCreated, review.TimestampUpdated}
 	}
+
 	document := collectionDocument{
 		SchemaVersion: 1,
 		AppID:         result.AppID,
@@ -59,5 +61,6 @@ func MarshalCollection(result steamdomain.Collection) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("encode review collection JSON: %w", err)
 	}
+
 	return data, nil
 }

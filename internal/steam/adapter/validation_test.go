@@ -43,8 +43,10 @@ func TestNewClient(t *testing.T) {
 				if client != nil || !errors.Is(err, steamdomain.ErrInvalidArgument) {
 					t.Fatalf("client=%v error=%v", client, err)
 				}
+
 				return
 			}
+
 			if client == nil || err != nil {
 				t.Fatalf("client=%v error=%v", client, err)
 			}
@@ -78,6 +80,7 @@ func TestFetchReviewsPageInvalidArguments(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			page, err := client.FetchReviewsPage(context.Background(), tt.appID, tt.options)
 			if !errors.Is(err, steamdomain.ErrInvalidArgument) || calls != 0 || !reflect.DeepEqual(page, steamdomain.ReviewPage{}) {
 				t.Fatalf("page=%#v error=%v calls=%d", page, err, calls)

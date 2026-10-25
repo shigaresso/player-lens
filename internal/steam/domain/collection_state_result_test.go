@@ -23,13 +23,16 @@ func TestCollectionStateResultOwnership(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			first := steamdomain.Review{RecommendationID: 1, Text: "最初の本文", TimestampCreated: 10, TimestampUpdated: 20}
 			if err := state.AddPage(steamdomain.ReviewPage{Reviews: []steamdomain.Review{first}, NextCursor: "A"}); err != nil {
 				t.Fatal(err)
 			}
+
 			if tc.fail {
 				state.Fail()
 			}
+
 			returned := state.Result()
 			returned.AppID = 570
 			returned.Options.Language = "japanese"
@@ -39,6 +42,7 @@ func TestCollectionStateResultOwnership(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			want := steamdomain.Collection{AppID: 440, Options: normalized.Config(), Reviews: []steamdomain.Review{first}, PagesFetched: 1, StopReason: tc.reason}
 			if got := state.Result(); !reflect.DeepEqual(got, want) {
 				t.Fatalf("result=%#v; want=%#v", got, want)

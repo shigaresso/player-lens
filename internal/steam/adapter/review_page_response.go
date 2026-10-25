@@ -31,20 +31,25 @@ func decodeReviewPage(appID steamdomain.AppID, options steamdomain.PageOptions, 
 	if err := json.Unmarshal(body, &result); err != nil {
 		return steamdomain.ReviewPage{}, fmt.Errorf("decode Steam review response: %w", errors.Join(ErrInvalidResponse, err))
 	}
+
 	if result.Response == nil || len(result.Response.Reviews) > options.PageSize {
 		return steamdomain.ReviewPage{}, fmt.Errorf("missing response or too many reviews: %w", ErrInvalidResponse)
 	}
+
 	if len(result.Response.Reviews) > 0 && result.Response.Cursor == "" {
 		return steamdomain.ReviewPage{}, fmt.Errorf("missing next cursor: %w", ErrInvalidResponse)
 	}
+
 	reviews := make([]steamdomain.Review, len(result.Response.Reviews))
 	for i, input := range result.Response.Reviews {
 		review, err := convertReview(input)
 		if err != nil {
 			return steamdomain.ReviewPage{}, err
 		}
+
 		reviews[i] = review
 	}
+
 	return steamdomain.ReviewPage{AppID: appID, Options: options, Reviews: reviews, NextCursor: result.Response.Cursor}, nil
 }
 
@@ -55,6 +60,7 @@ func convertReview(input reviewPageReview) (steamdomain.Review, error) {
 	if err != nil {
 		return steamdomain.Review{}, fmt.Errorf("invalid Steam recommendationid: %w", errors.Join(ErrInvalidResponse, err))
 	}
+
 	return steamdomain.Review{
 		RecommendationID: id,
 		Text:             input.Text,

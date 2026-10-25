@@ -20,15 +20,19 @@ func readReviewPageResponse(response *http.Response, appID steamdomain.AppID, op
 			err = errors.Join(err, fmt.Errorf("close Steam review response: %w", closeErr))
 		}
 	}()
+
 	if response.StatusCode != http.StatusOK {
 		return steamdomain.ReviewPage{}, &HTTPStatusError{StatusCode: response.StatusCode}
 	}
+
 	body, err := io.ReadAll(io.LimitReader(response.Body, maxResponseBytes+1))
 	if err != nil {
 		return steamdomain.ReviewPage{}, fmt.Errorf("read Steam review response: %w", err)
 	}
+
 	if len(body) > maxResponseBytes {
 		return steamdomain.ReviewPage{}, ErrResponseTooLarge
 	}
+
 	return decodeReviewPage(appID, options, body)
 }

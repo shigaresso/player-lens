@@ -30,18 +30,21 @@ func TestFetchReviewsPageBodyPanic(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	func() {
 		defer func() {
 			if got := recover(); got != cause {
 				t.Errorf("panic の原因=%v; want=%v", got, cause)
 			}
 		}()
+
 		_, err := client.FetchReviewsPage(t.Context(), 440, steamdomain.PageOptions{})
 		t.Errorf("panic を呼び出し側へ伝えなかった: err=%v", err)
 	}()
 	if body.closed != 1 {
 		t.Fatalf("panic 後の Close 回数=%d; want=1", body.closed)
 	}
+
 	if requestContext == nil || !errors.Is(requestContext.Err(), context.Canceled) || t.Context().Err() != nil {
 		t.Fatal("panic 後に所有する context だけを解放しなかった")
 	}

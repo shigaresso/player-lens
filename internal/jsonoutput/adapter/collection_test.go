@@ -28,6 +28,7 @@ func TestMarshalCollection(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			var result struct {
 				Version int               `json:"schema_version"`
 				AppID   steamdomain.AppID `json:"app_id"`
@@ -51,15 +52,18 @@ func TestMarshalCollection(t *testing.T) {
 			if err := json.Unmarshal(data, &result); err != nil {
 				t.Fatal(err)
 			}
+
 			if result.Version != 1 || result.AppID != 440 || result.Options.Language != "japanese" || result.Options.PageSize != 10 || result.Options.MaxReviews != 20 || result.Options.MaxPages != 3 || result.PagesFetched != 2 || result.StopReason != string(test.reason) || result.Reviews == nil || len(result.Reviews) != len(test.reviews) {
 				t.Fatalf("JSONの契約: %s", data)
 			}
+
 			for i, review := range test.reviews {
 				got := result.Reviews[i]
 				if got.RecommendationID != strconv.FormatUint(uint64(review.RecommendationID), 10) || got.Text != review.Text || got.Language != review.Language || got.Recommended != review.Recommended || got.TimestampCreated != review.TimestampCreated || got.TimestampUpdated != review.TimestampUpdated {
 					t.Fatalf("レビューを失った: %+v", got)
 				}
 			}
+
 			if !reflect.DeepEqual(input.Reviews, original) {
 				t.Fatal("入力を書き換えた")
 			}
@@ -84,6 +88,7 @@ func TestMarshalCollectionNumericRecommendationID(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			var got struct {
 				SchemaVersion int                          `json:"schema_version"`
 				AppID         json.RawMessage              `json:"app_id"`
@@ -92,9 +97,11 @@ func TestMarshalCollectionNumericRecommendationID(t *testing.T) {
 			if err := json.Unmarshal(data, &got); err != nil {
 				t.Fatal(err)
 			}
+
 			if got.SchemaVersion != 1 || string(got.AppID) != "4294967295" || len(got.Reviews) != 1 {
 				t.Fatalf("JSON=%s", data)
 			}
+
 			review := got.Reviews[0]
 			if len(review) != 6 || string(review["id"]) != tc.want || string(review["created_at"]) != "4294967295" || string(review["updated_at"]) != "0" {
 				t.Fatalf("レビューの公開形式を変更した: %s", data)

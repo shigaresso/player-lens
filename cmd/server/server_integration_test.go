@@ -39,6 +39,7 @@ func TestShutdownDeadlineClosesConnection(t *testing.T) {
 				t.Errorf("応答の解放に失敗した: %v", closeErr)
 			}
 		}
+
 		requestDone <- err
 	}()
 	select {
@@ -46,6 +47,7 @@ func TestShutdownDeadlineClosesConnection(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("リクエストが開始しなかった")
 	}
+
 	cancel()
 	select {
 	case err := <-done:
@@ -55,11 +57,13 @@ func TestShutdownDeadlineClosesConnection(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("期限超過後も終了しなかった")
 	}
+
 	select {
 	case <-finished:
 	case <-time.After(5 * time.Second):
 		t.Fatal("接続の context をキャンセルしなかった")
 	}
+
 	if err := <-requestDone; err == nil {
 		t.Fatal("強制終了した接続を正常応答として扱った")
 	}
@@ -70,6 +74,7 @@ func TestRunBindFailure(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	t.Cleanup(func() {
 		if err := listener.Close(); err != nil {
 			t.Errorf("listener の解放に失敗した: %v", err)
@@ -97,6 +102,7 @@ func startTestServer(t *testing.T, handler http.Handler, timeout time.Duration) 
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	tracked := &trackedListener{Listener: listener, closed: make(chan struct{})}
 	ctx, cancel := context.WithCancel(t.Context())
 	done := make(chan error, 1)
@@ -124,11 +130,13 @@ func TestServerHealthAndShutdown(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	body, readErr := io.ReadAll(response.Body)
 	closeErr := response.Body.Close()
 	if readErr != nil || closeErr != nil || response.StatusCode != http.StatusOK || string(body) != "ok\n" {
 		t.Fatalf("HTTP 応答: status=%d body=%q read=%v close=%v", response.StatusCode, body, readErr, closeErr)
 	}
+
 	cancel()
 	select {
 	case err := <-done:
@@ -138,10 +146,12 @@ func TestServerHealthAndShutdown(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("終了しなかった")
 	}
+
 	if response, err := client.Get(url + "/healthz"); err == nil {
 		if closeErr := response.Body.Close(); closeErr != nil {
 			t.Errorf("応答の解放に失敗した: %v", closeErr)
 		}
+
 		t.Fatal("終了後に新しい接続を受け付けた")
 	}
 }
@@ -172,6 +182,7 @@ func TestShutdownWaitsForActiveRequest(t *testing.T) {
 				err = errors.Join(err, io.ErrUnexpectedEOF)
 			}
 		}
+
 		result <- err
 	}()
 	select {
@@ -179,21 +190,25 @@ func TestShutdownWaitsForActiveRequest(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("リクエストが開始しなかった")
 	}
+
 	cancel()
 	select {
 	case <-closed:
 	case <-time.After(5 * time.Second):
 		t.Fatal("新規受付を停止しなかった")
 	}
+
 	select {
 	case err := <-done:
 		t.Fatalf("処理中のリクエストを待たず終了した: %v", err)
 	default:
 	}
+
 	finish()
 	if err := <-result; err != nil {
 		t.Fatal(err)
 	}
+
 	select {
 	case err := <-done:
 		if err != nil {

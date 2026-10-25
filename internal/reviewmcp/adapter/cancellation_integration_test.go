@@ -28,11 +28,13 @@ func TestHTTPRequestCancellation(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			server := httptest.NewServer(handler)
 			t.Cleanup(server.Close)
 			session := connectClient(t, server.URL, version)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
+
 			done := make(chan error, 1)
 			go func() {
 				_, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "collect_reviews", Arguments: map[string]any{"app_id": 440}})
@@ -43,6 +45,7 @@ func TestHTTPRequestCancellation(t *testing.T) {
 			case <-time.After(2 * time.Second):
 				t.Fatal("取得が開始しなかった")
 			}
+
 			cancel()
 			select {
 			case err := <-finished:
@@ -52,6 +55,7 @@ func TestHTTPRequestCancellation(t *testing.T) {
 			case <-time.After(2 * time.Second):
 				t.Error("HTTP 切断が取得へ伝播しなかった")
 			}
+
 			select {
 			case err := <-done:
 				if err == nil {

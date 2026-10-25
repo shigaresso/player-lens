@@ -22,16 +22,19 @@ func TestCollectionStateFail(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			for _, page := range tc.pages {
 				if err := state.AddPage(page); err != nil {
 					t.Fatal(err)
 				}
 			}
+
 			state.Fail()
 			result := state.Result()
 			if result.AppID != 440 || result.Options != options || result.PagesFetched != len(tc.pages) || result.StopReason != steamdomain.StopFailed || !reflect.DeepEqual(result.Reviews, tc.want) {
 				t.Fatalf("result=%#v", result)
 			}
+
 			if next, ok := state.NextPage(); ok || next != (steamdomain.PageOptions{}) {
 				t.Fatalf("失敗後の next=%#v available=%v", next, ok)
 			}

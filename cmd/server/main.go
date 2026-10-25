@@ -29,27 +29,33 @@ func run(ctx context.Context, port string) error {
 	if err != nil {
 		return err
 	}
+
 	limits, err := serveradapter.ReadMCPLimits(os.Getenv)
 	if err != nil {
 		return fmt.Errorf("MCP 利用制限の設定に失敗した: %w", err)
 	}
+
 	access, err := serveradapter.ReadMCPAccess(os.Getenv)
 	if err != nil {
 		return fmt.Errorf("MCP 公開設定に失敗した: %w", err)
 	}
+
 	fetcher, closeIdleConnections, err := serveradapter.NewSteamFetcher()
 	if err != nil {
 		return fmt.Errorf("レビュー取得クライアントの準備に失敗した: %w", err)
 	}
 	defer closeIdleConnections()
+
 	mcpHandler, err := reviewmcp.NewHandler(fetcher, limits, access)
 	if err != nil {
 		return fmt.Errorf("MCP サーバーの準備に失敗した: %w", err)
 	}
+
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
 		return fmt.Errorf("HTTP の待ち受けに失敗した: %w", err)
 	}
+
 	log.Printf("HTTP サーバーを起動した: %s", address)
 	return serveradapter.Serve(ctx, listener, serveradapter.NewHandler(mcpHandler), 10*time.Second)
 }

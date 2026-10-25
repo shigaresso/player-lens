@@ -31,6 +31,7 @@ func TestCollectReviewsCursorCycle(t *testing.T) {
 				if calls >= len(tt.pages) {
 					t.Fatal("循環の検出後に取得した")
 				}
+
 				page := tt.pages[calls]
 				calls++
 				page.AppID, page.Options = appID, options

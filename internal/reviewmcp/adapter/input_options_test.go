@@ -24,11 +24,13 @@ func TestNormalizeToolInput(t *testing.T) {
 			if err != nil || appID != tc.input.AppID || options.Config() != tc.want {
 				t.Fatalf("appID = %d, options = %+v, err = %v", appID, options, err)
 			}
+
 			if input != tc.input {
 				t.Fatal("呼び出し側の入力を変更した")
 			}
 		})
 	}
+
 	for _, tc := range []struct {
 		name  string
 		input toolInput
@@ -51,6 +53,7 @@ func TestNormalizeToolInput(t *testing.T) {
 			if !errors.Is(err, steamdomain.ErrInvalidArgument) || appID != 0 || options != (steamdomain.CollectionOptions{}) {
 				t.Fatalf("appID = %d, options = %+v, err = %v", appID, options, err)
 			}
+
 			if input != tc.input {
 				t.Fatal("失敗時に呼び出し側の入力を変更した")
 			}

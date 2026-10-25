@@ -12,5 +12,6 @@ func parseRecommendationID(value string) (steamdomain.RecommendationID, error) {
 	if err != nil {
 		return 0, fmt.Errorf("parse Steam recommendationid: %w", err)
 	}
+
 	return steamdomain.RecommendationID(id), nil
 }

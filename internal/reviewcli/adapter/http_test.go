@@ -40,19 +40,23 @@ func TestRunWithHTTPClientAndJSONSaver(t *testing.T) {
 					w.WriteHeader(400)
 					return
 				}
+
 				cursor, size := steamdomain.FirstPageCursor, 2
 				body := `{"response":{"reviews":[{"recommendationid":"1","review":"本文1"},{"recommendationid":"2","review":"本文2"}],"cursor":"A"}}`
 				if call == 2 {
 					cursor, size = "A", 1
 					body = `{"response":{"reviews":[{"recommendationid":"3","review":"本文3"}],"cursor":"B"}}`
 				}
+
 				if input.Cursor != cursor || input.Size != size {
 					t.Errorf("要求入力: %+v", input)
 				}
+
 				if call == 2 && test.status != http.StatusOK {
 					w.WriteHeader(test.status)
 					return
 				}
+
 				if _, err := fmt.Fprint(w, body); err != nil {
 					t.Error(err)
 				}
@@ -64,21 +68,25 @@ func TestRunWithHTTPClientAndJSONSaver(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			var output bytes.Buffer
 			saver, err := jsonoutput.NewSaver(&output)
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			err = reviewcli.Run(t.Context(), []string{"--app-id=440", "--page-size=2", "--max-reviews=3"}, client, saver)
 			if test.status == http.StatusOK && err != nil {
 				t.Fatal(err)
 			}
+
 			if test.status != http.StatusOK {
 				var status *steamadapter.HTTPStatusError
 				if !errors.As(err, &status) || status.StatusCode != test.status {
 					t.Fatalf("HTTPの原因: %v", err)
 				}
 			}
+
 			var result struct {
 				Reviews []struct {
 					RecommendationID string `json:"id"`

@@ -30,16 +30,20 @@ func TestCollectReviewsReviewType(t *testing.T) {
 				if calls == 2 {
 					cursor = "next"
 				}
+
 				if id != 440 || options.ReviewType != tt.kind || options.Cursor != cursor || options.PageSize != 1 {
 					t.Fatalf("page %d options=%+v", calls, options)
 				}
+
 				if calls == 2 && tt.fail {
 					return steamdomain.ReviewPage{}, io.ErrUnexpectedEOF
 				}
+
 				recommendationID := steamdomain.RecommendationID(1)
 				if calls == 2 {
 					recommendationID = 2
 				}
+
 				return steamdomain.ReviewPage{Reviews: []steamdomain.Review{{RecommendationID: recommendationID, Recommended: tt.kind == steamdomain.ReviewTypePositive}}, NextCursor: "next"}, nil
 			})
 			result, err := steamapplication.CollectReviews(t.Context(), fetcher, 440, collectionOptions(t, steamdomain.CollectionOptionsConfig{ReviewType: tt.kind, PageSize: 1, MaxReviews: 2, MaxPages: 2}))
@@ -47,6 +51,7 @@ func TestCollectReviewsReviewType(t *testing.T) {
 			if tt.fail {
 				wantCount, wantReason = 1, steamdomain.StopFailed
 			}
+
 			if (err != nil) != tt.fail || (tt.fail && !errors.Is(err, io.ErrUnexpectedEOF)) || calls != 2 || result.Options.ReviewType != tt.kind || len(result.Reviews) != wantCount || result.PagesFetched != wantCount || result.StopReason != wantReason {
 				t.Fatalf("result=%+v calls=%d err=%v", result, calls, err)
 			}

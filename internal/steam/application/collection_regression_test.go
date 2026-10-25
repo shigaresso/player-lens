@@ -30,6 +30,7 @@ func TestCollectReviewsInvalidInput(t *testing.T) {
 			if tt.nilFetcher {
 				fetcher = nil
 			}
+
 			got, err := steamapplication.CollectReviews(context.Background(), fetcher, tt.appID, collectionOptions(t, tt.options))
 			if !errors.Is(err, steamdomain.ErrInvalidArgument) || !reflect.DeepEqual(got, steamdomain.Collection{}) {
 				t.Fatalf("result=%#v error=%v", got, err)
@@ -45,10 +46,12 @@ func TestCollectReviewsMaximumReviews(t *testing.T) {
 		if calls > 100 || options.PageSize != 100 {
 			t.Fatalf("calls=%d options=%#v", calls, options)
 		}
+
 		reviews := make([]steamdomain.Review, 100)
 		for i := range reviews {
 			reviews[i].RecommendationID = steamdomain.RecommendationID((calls-1)*100 + i + 1)
 		}
+
 		return steamdomain.ReviewPage{AppID: appID, Options: options, Reviews: reviews, NextCursor: strconv.Itoa(calls)}, nil
 	})
 	got, err := steamapplication.CollectReviews(context.Background(), fetcher, 440, collectionOptions(t, steamdomain.CollectionOptionsConfig{MaxReviews: 10000}))
@@ -72,6 +75,7 @@ func TestCollectReviewsFailureReleasesContext(t *testing.T) {
 				if tt.cause == steamdomain.ErrCursorCycle {
 					return steamdomain.ReviewPage{AppID: appID, Options: options, Reviews: collectionReviews(1), NextCursor: "*"}, nil
 				}
+
 				return steamdomain.ReviewPage{}, tt.cause
 			})
 			got, err := steamapplication.CollectReviews(context.Background(), fetcher, 440, collectionOptions(t, steamdomain.CollectionOptionsConfig{MaxReviews: 2}))

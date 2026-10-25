@@ -27,6 +27,7 @@ func TestParseInput(t *testing.T) {
 			}
 		})
 	}
+
 	for name, input := range map[string]string{
 		"AppIDが欠落した": `{}`, "AppIDがゼロだった": `{"app_id":0}`,
 		"AppIDが負数だった": `{"app_id":-1}`, "AppIDが上限を超えた": `{"app_id":4294967296}`,

@@ -28,6 +28,7 @@ var toolInputJSONFields = func() map[string]struct{} {
 			fields[name] = struct{}{}
 		}
 	}
+
 	return fields
 }()
 
@@ -39,20 +40,24 @@ func (input *toolInput) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &fields); err != nil || fields == nil {
 		return steamdomain.ErrInvalidArgument
 	}
+
 	for name, value := range fields {
 		if _, allowed := toolInputJSONFields[name]; !allowed {
 			return steamdomain.ErrInvalidArgument
 		}
+
 		if bytes.Equal(bytes.TrimSpace(value), []byte("null")) {
 			return steamdomain.ErrInvalidArgument
 		}
 	}
+
 	// メソッドを持たない別の型へ読み、UnmarshalJSON の再帰呼び出しを避ける。
 	type rawToolInput toolInput
 	var decoded rawToolInput
 	if err := json.Unmarshal(data, &decoded); err != nil {
 		return steamdomain.ErrInvalidArgument
 	}
+
 	*input = toolInput(decoded)
 	return nil
 }

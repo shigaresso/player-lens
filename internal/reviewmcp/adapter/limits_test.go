@@ -21,5 +21,6 @@ func testLimits(t *testing.T, config mcpdomain.LimitsConfig) mcpdomain.Limits {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	return limits
 }

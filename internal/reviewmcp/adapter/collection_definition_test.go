@@ -39,11 +39,13 @@ func TestCollectReviewsDefinition(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			tc.mutate(first)
 			after, err := json.Marshal(second)
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			if !bytes.Equal(before, after) {
 				t.Fatal("別に生成したツール定義へ変更が伝播した")
 			}

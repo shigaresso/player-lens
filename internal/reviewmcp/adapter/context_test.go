@@ -26,6 +26,7 @@ func TestCollectionContext(t *testing.T) {
 				ctx, cancel = context.WithTimeout(ctx, time.Second)
 				defer cancel()
 			}
+
 			var passed context.Context
 			start := time.Now()
 			fetcher := fetchFunc(func(received context.Context, _ steamdomain.AppID, _ steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
@@ -34,6 +35,7 @@ func TestCollectionContext(t *testing.T) {
 				if !ok || received.Value(key{}) != "request" {
 					t.Fatal("期限または値が伝播しなかった")
 				}
+
 				if tc.shorter {
 					want, _ := ctx.Deadline()
 					if !deadline.Equal(want) {
@@ -42,17 +44,20 @@ func TestCollectionContext(t *testing.T) {
 				} else if deadline.Before(start.Add(7*time.Second)) || deadline.After(start.Add(8*time.Second+100*time.Millisecond)) {
 					t.Fatalf("既定期限=%v", deadline.Sub(start))
 				}
+
 				return steamdomain.ReviewPage{}, nil
 			})
 			result, err := collect(ctx, fetcher, json.RawMessage(`{"app_id":440}`), mcpdomain.NewLimiter(mcpdomain.DefaultLimits(), time.Now))
 			if err != nil || result.IsError {
 				t.Fatalf("%+v %v", result, err)
 			}
+
 			if passed == nil || passed.Err() != context.Canceled || ctx.Err() != nil {
 				t.Fatal("所有する context の解放が不正だった")
 			}
 		})
 	}
+
 	for _, tc := range []struct {
 		name    string
 		expired bool
@@ -69,7 +74,9 @@ func TestCollectionContext(t *testing.T) {
 			} else {
 				cancel()
 			}
+
 			defer cancel()
+
 			result, err := collect(ctx, fetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				t.Fatal("終了済み context で取得した")
 				return steamdomain.ReviewPage{}, nil

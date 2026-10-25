@@ -39,14 +39,17 @@ func TestMCPShutdownWaitsForActiveCollection(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	url, httpClient, cancel, done, closed := startTestServer(t, serveradapter.NewHandler(mcpHandler), 2*time.Second)
 	client := mcp.NewClient(&mcp.Implementation{Name: "server-integration", Version: "1"}, nil)
 	ctx, stop := context.WithTimeout(context.Background(), 5*time.Second)
 	defer stop()
+
 	session, err := client.Connect(ctx, &mcp.StreamableClientTransport{Endpoint: url + "/tools", HTTPClient: httpClient}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	t.Cleanup(func() {
 		if err := session.Close(); err != nil {
 			t.Error(err)
@@ -73,21 +76,25 @@ func TestMCPShutdownWaitsForActiveCollection(t *testing.T) {
 	case <-ctx.Done():
 		t.Fatal("MCP 取得が開始しなかった")
 	}
+
 	cancel()
 	select {
 	case <-closed:
 	case <-ctx.Done():
 		t.Fatal("新規受付を停止しなかった")
 	}
+
 	release()
 	select {
 	case <-resultDone:
 	case <-ctx.Done():
 		t.Fatal("処理中の MCP 応答が返らなかった")
 	}
+
 	if callErr != nil || result.IsError {
 		t.Fatalf("result=%+v err=%v", result, callErr)
 	}
+
 	select {
 	case err := <-done:
 		if err != nil {
@@ -96,10 +103,12 @@ func TestMCPShutdownWaitsForActiveCollection(t *testing.T) {
 	case <-ctx.Done():
 		t.Fatal("サーバーが終了しなかった")
 	}
+
 	if response, err := httpClient.Get(url + "/healthz"); err == nil {
 		if closeErr := response.Body.Close(); closeErr != nil {
 			t.Error(closeErr)
 		}
+
 		t.Fatal("終了後に新規受付した")
 	}
 }

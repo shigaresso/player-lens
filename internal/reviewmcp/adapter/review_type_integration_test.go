@@ -25,11 +25,13 @@ func TestMCPReviewType(t *testing.T) {
 				if id != 440 {
 					t.Errorf("AppID=%d", id)
 				}
+
 				return steamdomain.ReviewPage{Reviews: []steamdomain.Review{{RecommendationID: 1, Recommended: options.ReviewType == steamdomain.ReviewTypePositive}}, NextCursor: "next"}, nil
 			}), testLimits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 3, RequestsPerDay: 10, MaxConcurrent: 1}), nil)
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			server := httptest.NewServer(handler)
 			t.Cleanup(server.Close)
 			session := connectClient(t, server.URL, version)
@@ -37,10 +39,12 @@ func TestMCPReviewType(t *testing.T) {
 			if err != nil || len(tools.Tools) != 1 {
 				t.Fatalf("tools=%+v err=%v", tools, err)
 			}
+
 			schemaData, err := json.Marshal(tools.Tools[0].InputSchema)
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			var schema struct {
 				Properties map[string]struct {
 					Enum []string `json:"enum"`
@@ -49,9 +53,11 @@ func TestMCPReviewType(t *testing.T) {
 			if err := json.Unmarshal(schemaData, &schema); err != nil {
 				t.Fatal(err)
 			}
+
 			if !reflect.DeepEqual(schema.Properties["review_type"].Enum, []string{"", "all", "positive", "negative"}) {
 				t.Fatalf("schema=%s", schemaData)
 			}
+
 			for _, bad := range []struct {
 				name  string
 				value any
@@ -63,27 +69,32 @@ func TestMCPReviewType(t *testing.T) {
 					if err != nil || result == nil {
 						t.Fatalf("result=%+v err=%v", result, err)
 					}
+
 					if !result.IsError || decodeOutput(t, result).ErrorCode != "invalid_input" || calls.Load() != 0 {
 						t.Fatalf("result=%+v calls=%d", result, calls.Load())
 					}
 				})
 			}
+
 			for i, kind := range []string{"all", "positive", "negative"} {
 				t.Run(kind+"を収集して条件を返す", func(t *testing.T) {
 					result, err := session.CallTool(t.Context(), &mcp.CallToolParams{Name: "collect_reviews", Arguments: map[string]any{"app_id": 440, "review_type": kind, "max_reviews": 1, "max_pages": 1}})
 					if err != nil || result == nil {
 						t.Fatalf("result=%+v err=%v", result, err)
 					}
+
 					out := decodeOutput(t, result)
 					if result.IsError || out.Collection.Options.ReviewType != kind || out.ReturnedCount != 1 || calls.Load() != int32(i+1) || out.Collection.Reviews[0].Recommended != (kind == "positive") {
 						t.Fatalf("out=%+v calls=%d", out, calls.Load())
 					}
 				})
 			}
+
 			result, err := session.CallTool(t.Context(), &mcp.CallToolParams{Name: "collect_reviews", Arguments: map[string]any{"app_id": 440, "review_type": "negative"}})
 			if err != nil || result == nil {
 				t.Fatalf("result=%+v err=%v", result, err)
 			}
+
 			out := decodeOutput(t, result)
 			if !result.IsError || out.ErrorCode != "rate_limited" || out.Collection.Options.ReviewType != "negative" || out.ReturnedCount != 0 || out.Collection.PagesFetched != 0 || calls.Load() != 3 {
 				t.Fatalf("out=%+v calls=%d", out, calls.Load())

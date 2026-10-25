@@ -20,6 +20,7 @@ func (e *conversionProbeError) Is(target error) bool {
 	if target == context.Canceled {
 		e.classify()
 	}
+
 	return false
 }
 
@@ -32,6 +33,7 @@ func TestCollectKeepsSlotDuringFailureConversion(t *testing.T) {
 		if release != nil {
 			release()
 		}
+
 		if reason != mcpdomain.ConcurrentLimitReached {
 			t.Errorf("応答変換中に同時枠が空いている: reason=%v", reason)
 		}
@@ -42,13 +44,16 @@ func TestCollectKeepsSlotDuringFailureConversion(t *testing.T) {
 	if err != nil || result == nil || !result.IsError {
 		t.Fatalf("result=%+v err=%v", result, err)
 	}
+
 	if classifications == 0 || decodeOutput(t, result).ErrorCode != "fetch_failed" {
 		t.Fatal("実際の応答変換で取得の失敗を分類しなかった")
 	}
+
 	release, reason := gate.Acquire()
 	if release != nil {
 		t.Cleanup(release)
 	}
+
 	if reason != mcpdomain.NotRejected {
 		t.Fatalf("応答変換後に同時枠を返却しなかった: %v", reason)
 	}

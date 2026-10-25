@@ -27,6 +27,7 @@ func connectClient(t *testing.T, handlerURL, version string) *mcp.ClientSession 
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	t.Cleanup(func() {
 		if err := session.Close(); err != nil {
 			t.Error(err)
@@ -46,26 +47,32 @@ func TestMCPProtocol(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			server := httptest.NewServer(handler)
 			t.Cleanup(server.Close)
 			session := connectClient(t, server.URL, version)
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
+
 			tools, err := session.ListTools(ctx, nil)
 			if err != nil || len(tools.Tools) != 1 || tools.Tools[0].Name != "collect_reviews" {
 				t.Fatalf("tools=%+v err=%v", tools, err)
 			}
+
 			tool := tools.Tools[0]
 			if tool.InputSchema == nil || tool.OutputSchema == nil || tool.Annotations == nil || !tool.Annotations.ReadOnlyHint || tool.Annotations.OpenWorldHint == nil || !*tool.Annotations.OpenWorldHint {
 				t.Fatal("ツール契約が公開されていない")
 			}
+
 			if !strings.Contains(tool.Description, "analysis_guide") {
 				t.Fatal("分析ガイドの存在を説明していない")
 			}
+
 			schemaData, err := json.Marshal(tool.OutputSchema)
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			var schema struct {
 				Required   []string `json:"required"`
 				Properties struct {
@@ -84,22 +91,27 @@ func TestMCPProtocol(t *testing.T) {
 			if err := json.Unmarshal(schemaData, &schema); err != nil {
 				t.Fatal(err)
 			}
+
 			guide := schema.Properties.Guide
 			if !slices.Contains(schema.Required, "analysis_guide") || guide.Type != "object" || guide.AdditionalProperties || !slices.Contains(guide.Required, "version") || !slices.Contains(guide.Required, "instructions") || guide.Properties["version"].Type != "string" || guide.Properties["version"].Const != "1" || guide.Properties["instructions"].Type != "string" || guide.Properties["instructions"].MinLength != 1 {
 				t.Fatal("版付き分析ガイドの出力契約を公開していない")
 			}
+
 			result, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "collect_reviews", Arguments: map[string]any{"app_id": 440, "max_reviews": 1}})
 			if err != nil || result.IsError {
 				t.Fatalf("result=%+v err=%v", result, err)
 			}
+
 			out := decodeOutput(t, result)
 			if calls.Load() != 1 || out.ReturnedCount != 1 || out.Collection.Reviews[0].RecommendationID != "15" || out.Collection.StopReason != steamdomain.StopReviewLimit {
 				t.Fatal(out)
 			}
+
 			invalid, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "collect_reviews", Arguments: map[string]any{"app_id": 0}})
 			if err != nil || !invalid.IsError || decodeOutput(t, invalid).ErrorCode != "invalid_input" || calls.Load() != 1 {
 				t.Fatalf("入力エラー=%+v %v calls=%d", invalid, err, calls.Load())
 			}
+
 			_, err = session.CallTool(ctx, &mcp.CallToolParams{Name: "missing", Arguments: json.RawMessage(`{}`)})
 			if err == nil || calls.Load() != 1 {
 				t.Fatal("未定義のツールをプロトコルエラーとしなかった")

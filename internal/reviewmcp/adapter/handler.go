@@ -27,9 +27,11 @@ func NewHandler(fetcher steamapplication.PageFetcher, limits mcpdomain.Limits, a
 	if fetcher == nil {
 		return nil, fmt.Errorf("prepare review MCP handler: %w", steamdomain.ErrInvalidArgument)
 	}
+
 	if limits == (mcpdomain.Limits{}) {
 		return nil, fmt.Errorf("prepare review MCP handler: limits are required: %w", steamdomain.ErrInvalidArgument)
 	}
+
 	gate := mcpdomain.NewLimiter(limits, time.Now)
 	handler := mcp.NewStreamableHTTPHandler(func(request *http.Request) *mcp.Server {
 		return newServer(fetcher, request.Context(), gate)
@@ -43,6 +45,7 @@ func NewHandler(fetcher steamapplication.PageFetcher, limits mcpdomain.Limits, a
 	if access != nil {
 		return accessadapter.Protect(access, handler)
 	}
+
 	return accessadapter.ProtectLocal(handler), nil
 }
 

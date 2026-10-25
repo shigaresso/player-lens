@@ -21,14 +21,17 @@ func TestReadMCPAccess(t *testing.T) {
 				if name != "MCP_PUBLIC_URL" {
 					t.Fatalf("不要な設定を要求した: %s", name)
 				}
+
 				return tc.value
 			})
 			if tc.valid {
 				if err != nil || (access == nil) != tc.local {
 					t.Fatalf("access=%v err=%v", access, err)
 				}
+
 				return
 			}
+
 			if access != nil || !errors.Is(err, mcpaccess.ErrInvalidConfig) {
 				t.Fatalf("access=%v err=%v", access, err)
 			}

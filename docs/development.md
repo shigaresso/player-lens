@@ -68,11 +68,40 @@ Docker の停止・未導入でこの検査を省略して成功扱いにしな�
 
 全体の整形チェックは `bash scripts/check-go.sh format`、明示的な修正は `bash scripts/check-go.sh format-fix` を使う。修正だけが Compose の format サービスを使い、作業ツリーへ書き込む。修正後に差分を確認してステージする。検査用サービスの読み取り専用設定を変更して修正を行わない。
 
-[ADR-0003](adr/0003-go-format-and-lint.md) に従い、golangci-lint v2.14.0 の公式イメージをタグと複数アーキテクチャ用 index digest で固定し、development と同じ Go 1.27.1 の lint ステージへバイナリを取り込む。設定 `.golangci.yml` は errcheck（blank identifier のエラーも含む）、staticcheck、ineffassign、unused を有効にする。検査ツールはアプリケーションの go.mod と本番用イメージへ追加しない。Issue #23 で Dockerfile の development ステージに `GOFLAGS=-buildvcs=false` を共通設定した。開発・検証・解析・本番ビルドと、テスト内で起動する子 Go コマンドがこの設定を引き継ぐ。バイナリの VCS 情報埋め込みは省略し、対象 SHA・成果物の対応は CI と作業記録で管理する。Git・GitHub の規約検査は維持する。Git 非依存の回帰検査は integration の共通コマンドで、pre-push と CI の go-integration から実行する。go-build・go-mod・go-lint volume は再利用可能なキャッシュで、データ永続化ではない。
+[ADR-0003](adr/0003-go-format-and-lint.md) に従い、golangci-lint v2.14.0 の公式イメージをタグと複数アーキテクチャ用 index digest で固定し、development と同じ Go 1.27.1 の lint ステージへバイナリを取り込む。設定 `.golangci.yml` は errcheck（blank identifier のエラーも含む）、staticcheck、ineffassign、unused、wsl_v5 を有効にする。検査ツールはアプリケーションの go.mod と本番用イメージへ追加しない。Issue #23 で Dockerfile の development ステージに `GOFLAGS=-buildvcs=false` を共通設定した。開発・検証・解析・本番ビルドと、テスト内で起動する子 Go コマンドがこの設定を引き継ぐ。バイナリの VCS 情報埋め込みは省略し、対象 SHA・成果物の対応は CI と作業記録で管理する。Git・GitHub の規約検査は維持する。Git 非依存の回帰検査は integration の共通コマンドで、pre-push と CI の go-integration から実行する。go-build・go-mod・go-lint volume は再利用可能なキャッシュで、データ永続化ではない。
 
-ツール更新時は版・digest・公式の Go 対応情報を確認し、`python3 scripts/verify_go_tools.py` を実行する。この実 Docker 検証は一時ソースで正常、4種類のリンター違反、integration タグ、部分ステージ、全体の整形検査と修正を確認し、一時ファイル・コンテナを削除する。通常の Python テストと隔離したフック検証には Docker を要求しない。pre-push はアプリケーション全体の検査を行い、ツール自体の違反入力検証は独立した CI と更新時に行う。
+ツール更新時は版・digest・公式の Go 対応情報を確認し、`python3 scripts/verify_go_tools.py` を実行する。この実 Docker 検証は一時ソースで正常、既存4種類のリンター違反、空行の正常／違反と defer のまとまり、integration タグ、部分ステージ、全体の整形検査と修正を確認し、一時ファイル・コンテナを削除する。通常の Python テストと隔離したフック検証には Docker を要求しない。pre-push はアプリケーション全体の検査を行い、ツール自体の違反入力検証は独立した CI と更新時に行う。
 
 coverage は最初のユースケースが動く段階、mutation はユニットテストが安定した段階で専用 Issue により導入を検討する。AGENTS.md の品質目標を維持し、現在の検査成功を目標達成と記載しない。
+
+### Go の空行規則
+
+Issue #70 で、処理と直後のエラー対応を1セットとして読めるよう、wsl_v5 の err・after-block・after-defer を有効にした。ほかの wsl_v5 の規則は有効にしていない。
+
+- 実行によるエラーの代入と、その直後のエラー確認の間には空行を入れない。
+- if・for・switch などのブロックの後に次の文が続く場合は、空行を入れる。
+- 資源取得・エラー確認・その資源に対応する defer は隣接を許可する。連続する defer も分断せず、最後の defer と次の処理を空行で区切る。
+
+```go
+resource, err := acquire()
+if err != nil {
+    return err
+}
+defer resource.Release()
+
+result, err := execute(resource)
+if err != nil {
+    return err
+}
+
+return result, nil
+```
+
+このコードは配置の例であり、実際の資源解放のエラー処理は各 API の契約に従う。検査は通常・integration の実装とテストに適用し、pre-push と go-lint CI の読み取り専用 lint で拒否する。pre-commit は従来の index の gofmt 検査を行う。
+
+gofmt と format-fix はこの空行の区切りを自動生成しない。lint の指摘に従って修正し、差分と再検査で確認する。検査中の自動修正・再ステージは行わない。初回の一括修正では別パスの一時コピーだけを修正し、空行以外の行が同じことを確認して反映した。検証結果は docs/worklogs/70-go-error-block-spacing.md に記録する。
+
+機械的な空行検査は、処理の意味や全エラー確認の対応を保証しない。ブロックを持たない文同士の意味上のまとまりはレビューで判断する。スタイルのために処理順序・テストの入力や期待結果を変えたり、関数抽出を行ったりしない。
 
 ## 本文検査の契約
 

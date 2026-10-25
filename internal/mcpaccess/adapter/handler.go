@@ -14,12 +14,14 @@ func Protect(a *mcpaccess.Access, next http.Handler) (http.Handler, error) {
 	if !a.IsInitialized() || next == nil {
 		return nil, fmt.Errorf("公開 MCP の保護には有効な設定とハンドラーが必要: %w", mcpaccess.ErrInvalidConfig)
 	}
+
 	protected := http.NewCrossOriginProtection().Handler(next)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !a.AllowsHost(r.Host) {
 			http.Error(w, "許可されていない Host です", http.StatusForbidden)
 			return
 		}
+
 		protected.ServeHTTP(w, r)
 	}), nil
 }

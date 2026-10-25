@@ -26,6 +26,7 @@ func TestCollectionOptionsZero(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
+
 			if options != (steamdomain.CollectionOptions{}) || options.Config() != defaults {
 				t.Fatalf("options=%+v config=%+v", options, options.Config())
 			}
@@ -52,6 +53,7 @@ func TestCollectionOptionsConfigCopy(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			if tc.source {
 				input.Language = "invalid language"
 				input.MaxReviews = -1
@@ -60,6 +62,7 @@ func TestCollectionOptionsConfigCopy(t *testing.T) {
 				snapshot.Language = "invalid language"
 				snapshot.MaxReviews = -1
 			}
+
 			if got := options.Config(); got != tc.want {
 				t.Fatalf("config=%+v; want=%+v", got, tc.want)
 			}

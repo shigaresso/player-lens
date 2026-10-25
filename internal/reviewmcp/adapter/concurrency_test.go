@@ -26,6 +26,7 @@ func TestCollectionReleasesSlotAfterFailure(t *testing.T) {
 			gate := mcpdomain.NewLimiter(testLimits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 2, RequestsPerDay: 10, MaxConcurrent: 1}), time.Now)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
+
 			first := true
 			calls := 0
 			fetcher := fetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
@@ -33,11 +34,13 @@ func TestCollectionReleasesSlotAfterFailure(t *testing.T) {
 				if !first {
 					return steamdomain.ReviewPage{}, nil
 				}
+
 				switch tc.code {
 				case "fetch_failed":
 					if calls == 1 {
 						return steamdomain.ReviewPage{Reviews: []steamdomain.Review{{RecommendationID: 11}}, NextCursor: "next"}, nil
 					}
+
 					return steamdomain.ReviewPage{}, errors.New("fetch failed")
 				case "cancelled":
 					cancel()
@@ -52,19 +55,23 @@ func TestCollectionReleasesSlotAfterFailure(t *testing.T) {
 			if tc.code == "response_too_large" {
 				count = 1
 			}
+
 			input, err := json.Marshal(map[string]any{"app_id": 440, "max_reviews": count})
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			result, err := collect(ctx, fetcher, input, gate)
 			if err != nil || !result.IsError || decodeOutput(t, result).ErrorCode != tc.code {
 				t.Fatalf("初回=%+v %v", result, err)
 			}
+
 			first = false
 			result, err = collect(context.Background(), fetcher, input, gate)
 			if err != nil || result.IsError {
 				t.Fatalf("枠を返却しなかった: %+v %v", result, err)
 			}
+
 			before := calls
 			result, err = collect(context.Background(), fetcher, input, gate)
 			if err != nil || !result.IsError || decodeOutput(t, result).ErrorCode != "rate_limited" || calls != before {
@@ -80,7 +87,9 @@ func TestCollectionBusyResponse(t *testing.T) {
 	if reason != mcpdomain.NotRejected {
 		t.Fatal(reason)
 	}
+
 	defer release()
+
 	result, err := collect(context.Background(), fetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 		t.Fatal("同時枠のない呼び出しで取得した")
 		return steamdomain.ReviewPage{}, nil
@@ -88,6 +97,7 @@ func TestCollectionBusyResponse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	out := decodeOutput(t, result)
 	if !result.IsError || out.ErrorCode != "busy" || out.Collection.AppID != 440 || out.Collection.StopReason != steamdomain.StopFailed || out.Collection.PagesFetched != 0 || out.ReturnedCount != 0 || len(out.Collection.Reviews) != 0 {
 		t.Fatal(out)

@@ -30,6 +30,7 @@ func TestMarshalCollectionReviewType(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			var out struct {
 				Version int `json:"schema_version"`
 				Options struct {
@@ -41,9 +42,11 @@ func TestMarshalCollectionReviewType(t *testing.T) {
 			if err := json.Unmarshal(data, &out); err != nil {
 				t.Fatal(err)
 			}
+
 			if out.Version != 1 || out.Options.ReviewType != tt.want || out.StopReason != tt.reason || out.Reviews == nil || len(out.Reviews) != len(tt.reviews) {
 				t.Fatalf("JSON=%s", data)
 			}
+
 			if !reflect.DeepEqual(input, before) {
 				t.Fatal("入力を変更した")
 			}
@@ -69,11 +72,14 @@ func TestMarshalCollectionReviewTypeBoundary(t *testing.T) {
 				if data != nil || !errors.Is(err, steamdomain.ErrInvalidArgument) {
 					t.Fatalf("JSON=%s error=%v", data, err)
 				}
+
 				return
 			}
+
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			var got struct {
 				Options struct {
 					ReviewType string `json:"review_type"`
@@ -82,6 +88,7 @@ func TestMarshalCollectionReviewTypeBoundary(t *testing.T) {
 			if err := json.Unmarshal(data, &got); err != nil {
 				t.Fatal(err)
 			}
+
 			if got.Options.ReviewType != "all" || input.Options.ReviewType != tc.kind {
 				t.Fatalf("JSON=%s input=%+v", data, input)
 			}

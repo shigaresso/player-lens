@@ -53,9 +53,11 @@ func TestLimitsConfigIsolation(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			if tc.changeCopy {
 				config = limits.Config()
 			}
+
 			config.RequestsPerMinute = 0
 			config.RequestsPerDay = 0
 			config.MaxConcurrent = 0
@@ -64,6 +66,7 @@ func TestLimitsConfigIsolation(t *testing.T) {
 			}
 		})
 	}
+
 	t.Run("未初期化の値からはゼロ設定を返す", func(t *testing.T) {
 		var limits mcpdomain.Limits
 		if config := limits.Config(); config != (mcpdomain.LimitsConfig{}) {

@@ -36,7 +36,7 @@ func TestCollectReviewsRejection(t *testing.T) {
 			if !tc.occupied {
 				release()
 			}
-			options := steamdomain.CollectionOptions{Language: "english", PageSize: 100, MaxReviews: 20, MaxPages: 3}
+			options := steamdomain.CollectionOptionsConfig{Language: "english", PageSize: 100, MaxReviews: 20, MaxPages: 3}
 			result := mcpapplication.CollectReviews(t.Context(), fetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				t.Fatal("拒否した操作で取得した")
 				return steamdomain.ReviewPage{}, nil
@@ -59,7 +59,7 @@ func TestCollectReviewsFailure(t *testing.T) {
 			return steamdomain.ReviewPage{Reviews: []steamdomain.Review{{RecommendationID: 11}}, NextCursor: "next"}, nil
 		}
 		return steamdomain.ReviewPage{}, cause
-	}), 440, steamdomain.CollectionOptions{}, mcpdomain.NewLimiter(mcpdomain.DefaultLimits(), time.Now))
+	}), 440, steamdomain.CollectionOptionsConfig{}, mcpdomain.NewLimiter(mcpdomain.DefaultLimits(), time.Now))
 	if !errors.Is(result.Err, cause) || result.Rejection != mcpdomain.NotRejected || result.Collection.StopReason != steamdomain.StopFailed || result.Collection.PagesFetched != 1 || len(result.Collection.Reviews) != 1 || result.Collection.Reviews[0].RecommendationID != 11 {
 		t.Fatalf("result=%+v", result)
 	}
@@ -79,7 +79,7 @@ func TestCollectReviewsCancelledBeforeStart(t *testing.T) {
 	result := mcpapplication.CollectReviews(ctx, fetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 		t.Fatal("開始前キャンセルで取得した")
 		return steamdomain.ReviewPage{}, nil
-	}), 440, steamdomain.CollectionOptions{}, gate)
+	}), 440, steamdomain.CollectionOptionsConfig{}, gate)
 	if !errors.Is(result.Err, context.Canceled) || result.Rejection != mcpdomain.NotRejected || result.Collection.AppID != 440 || result.Collection.StopReason != steamdomain.StopFailed || result.Collection.PagesFetched != 0 {
 		t.Fatalf("result=%+v", result)
 	}

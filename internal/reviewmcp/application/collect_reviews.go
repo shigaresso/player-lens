@@ -25,7 +25,7 @@ type Result struct {
 // 入力の読み取りと MCP 用の条件検査は adapter が先に行う。
 // 開始前キャンセルでは利用枠を消費せず、成功した確保は終了時に必ず返却する。
 // 開始回数は戻さない。取得用 context はここで解放し、親をキャンセルしない。
-func CollectReviews(ctx context.Context, fetcher steamapplication.PageFetcher, appID steamdomain.AppID, options steamdomain.CollectionOptions, gate *mcpdomain.Limiter) Result {
+func CollectReviews(ctx context.Context, fetcher steamapplication.PageFetcher, appID steamdomain.AppID, options steamdomain.CollectionOptionsConfig, gate *mcpdomain.Limiter) Result {
 	if ctx.Err() == nil {
 		release, reason := gate.Acquire()
 		if reason != mcpdomain.NotRejected {

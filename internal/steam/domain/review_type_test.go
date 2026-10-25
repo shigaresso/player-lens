@@ -24,13 +24,13 @@ func TestReviewTypeNormalization(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			pageInput := steamdomain.PageOptions{ReviewType: tt.input}
 			page, pageErr := steamdomain.NormalizePageOptions(pageInput)
-			collectionInput := steamdomain.CollectionOptions{ReviewType: tt.input}
+			collectionInput := steamdomain.CollectionOptionsConfig{ReviewType: tt.input}
 			collection, collectionErr := steamdomain.NormalizeCollectionOptions(collectionInput)
 			if errors.Is(pageErr, steamdomain.ErrInvalidArgument) != tt.invalid || errors.Is(collectionErr, steamdomain.ErrInvalidArgument) != tt.invalid {
 				t.Fatalf("page error=%v collection error=%v", pageErr, collectionErr)
 			}
 			if tt.invalid {
-				if page != (steamdomain.PageOptions{}) || collection != (steamdomain.CollectionOptions{}) {
+				if page != (steamdomain.PageOptions{}) || collection != (steamdomain.CollectionOptionsConfig{}) {
 					t.Fatalf("拒否時に結果を返した: page=%+v collection=%+v", page, collection)
 				}
 				return

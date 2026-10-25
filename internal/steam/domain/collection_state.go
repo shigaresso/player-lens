@@ -14,7 +14,7 @@ type CollectionState struct {
 
 // NewCollectionState は正の App ID と条件を検査・正規化し、先頭からの収集状態を返す。
 // 入力を変更せず、不正なら nil と ErrInvalidArgument を保持するエラーを返す。
-func NewCollectionState(appID AppID, options CollectionOptions) (*CollectionState, error) {
+func NewCollectionState(appID AppID, options CollectionOptionsConfig) (*CollectionState, error) {
 	if appID == 0 {
 		return nil, fmt.Errorf("positive AppID is required: %w", ErrInvalidArgument)
 	}

@@ -20,7 +20,7 @@ type PageFetcher interface {
 // fetcher は有効な取得依存を渡す。入力不正ではゼロ値と ErrInvalidArgument を返す。
 // 呼び出し側の短い期限を優先し、収集全体を最大2分とする。
 // 取得・循環・context の失敗では部分結果と StopFailed、原因を保持したエラーを返す。
-func CollectReviews(ctx context.Context, fetcher PageFetcher, appID steamdomain.AppID, options steamdomain.CollectionOptions) (steamdomain.Collection, error) {
+func CollectReviews(ctx context.Context, fetcher PageFetcher, appID steamdomain.AppID, options steamdomain.CollectionOptionsConfig) (steamdomain.Collection, error) {
 	if fetcher == nil {
 		return steamdomain.Collection{}, fmt.Errorf("page fetcher and positive AppID are required: %w", steamdomain.ErrInvalidArgument)
 	}

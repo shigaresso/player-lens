@@ -4,6 +4,8 @@
 
 採用。[Issue #58](https://github.com/shigaresso/player-lens/issues/58) の Steam 収集操作に適用する。ADR-0005 の上限・部分結果と ADR-0013 の各領域内のレイヤーを維持し、収集状態の管理を steam/domain に配置する。
 
+条件の検査・正規化の担当は [ADR-0015](0015-collection-options-boundary.md) で部分的に置き換えた。状態は生成済みの CollectionOptions を受け取り、App ID の検査と設定のコピーの保持を担当する。以下の重複・終了・部分結果・資源の契約は維持する。
+
 ## 背景と比較
 
 CollectReviews が取得の手順と result・seenIDs・seenCursors・cursor を個別に管理していた。重複と終了判断には、最初の値・順序、成功ページ数、終了の優先順位という関係がある。

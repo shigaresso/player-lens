@@ -10,13 +10,13 @@ import (
 func TestCollectionStateResultOwnership(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
-		options steamdomain.CollectionOptions
+		options steamdomain.CollectionOptionsConfig
 		fail    bool
 		reason  steamdomain.StopReason
 	}{
-		{"進行中の結果を書き換えても状態は変わらない", steamdomain.CollectionOptions{}, false, ""},
-		{"成功結果を書き換えても状態は変わらない", steamdomain.CollectionOptions{MaxReviews: 1}, false, steamdomain.StopReviewLimit},
-		{"失敗結果を書き換えても状態は変わらない", steamdomain.CollectionOptions{}, true, steamdomain.StopFailed},
+		{"進行中の結果を書き換えても状態は変わらない", steamdomain.CollectionOptionsConfig{}, false, ""},
+		{"成功結果を書き換えても状態は変わらない", steamdomain.CollectionOptionsConfig{MaxReviews: 1}, false, steamdomain.StopReviewLimit},
+		{"失敗結果を書き換えても状態は変わらない", steamdomain.CollectionOptionsConfig{}, true, steamdomain.StopFailed},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			state, err := steamdomain.NewCollectionState(440, tc.options)

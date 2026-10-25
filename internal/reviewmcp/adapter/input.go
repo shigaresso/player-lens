@@ -8,9 +8,9 @@ import (
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
 )
 
-func parseInput(data []byte) (steamdomain.AppID, steamdomain.CollectionOptions, error) {
-	invalid := func() (steamdomain.AppID, steamdomain.CollectionOptions, error) {
-		return 0, steamdomain.CollectionOptions{}, fmt.Errorf("invalid MCP collection input: %w", steamdomain.ErrInvalidArgument)
+func parseInput(data []byte) (steamdomain.AppID, steamdomain.CollectionOptionsConfig, error) {
+	invalid := func() (steamdomain.AppID, steamdomain.CollectionOptionsConfig, error) {
+		return 0, steamdomain.CollectionOptionsConfig{}, fmt.Errorf("invalid MCP collection input: %w", steamdomain.ErrInvalidArgument)
 	}
 	var input toolInput
 	if err := json.Unmarshal(data, &input); err != nil {

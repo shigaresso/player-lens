@@ -19,18 +19,18 @@ func TestCollectionStatePages(t *testing.T) {
 	first := steamdomain.Review{RecommendationID: 0, Text: "最初の本文", Language: "japanese", Recommended: true, TimestampCreated: 10, TimestampUpdated: 20}
 	for _, tc := range []struct {
 		name    string
-		options steamdomain.CollectionOptions
+		options steamdomain.CollectionOptionsConfig
 		pages   []steamdomain.ReviewPage
 		want    []steamdomain.Review
 		reason  steamdomain.StopReason
 		next    steamdomain.PageOptions
 	}{
-		{"短いページを反映して残件数と加工しないカーソルを返す", steamdomain.CollectionOptions{PageSize: 3, MaxReviews: 3, MaxPages: 3}, []steamdomain.ReviewPage{{Reviews: stateReviews(1), NextCursor: "A+/="}}, stateReviews(1), "", steamdomain.PageOptions{Language: "english", Cursor: "A+/=", PageSize: 2}},
-		{"重複だけのページでも継続する", steamdomain.CollectionOptions{PageSize: 2, MaxReviews: 3, MaxPages: 3}, []steamdomain.ReviewPage{{Reviews: stateReviews(1), NextCursor: "A"}, {Reviews: stateReviews(1), NextCursor: "B"}}, stateReviews(1), "", steamdomain.PageOptions{Language: "english", Cursor: "B", PageSize: 2}},
-		{"数値 ID が同じなら最初の本文と順序を保持する", steamdomain.CollectionOptions{MaxReviews: 2}, []steamdomain.ReviewPage{{Reviews: []steamdomain.Review{first}, NextCursor: "A"}, {Reviews: []steamdomain.Review{{RecommendationID: 0, Text: "更新された本文"}, {RecommendationID: 1}}, NextCursor: "B"}}, []steamdomain.Review{first, {RecommendationID: 1}}, steamdomain.StopReviewLimit, steamdomain.PageOptions{}},
-		{"空ページも成功数へ含め走査終了をページ上限より優先する", steamdomain.CollectionOptions{MaxPages: 1}, []steamdomain.ReviewPage{{}}, []steamdomain.Review{}, steamdomain.StopExhausted, steamdomain.PageOptions{}},
-		{"件数上限をページ上限より優先する", steamdomain.CollectionOptions{MaxReviews: 1, MaxPages: 1}, []steamdomain.ReviewPage{{Reviews: stateReviews(1), NextCursor: "A"}}, stateReviews(1), steamdomain.StopReviewLimit, steamdomain.PageOptions{}},
-		{"重複除外後の件数が足りなくてもページ上限で終了する", steamdomain.CollectionOptions{MaxReviews: 5, MaxPages: 2}, []steamdomain.ReviewPage{{Reviews: stateReviews(1), NextCursor: "A"}, {Reviews: stateReviews(1), NextCursor: "B"}}, stateReviews(1), steamdomain.StopPageLimit, steamdomain.PageOptions{}},
+		{"短いページを反映して残件数と加工しないカーソルを返す", steamdomain.CollectionOptionsConfig{PageSize: 3, MaxReviews: 3, MaxPages: 3}, []steamdomain.ReviewPage{{Reviews: stateReviews(1), NextCursor: "A+/="}}, stateReviews(1), "", steamdomain.PageOptions{Language: "english", Cursor: "A+/=", PageSize: 2}},
+		{"重複だけのページでも継続する", steamdomain.CollectionOptionsConfig{PageSize: 2, MaxReviews: 3, MaxPages: 3}, []steamdomain.ReviewPage{{Reviews: stateReviews(1), NextCursor: "A"}, {Reviews: stateReviews(1), NextCursor: "B"}}, stateReviews(1), "", steamdomain.PageOptions{Language: "english", Cursor: "B", PageSize: 2}},
+		{"数値 ID が同じなら最初の本文と順序を保持する", steamdomain.CollectionOptionsConfig{MaxReviews: 2}, []steamdomain.ReviewPage{{Reviews: []steamdomain.Review{first}, NextCursor: "A"}, {Reviews: []steamdomain.Review{{RecommendationID: 0, Text: "更新された本文"}, {RecommendationID: 1}}, NextCursor: "B"}}, []steamdomain.Review{first, {RecommendationID: 1}}, steamdomain.StopReviewLimit, steamdomain.PageOptions{}},
+		{"空ページも成功数へ含め走査終了をページ上限より優先する", steamdomain.CollectionOptionsConfig{MaxPages: 1}, []steamdomain.ReviewPage{{}}, []steamdomain.Review{}, steamdomain.StopExhausted, steamdomain.PageOptions{}},
+		{"件数上限をページ上限より優先する", steamdomain.CollectionOptionsConfig{MaxReviews: 1, MaxPages: 1}, []steamdomain.ReviewPage{{Reviews: stateReviews(1), NextCursor: "A"}}, stateReviews(1), steamdomain.StopReviewLimit, steamdomain.PageOptions{}},
+		{"重複除外後の件数が足りなくてもページ上限で終了する", steamdomain.CollectionOptionsConfig{MaxReviews: 5, MaxPages: 2}, []steamdomain.ReviewPage{{Reviews: stateReviews(1), NextCursor: "A"}, {Reviews: stateReviews(1), NextCursor: "B"}}, stateReviews(1), steamdomain.StopPageLimit, steamdomain.PageOptions{}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			state, err := steamdomain.NewCollectionState(440, tc.options)

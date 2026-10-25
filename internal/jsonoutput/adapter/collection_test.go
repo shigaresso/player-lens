@@ -22,7 +22,7 @@ func TestMarshalCollection(t *testing.T) {
 		{"部分結果の失敗を出力する", []steamdomain.Review{{RecommendationID: 1, Text: "途中結果"}}, steamdomain.StopFailed},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			input := steamdomain.Collection{AppID: 440, Options: steamdomain.CollectionOptions{Language: "japanese", PageSize: 10, MaxReviews: 20, MaxPages: 3}, Reviews: test.reviews, PagesFetched: 2, StopReason: test.reason}
+			input := steamdomain.Collection{AppID: 440, Options: steamdomain.CollectionOptionsConfig{Language: "japanese", PageSize: 10, MaxReviews: 20, MaxPages: 3}, Reviews: test.reviews, PagesFetched: 2, StopReason: test.reason}
 			original := slices.Clone(input.Reviews)
 			data, err := jsonoutput.MarshalCollection(input)
 			if err != nil {

@@ -20,7 +20,7 @@ func TestResponseSize(t *testing.T) {
 		{"上限を超える本文は切り詰めず省略を明示する", 70000, "response_too_large"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			collection := steamdomain.Collection{AppID: 440, Options: steamdomain.CollectionOptions{Language: "english", PageSize: 100, MaxReviews: 20, MaxPages: 3}, Reviews: []steamdomain.Review{{RecommendationID: 10, Text: strings.Repeat("x", tc.length)}}, PagesFetched: 1, StopReason: steamdomain.StopReviewLimit}
+			collection := steamdomain.Collection{AppID: 440, Options: steamdomain.CollectionOptionsConfig{Language: "english", PageSize: 100, MaxReviews: 20, MaxPages: 3}, Reviews: []steamdomain.Review{{RecommendationID: 10, Text: strings.Repeat("x", tc.length)}}, PagesFetched: 1, StopReason: steamdomain.StopReviewLimit}
 			result, err := encodeResult(collection, toolFailureInfo{})
 			if err != nil {
 				t.Fatal(err)
@@ -64,7 +64,7 @@ func TestEncodeResultRejectsOversizedMetadata(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			collection := steamdomain.Collection{
 				AppID:   440,
-				Options: steamdomain.CollectionOptions{Language: strings.Repeat("x", maxResultBytes+1)},
+				Options: steamdomain.CollectionOptionsConfig{Language: strings.Repeat("x", maxResultBytes+1)},
 				Reviews: tc.reviews,
 			}
 			result, err := encodeResult(collection, toolFailureInfo{})

@@ -36,7 +36,7 @@ const (
 // PagesFetched は空ページを含む取得成功ページ数で、失敗したページは含まない。
 type Collection struct {
 	AppID        AppID
-	Options      CollectionOptions
+	Options      CollectionOptionsConfig
 	Reviews      []Review
 	PagesFetched int
 	StopReason   StopReason

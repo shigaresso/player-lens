@@ -17,7 +17,7 @@ func TestCollectionStateFail(t *testing.T) {
 		{"途中の失敗では成功したページだけを保持する", []steamdomain.ReviewPage{{Reviews: stateReviews(1), NextCursor: "A"}}, stateReviews(1)},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			options := steamdomain.CollectionOptions{Language: "japanese", PageSize: 2, MaxReviews: 3, MaxPages: 4}
+			options := steamdomain.CollectionOptionsConfig{Language: "japanese", PageSize: 2, MaxReviews: 3, MaxPages: 4}
 			state, err := steamdomain.NewCollectionState(440, options)
 			if err != nil {
 				t.Fatal(err)

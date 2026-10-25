@@ -11,17 +11,17 @@ import (
 func TestCollectionStateStopped(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
-		options steamdomain.CollectionOptions
+		options steamdomain.CollectionOptionsConfig
 		page    steamdomain.ReviewPage
 		reason  steamdomain.StopReason
 		fail    bool
 		cycle   bool
 	}{
-		{"空ページで終了した状態を変更しない", steamdomain.CollectionOptions{}, steamdomain.ReviewPage{}, steamdomain.StopExhausted, false, false},
-		{"件数上限で終了した状態を変更しない", steamdomain.CollectionOptions{MaxReviews: 1}, steamdomain.ReviewPage{Reviews: stateReviews(1), NextCursor: "A"}, steamdomain.StopReviewLimit, false, false},
-		{"ページ上限で終了した状態を変更しない", steamdomain.CollectionOptions{MaxPages: 1}, steamdomain.ReviewPage{Reviews: stateReviews(1), NextCursor: "A"}, steamdomain.StopPageLimit, false, false},
-		{"循環で失敗した状態を変更しない", steamdomain.CollectionOptions{}, steamdomain.ReviewPage{Reviews: stateReviews(1), NextCursor: "*"}, steamdomain.StopFailed, false, true},
-		{"取得の失敗で終了した状態を変更しない", steamdomain.CollectionOptions{}, steamdomain.ReviewPage{Reviews: stateReviews(1), NextCursor: "A"}, steamdomain.StopFailed, true, false},
+		{"空ページで終了した状態を変更しない", steamdomain.CollectionOptionsConfig{}, steamdomain.ReviewPage{}, steamdomain.StopExhausted, false, false},
+		{"件数上限で終了した状態を変更しない", steamdomain.CollectionOptionsConfig{MaxReviews: 1}, steamdomain.ReviewPage{Reviews: stateReviews(1), NextCursor: "A"}, steamdomain.StopReviewLimit, false, false},
+		{"ページ上限で終了した状態を変更しない", steamdomain.CollectionOptionsConfig{MaxPages: 1}, steamdomain.ReviewPage{Reviews: stateReviews(1), NextCursor: "A"}, steamdomain.StopPageLimit, false, false},
+		{"循環で失敗した状態を変更しない", steamdomain.CollectionOptionsConfig{}, steamdomain.ReviewPage{Reviews: stateReviews(1), NextCursor: "*"}, steamdomain.StopFailed, false, true},
+		{"取得の失敗で終了した状態を変更しない", steamdomain.CollectionOptionsConfig{}, steamdomain.ReviewPage{Reviews: stateReviews(1), NextCursor: "A"}, steamdomain.StopFailed, true, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			state, err := steamdomain.NewCollectionState(440, tc.options)

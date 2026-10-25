@@ -35,7 +35,7 @@ func Run(ctx context.Context, args []string, fetcher steamapplication.PageFetche
 	flags.SetOutput(io.Discard)
 	appID := flags.String("app-id", "", "Steam App ID")
 	reviewType := flags.String("review-type", "", "レビューの評価種別")
-	options := steamdomain.CollectionOptions{}
+	options := steamdomain.CollectionOptionsConfig{}
 	flags.StringVar(&options.Language, "language", "", "レビューの言語")
 	flags.IntVar(&options.PageSize, "page-size", 0, "要求件数")
 	flags.IntVar(&options.MaxReviews, "max-reviews", 0, "レビュー上限")

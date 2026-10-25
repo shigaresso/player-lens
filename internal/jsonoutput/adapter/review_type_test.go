@@ -24,7 +24,7 @@ func TestMarshalCollectionReviewType(t *testing.T) {
 		{"非おすすめの部分失敗でも条件を出力する", steamdomain.ReviewTypeNegative, "negative", steamdomain.StopFailed, []steamdomain.Review{{RecommendationID: 3}}},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			input := steamdomain.Collection{AppID: 440, Options: steamdomain.CollectionOptions{ReviewType: tt.kind}, Reviews: tt.reviews, StopReason: tt.reason}
+			input := steamdomain.Collection{AppID: 440, Options: steamdomain.CollectionOptionsConfig{ReviewType: tt.kind}, Reviews: tt.reviews, StopReason: tt.reason}
 			before := input
 			data, err := jsonoutput.MarshalCollection(input)
 			if err != nil {
@@ -63,7 +63,7 @@ func TestMarshalCollectionReviewTypeBoundary(t *testing.T) {
 		{"int32最大値ではJSONを返さない", 2147483647, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			input := steamdomain.Collection{Options: steamdomain.CollectionOptions{ReviewType: tc.kind}}
+			input := steamdomain.Collection{Options: steamdomain.CollectionOptionsConfig{ReviewType: tc.kind}}
 			data, err := jsonoutput.MarshalCollection(input)
 			if tc.invalid {
 				if data != nil || !errors.Is(err, steamdomain.ErrInvalidArgument) {

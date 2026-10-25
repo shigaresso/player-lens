@@ -33,7 +33,7 @@ func TestCollectReviews(t *testing.T) {
 		}
 		return steamdomain.ReviewPage{}, nil
 	})
-	result := mcpapplication.CollectReviews(t.Context(), fetcher, 440, steamdomain.CollectionOptions{Language: "japanese"}, gate)
+	result := mcpapplication.CollectReviews(t.Context(), fetcher, 440, steamdomain.CollectionOptionsConfig{Language: "japanese"}, gate)
 	if result.Err != nil || result.Rejection != mcpdomain.NotRejected || result.Collection.AppID != 440 || result.Collection.StopReason != steamdomain.StopExhausted {
 		t.Fatalf("result=%+v", result)
 	}

@@ -35,7 +35,7 @@ func TestParseInputReviewType(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			id, options, err := parseInput([]byte(tt.input))
 			if tt.invalid {
-				if err == nil || id != 0 || options != (steamdomain.CollectionOptions{}) {
+				if err == nil || id != 0 || options != (steamdomain.CollectionOptionsConfig{}) {
 					t.Fatalf("id=%d options=%+v err=%v", id, options, err)
 				}
 			} else if err != nil || id != 440 || options.ReviewType != tt.want {

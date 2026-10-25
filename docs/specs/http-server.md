@@ -19,6 +19,8 @@ run は http.NewServeMux でルーターを生成し、RegisterRoutes(mux, healt
 
 RegisterRoutes は GET /healthz（HEAD を含む）と、MCP が非 nil の場合の /tools を登録する。mux と healthHandler は有効な非 nil の値を渡し、登録は受付開始前に行う。競合するパターンは事前に登録しない。重複登録などは標準 ServeMux の panic に従い、独自の検査や復旧は追加しない。各 handler は並行利用可能なものを渡す。
 
+Issue #76 で、登録パターンのパスとログの http.route は同じ非公開の healthPath 定義を参照する。公開経路は /healthz のまま維持し、受信 URL・query を経路の定義へ取り込まない。公開契約を検証するテストの期待値はこの実装定数を参照せず、/healthz のリテラルで確認する。
+
 生成は New、既存の対象への登録は Register という名前で区別する。業務操作を持たない生存確認のための application/domain や、生成と登録をまとめ直す互換ラッパーは作らない。
 
 ```text

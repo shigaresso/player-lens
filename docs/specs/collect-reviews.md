@@ -1,6 +1,6 @@
 # Steam レビューの上限付き収集
 
-操作と利用側の interface は steam/application、型と正規化は steam/domain、具体的な HTTP は steam/adapter に置く。 配置は [ADR-0013](../adr/0013-domain-folder-layers.md) に従う。
+操作と利用側の interface は steam/application、型・正規化と収集状態は steam/domain、具体的な HTTP は steam/adapter に置く。 配置は [ADR-0013](../adr/0013-domain-folder-layers.md) に従う。
 
 ## 範囲と依存
 
@@ -42,6 +42,14 @@
 | ページ取得・context が失敗した | StopFailed | 取得済み結果と原因を保持したエラー |
 
 空ページを観測したことと、更新中の Steam レビューを同一時点のスナップショットとして取得できたことは区別する。評価種別は共通のページ正規化で検査し、正規化した条件を Collection と各ページ要求へ保持する。部分失敗でも条件を失わせない。言語・ソート・off-topic の条件は1ページ adapter の仕様に従う。部分結果に永続化・再開の保証は付けない。ページ取得 adapter は失敗時にゼロ値を返し、収集操作がそれ以前の成功結果を保持する。
+
+## 収集状態の境界（Issue #58）
+
+steam/domain の CollectionState は結果・既読 ID・既読カーソルと次の取得条件を非公開で持つ。NewCollectionState が正の App ID と条件を検査・正規化し、ゼロ値は使用しない。CollectReviews は取得依存を確認してから生成 API を使い、App ID と条件を重複して検査しない。不正入力の戻り値と ErrInvalidArgument の原因識別は維持する。
+
+NextPage は次の条件と続行可否、AddPage は成功ページの反映と循環のエラー、Fail は取得や context 失敗の結果への反映を担当する。終了後は NextPage がゼロ値と false を返し、AddPage と Fail は結果を変更しない。終了後の AddPage は nil を返す。
+
+Result はレビュー配列も含めてコピーし、返した値の変更を内部へ伝えない。空配列は nil にしない。状態は通信・context・時計・再試行を扱わず、取得・期限・キャンセルと失敗の文脈は application が担当する。循環の識別には steam/domain.ErrCursorCycle を使う。判断は [ADR-0014](../adr/0014-steam-collection-state.md) に記録する。
 
 ## 期限と失敗
 

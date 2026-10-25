@@ -67,13 +67,13 @@ func TestCollectReviewsFailureReleasesContext(t *testing.T) {
 		cause error
 	}{
 		{"取得失敗でも解放する", io.ErrUnexpectedEOF},
-		{"循環でも解放する", steamapplication.ErrCursorCycle},
+		{"循環でも解放する", steamdomain.ErrCursorCycle},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			var captured context.Context
 			fetcher := pageFetcherFunc(func(ctx context.Context, appID steamdomain.AppID, options steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				captured = ctx
-				if tt.cause == steamapplication.ErrCursorCycle {
+				if tt.cause == steamdomain.ErrCursorCycle {
 					return steamdomain.ReviewPage{AppID: appID, Options: options, Reviews: collectionReviews(1), NextCursor: "*"}, nil
 				}
 				return steamdomain.ReviewPage{}, tt.cause

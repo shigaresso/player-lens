@@ -2,15 +2,11 @@ package application
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
 )
-
-// ErrCursorCycle は収集中に取得済みのカーソルへの循環を検出したことを表す。
-var ErrCursorCycle = errors.New("steam review cursor cycle")
 
 // PageFetcher は取得条件から1ページと次のカーソルを返す依存を表す。
 // 空ページは成功、不正入力や取得失敗は原因を保持したエラーとする。
@@ -66,7 +62,7 @@ func CollectReviews(ctx context.Context, fetcher PageFetcher, appID steamdomain.
 		}
 		if seenCursors[page.NextCursor] {
 			result.StopReason = steamdomain.StopFailed
-			return result, fmt.Errorf("collect Steam reviews after page %d: %w", result.PagesFetched, ErrCursorCycle)
+			return result, fmt.Errorf("collect Steam reviews after page %d: %w", result.PagesFetched, steamdomain.ErrCursorCycle)
 		}
 		seenCursors[page.NextCursor] = true
 		cursor = page.NextCursor

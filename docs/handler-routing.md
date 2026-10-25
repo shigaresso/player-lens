@@ -6,11 +6,11 @@ Issue #77 で、ルーティングから割り当てられる自前の処理と�
 
 | 登録・接続元 | 割り当て先・処理 | 自前の入口と配置先 |
 | --- | --- | --- |
-| cmd/server/adapter/routes.go の GET /healthz（HEAD を含む） | 生存応答、計測、構造化ログ | cmd/server/adapter/handler/health.go の healthHandler.ServeHTTP。生成は NewHealthHandler |
-| 同じ RegisterRoutes の /tools | MCP の HTTP 受付 | internal/reviewmcp/adapter/handler/handler.go の NewHandler が SDK の StreamableHTTPHandler を組み立てる |
-| MCP の公開設定の有無による next の接続 | Host と cross-origin の受付保護 | internal/mcpaccess/adapter/handler の Protect／ProtectLocal が SDK handler の手前を保護する |
-| SDK の HTTP リクエストごとの Server 構築 callback | newServer が設定とツール登録を行う | internal/reviewmcp/adapter/handler/handler.go の newServer。構築と登録を担当する補助関数 |
-| newServer の AddTool と SDK の collect_reviews へのディスパッチ | 入力検査、ユースケースへの接続、結果変換 | internal/reviewmcp/adapter/handler/collection_handler.go の newCollectReviewsHandler から collection.go の collect へ接続する |
+| [RegisterRoutes](../cmd/server/adapter/routes.go) の GET /healthz（HEAD を含む） | 生存応答、計測、構造化ログ | [healthHandler.ServeHTTP](../cmd/server/adapter/handler/health.go)。生成は同じファイルの NewHealthHandler |
+| 同じ RegisterRoutes の /tools | MCP の HTTP 受付 | [NewHandler](../internal/reviewmcp/adapter/handler/handler.go) が SDK の StreamableHTTPHandler を組み立てる |
+| MCP の公開設定の有無による next の接続 | Host と cross-origin の受付保護 | [Protect](../internal/mcpaccess/adapter/handler/handler.go)／[ProtectLocal](../internal/mcpaccess/adapter/handler/local.go) が SDK handler の手前を保護する |
+| SDK の HTTP リクエストごとの Server 構築 callback | newServer が設定とツール登録を行う | [newServer](../internal/reviewmcp/adapter/handler/handler.go)。構築と登録を担当する補助関数 |
+| newServer の AddTool と SDK の collect_reviews へのディスパッチ | 入力検査、ユースケースへの接続、結果変換 | [newCollectReviewsHandler](../internal/reviewmcp/adapter/handler/collection_handler.go) から [collect](../internal/reviewmcp/adapter/handler/collection.go) へ接続する |
 
 ## 登録・処理・補助処理の境界
 

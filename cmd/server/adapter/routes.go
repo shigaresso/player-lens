@@ -1,0 +1,16 @@
+package adapter
+
+import "net/http"
+
+// RegisterRoutes は生成済みの handler を mux の /healthz と /tools に登録する。
+// mux と healthHandler は有効な非 nil の値を渡す。mcpHandler が nil なら /tools は登録しない。
+// 登録は受付開始前に行い、競合するパターンは事前に登録しない。
+// 重複登録などの不正な登録は標準の http.ServeMux と同じく panic する。
+// mux と handler の生成・実行、サーバーの起動と終了は呼び出し側が担当する。
+func RegisterRoutes(mux *http.ServeMux, healthHandler, mcpHandler http.Handler) {
+	if mcpHandler != nil {
+		mux.Handle("/tools", mcpHandler)
+	}
+
+	mux.Handle("GET /healthz", healthHandler)
+}

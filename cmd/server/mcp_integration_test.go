@@ -6,6 +6,7 @@ import (
 	"context"
 	"io"
 	"log/slog"
+	"net/http"
 	"sync"
 	"testing"
 	"time"
@@ -42,7 +43,10 @@ func TestMCPShutdownWaitsForActiveCollection(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	url, httpClient, cancel, done, closed := startTestServer(t, serveradapter.NewHandler(mcpHandler, slog.New(slog.NewJSONHandler(io.Discard, nil)), time.Now), 2*time.Second)
+	healthHandler := serveradapter.NewHealthHandler(slog.New(slog.NewJSONHandler(io.Discard, nil)), time.Now)
+	router := http.NewServeMux()
+	serveradapter.RegisterRoutes(router, healthHandler, mcpHandler)
+	url, httpClient, cancel, done, closed := startTestServer(t, router, 2*time.Second)
 	client := mcp.NewClient(&mcp.Implementation{Name: "server-integration", Version: "1"}, nil)
 	ctx, stop := context.WithTimeout(context.Background(), 5*time.Second)
 	defer stop()

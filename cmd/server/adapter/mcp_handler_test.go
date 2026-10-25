@@ -28,16 +28,19 @@ func TestMCPRoute(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			called := false
-			handler := NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			mcpHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				called = true
 				if r.URL.Path != "/tools" {
 					t.Fatal(r.URL.Path)
 				}
 
 				w.WriteHeader(202)
-			}), slog.New(slog.NewJSONHandler(io.Discard, nil)), time.Now)
+			})
+			healthHandler := NewHealthHandler(slog.New(slog.NewJSONHandler(io.Discard, nil)), time.Now)
+			router := http.NewServeMux()
+			RegisterRoutes(router, healthHandler, mcpHandler)
 			w := httptest.NewRecorder()
-			handler.ServeHTTP(w, httptest.NewRequest(tc.method, tc.path, nil))
+			router.ServeHTTP(w, httptest.NewRequest(tc.method, tc.path, nil))
 			if w.Code != tc.status || called != tc.called {
 				t.Fatalf("status=%d called=%v", w.Code, called)
 			}

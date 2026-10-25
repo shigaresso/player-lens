@@ -33,7 +33,10 @@ func TestHealthHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			response := httptest.NewRecorder()
-			NewHandler(nil, slog.New(slog.NewJSONHandler(io.Discard, nil)), time.Now).ServeHTTP(response, httptest.NewRequest(tt.method, tt.path, nil))
+			health := NewHealthHandler(slog.New(slog.NewJSONHandler(io.Discard, nil)), time.Now)
+			router := http.NewServeMux()
+			RegisterRoutes(router, health, nil)
+			router.ServeHTTP(response, httptest.NewRequest(tt.method, tt.path, nil))
 			if response.Code != tt.status {
 				t.Fatalf("status=%d; want=%d", response.Code, tt.status)
 			}
@@ -96,7 +99,7 @@ func TestHealthWriteFailure(t *testing.T) {
 			var output bytes.Buffer
 			logger := slog.New(slog.NewJSONHandler(&output, nil))
 			response := &failedResponse{header: make(http.Header), cause: tc.cause}
-			NewHandler(nil, logger, time.Now).ServeHTTP(response,
+			NewHealthHandler(logger, time.Now).ServeHTTP(response,
 				httptest.NewRequest(http.MethodGet, "/healthz?secret=value", nil))
 			record := decodeHealthLog(t, output.String())
 			for key, want := range map[string]any{

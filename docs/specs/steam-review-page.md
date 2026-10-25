@@ -22,7 +22,7 @@ HTTP クライアントと接続先は外から渡す。空の接続先は公式
 
 ### リクエスト変換の境界（Issue #38）
 
-`review_page_request.go` の `newReviewPageRequest` が内部の ReviewType の数値列挙値を EUserReviewsReviewType に変換して API へ渡し、未知の数値は `ErrInvalidArgument` で拒否する。`newReviewPageRequest` は正規化済みの条件を名前付きの API 入力型へ変換し、`encodeReviewPageQuery` は JSON とクエリへ変換する。これらは通信・時刻・保存に依存しない。既定値と入力検査は `NormalizePageOptions`、期限・通信・応答 Body の解放は `FetchReviewsPage` が担当する。
+`FetchReviewsPage` は必ず `NormalizePageOptions` を通し、未知の評価種別を通信前に `ErrInvalidArgument` で拒否する。Issue #64 では、その成功後に呼ぶ `review_page_request.go` の `newReviewPageRequest` から同じ検査を除いた。正の App ID と正規化済みの条件を渡すことを呼び出し側の契約とし、内部の ReviewType を EUserReviewsReviewType へ変換して固定の API 条件を設定する。変換だけを行うため error 戻り値は持たない。`encodeReviewPageQuery` は JSON とクエリへ変換する。これらは通信・時刻・保存に依存しない。既定値と入力検査は `NormalizePageOptions`、期限・通信・応答 Body の解放は `FetchReviewsPage` が担当する。
 
 API 側の数値定数は [公式の列挙名](https://partner.steamgames.com/doc/webapi/IUserReviewsService#Enums) と同じ `k_EUserReviewsReviewType_All`・`k_EUserReviewsReviewType_Positive`・`k_EUserReviewsReviewType_Negative`、`k_EUserReviewsAppReviewsFilter_Recent`、`k_EUserReviewsPurchaseType_All` を使う。これらは非公開とし、API へ送る値を明示的な数値で定義する。
 

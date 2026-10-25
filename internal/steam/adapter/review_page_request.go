@@ -26,13 +26,9 @@ type reviewPageRequest struct {
 	FilterOfftopic bool                                     `json:"filter_offtopic_activity"`
 }
 
-// newReviewPageRequest は正規化済みの取得条件を API の入力データへ変換する。
-func newReviewPageRequest(appID steamdomain.AppID, options steamdomain.PageOptions) (reviewPageRequest, error) {
-	switch options.ReviewType {
-	case steamdomain.ReviewTypeAll, steamdomain.ReviewTypePositive, steamdomain.ReviewTypeNegative:
-	default:
-		return reviewPageRequest{}, fmt.Errorf("invalid Steam review type: %w", steamdomain.ErrInvalidArgument)
-	}
+// newReviewPageRequest は正の App ID と正規化済みの取得条件を API の入力データへ変換する。
+// 呼び出し側は App ID の検査と NormalizePageOptions を先に完了させる。
+func newReviewPageRequest(appID steamdomain.AppID, options steamdomain.PageOptions) reviewPageRequest {
 	return reviewPageRequest{
 		AppID:          appID,
 		Filter:         k_EUserReviewsAppReviewsFilter_Recent,
@@ -42,7 +38,7 @@ func newReviewPageRequest(appID steamdomain.AppID, options steamdomain.PageOptio
 		ReviewType:     steamdomain.EUserReviewsReviewType(options.ReviewType),
 		PurchaseType:   k_EUserReviewsPurchaseType_All,
 		FilterOfftopic: true,
-	}, nil
+	}
 }
 
 func encodeReviewPageQuery(input reviewPageRequest) (url.Values, error) {

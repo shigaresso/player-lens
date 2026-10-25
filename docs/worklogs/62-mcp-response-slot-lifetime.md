@@ -27,6 +27,12 @@
 
 `go test -tags=integration -race -count=1 ./internal/reviewmcp/application ./internal/reviewmcp/adapter -run '^(TestCollectReviewsResponseLifetime|TestCollectReviewsResponseFailureWithoutAcquisition|TestMCPSlotDuringResponseConversion)$'` が成功した。追加契約は修正時点で実装済みなので、形式上の Red は作らず、テストのみの 1a1b5e8 に分けた。
 
+### 追加の panic 検証
+
+ユーザーの追加依頼により、TestCollectReviewsPanicReleasesSlot を追加した。同じ goroutine の収集中・応答変換中に意図した panic を起こす2状況をテーブルで確認し、テスト側で recover して原因の同一性を確認する。通常のエラーとして返したり panic を握りつぶしたりせず、枠を再確保でき、開始回数は戻らず、取得用 context が解放されて親はキャンセルされないことを確認した。
+
+`go test -race -count=1 ./internal/reviewmcp/application` を Docker Compose の verify で実行し、追加時に Green だった。プロダクションコードは変更せず、形式上の Red は作っていない。追加後の `bash scripts/check-go.sh format`、`bash scripts/check-lint.sh` と必須フックを確認した。既存の結合・本番用イメージの検証結果は上記の実行結果を維持し、今回再実行したとは扱わない。
+
 ### 契約とテストの対応
 
 | 対象 | 確認した契約 |
@@ -34,6 +40,7 @@
 | TestCollectKeepsSlotDuringFailureConversion | 実際の失敗応答の分類中に枠を保持し、変換後に返す。原因の Is を観測するテスト用エラーを使い、プロダクションコードにテスト用の差し込み口を増やしていない |
 | TestCollectReviewsResponseLifetime（4状況） | 収集成功／失敗と結果処理成功／失敗の組み合わせで、処理中の枠保持、一度だけの同期呼び出し、収集原因と結果処理エラーの区別、終了後の枠・context 解放、開始回数を戻さないこと |
 | TestCollectReviewsResponseFailureWithoutAcquisition（2状況） | 受付拒否と開始前キャンセルの結果処理が失敗しても、他の処理の枠を返さず、未確保の枠・開始回数を消費しないこと |
+| TestCollectReviewsPanicReleasesSlot（2状況） | 収集中・応答変換中の panic の原因伝播、枠と context の解放、開始回数を戻さないこと |
 | TestMCPSlotDuringResponseConversion（4版） | 実 SDK の応答変換を制御した時点で別セッションの呼び出しが busy になり、変換完了後に再受付できること。全呼び出しはローカルサーバーと取得のテスト実装を使う |
 
 結合テストはチャネルで変換開始・続行・クライアント処理完了を同期し、時間経過で変換時点を推測していない。失敗時も続行・キャンセル・goroutine の完了待ちとセッション・サーバーの終了を行う。

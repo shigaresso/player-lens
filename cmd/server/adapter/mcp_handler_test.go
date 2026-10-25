@@ -1,9 +1,12 @@
 package adapter
 
 import (
+	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestMCPRoute(t *testing.T) {
@@ -32,7 +35,7 @@ func TestMCPRoute(t *testing.T) {
 				}
 
 				w.WriteHeader(202)
-			}))
+			}), slog.New(slog.NewJSONHandler(io.Discard, nil)), time.Now)
 			w := httptest.NewRecorder()
 			handler.ServeHTTP(w, httptest.NewRequest(tc.method, tc.path, nil))
 			if w.Code != tc.status || called != tc.called {

@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"net"
 	"os"
 	"os/signal"
@@ -15,16 +15,18 @@ import (
 )
 
 func main() {
+	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil)).With("service.name", "player-lens")
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	err := run(ctx, os.Getenv("PORT"))
+	err := run(ctx, os.Getenv("PORT"), logger)
 	stop()
 	if err != nil {
-		log.Print(err)
+		logger.ErrorContext(ctx, "HTTP サーバーの実行に失敗した",
+			slog.String("event", "server.failed"), slog.Any("error", err))
 		os.Exit(1)
 	}
 }
 
-func run(ctx context.Context, port string) error {
+func run(ctx context.Context, port string, logger *slog.Logger) error {
 	address, err := serveradapter.ListenAddress(port)
 	if err != nil {
 		return err
@@ -56,6 +58,7 @@ func run(ctx context.Context, port string) error {
 		return fmt.Errorf("HTTP の待ち受けに失敗した: %w", err)
 	}
 
-	log.Printf("HTTP サーバーを起動した: %s", address)
-	return serveradapter.Serve(ctx, listener, serveradapter.NewHandler(mcpHandler), 10*time.Second)
+	logger.InfoContext(ctx, "HTTP サーバーを起動した",
+		slog.String("event", "server.started"), slog.String("address", address))
+	return serveradapter.Serve(ctx, listener, serveradapter.NewHandler(mcpHandler, logger, time.Now), 10*time.Second)
 }

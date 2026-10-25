@@ -9,7 +9,36 @@
 - `GET /healthz` は200、`Content-Type: text/plain; charset=utf-8`、本文 `ok` と改行を返す。`HEAD /healthz` は同じヘッダーと200を返し、本文を返さない。
 - 未定義のパスは404、`/healthz` の GET・HEAD 以外のメソッドは405とする。`/healthz/child` などはヘルスチェックに含めない。
 - 起動した HTTP サーバーの応答を確認するものであり、DB・Steam・LLM・MCP の接続や調査の正常性を示さない。収集操作の一覧は [ユースケース](../use-cases.md)、追加した `/tools` の契約は [MCP 仕様](review-mcp.md) を参照する。
-- 応答の書き込みに失敗した場合は操作と原因をログへ記録する。接続へ書き込めない状況で新たな正常応答を作らない。
+- 応答の書き込みに失敗した場合は操作と安全な原因分類を構造化ログへ記録する。接続へ書き込めない状況で新たな正常応答を作らない。
+
+## 生存確認の構造化ログ（Issue #72）
+
+起動側は slog の JSONHandler で stderr に出力し、service.name=player-lens を付与する。生成した slog.Logger と時刻取得関数を serveradapter.NewHandler に渡し、handler はその依存を共有する。依存は有効な非 nil のものを渡し、同時実行時には並行利用に対応する。グローバル logger の差し替えは行わない。
+
+GET/HEAD /healthz が通常 return したときに health_check.completed を1回記録する。時刻・level・msg は slog の標準項目とし、msg は「ヘルスチェックを処理した」に固定する。
+
+| 項目 | 契約 |
+| --- | --- |
+| event | health_check.completed |
+| http.request.method | GET または HEAD |
+| http.route | /healthz の固定値。query は含めない |
+| http.response.status_code | handler が選択する200。クライアントの受信成功を示すものではない |
+| duration_ms | handler 開始から応答処理の終了までの数値（ミリ秒）。ログの出力時間とクライアントへの配信完了は含まない |
+| outcome | 成功は success、本文の書き込み失敗は write_failed |
+| error_code | 書き込み失敗時だけ response_write_failed |
+| cause_kind | 書き込み失敗時だけ、安全な原因分類 |
+
+成功は INFO、書き込み失敗は ERROR とする。cause_kind は errors.Is による cancelled・deadline_exceeded・connection_closed、net.Error の Timeout による timeout、残りを unknown とする。この順で判定する。切断は io.ErrClosedPipe・net.ErrClosed・syscall.EPIPE・syscall.ECONNRESET を含む。以前の任意のエラー文字列の出力を分類へ変更し、未加工の原因・リクエストの query・ヘッダー・本文を記録しない。発生していないエラー属性や仮の trace ID は付けない。
+
+書き込み失敗では新しいステータスや本文を書き直さず、既存の応答処理を維持する。404/405・未定義パス・MCP への委譲はこのイベントに含めない。panic は従来どおり伝播し、独自の回復や panic 専用の完了ログは追加しない。生存確認の成功は Steam・MCP・調査の成功を示さない。
+
+LogAttrs に request の context をそのまま渡す。キャンセル済みでも別の Background に置き換えない。将来の OTel bridge が参照できる経路を保持するものであり、今回は SDK・トレース・メトリクスを導入しない。
+
+ログ出力先の通常の Write エラーで HTTP 応答を変更しない。任意の writer の非ブロッキング・保存成功・保持期間は保証しない。新しい buffer・goroutine・ファイル・DB は作らず、出力先の Close は引き受けない。stderr の保持と検索基盤は配置側の別の契約とする。
+
+起動側が従来出していた起動と実行失敗も、同じ logger の server.started（INFO、address）と server.failed（ERROR、error）で JSON 化する。起動失敗の既存の運用診断は error に保持する。これらは別イベントであり、生存確認の属性を付けない。SDK・net/http 自身の診断を全て JSON 化する契約は含まない。
+
+配置と比較は [ADR-0017](../adr/0017-health-structured-logging.md) を参照する。
 
 ## 設定と終了の契約
 
@@ -21,7 +50,7 @@
 
 ### Steam クライアントの構築と所有
 
-サーバー起動の `run` は、同じ main パッケージの非公開関数 `newSteamFetcher` から取得クライアントと idle 接続の終了関数を受け取る。構築関数が既定の Transport を複製し、HTTP タイムアウト10秒と公式の Steam 接続先を使って組み立てる。構築中は通信しない。
+サーバー起動の `run` は、server adapter の公開関数 `NewSteamFetcher` から取得クライアントと idle 接続の終了関数を受け取る。構築関数が既定の Transport を複製し、HTTP タイムアウト10秒と公式の Steam 接続先を使って組み立てる。構築中は通信しない。
 
 構築失敗時は構築関数が Transport の idle 接続を解放し、nil のクライアント・nil の終了関数と元のエラーを返す。成功時は `run` が直後に終了関数を defer へ登録し、後続の起動失敗またはサーバー実行の終了時に呼ぶ。終了関数は idle 接続だけを閉じ、処理中のリクエストのキャンセルや HTTP サーバーの終了待機は既存の担当に残す。
 
@@ -35,9 +64,9 @@
 
 ## 検証との対応
 
-設定と HTTP 応答はネットワークを使わないユニットテストで確認する。実際の待ち受け・応答・処理中の終了・期限超過・bind 失敗は `integration` タグの結合テストで確認し、race detector を実行する。本番用イメージの PORT・不正設定・HTTP 応答・SIGTERM は独立したスモーク検査で確認する。
+設定と HTTP 応答はネットワークを使わないユニットテストで確認する。構造化ログは制御した時計とメモリ上の出力先で正常・書き込み失敗・ログ出力失敗・context の引き継ぎと対象経路を確認する。実 HTTP の GET/HEAD と JSON の接続、実バイナリの起動失敗と stderr・終了コードは integration タグで確認する。実際の待ち受け・応答・処理中の終了・期限超過・bind 失敗は `integration` タグの結合テストで確認し、race detector を実行する。本番用イメージの PORT・不正設定・HTTP 応答・SIGTERM は独立したスモーク検査で確認する。
 
-`newSteamFetcher` の終了関数は、実 Steam へ接続しないローカル TLS サーバーとの結合テストで確認する。取得に同じ接続を再利用できることと、返された終了関数がその接続を閉じることを観測する。テストで差し替える既定 Transport は終了時に復元し、並列実行による干渉を避ける。
+`NewSteamFetcher` の終了関数は、実 Steam へ接続しないローカル TLS サーバーとの結合テストで確認する。取得に同じ接続を再利用できることと、返された終了関数がその接続を閉じることを観測する。テストで差し替える既定 Transport は終了時に復元し、並列実行による干渉を避ける。
 
 開発用のポート選択・失敗伝播・二重起動拒否・停止は Docker やネットワークを使わない Python テストで確認する。連続ポートの使用中からの起動、Watch と停止はローカル Docker で実行して確認する。
 

@@ -38,7 +38,7 @@ MCP の開始回数と同時数は handler が所有する入口の制限とし�
 
 Issue #54 で、利用制限の設定は未検証の `LimitsConfig` から `NewLimits` で生成する構成にした。環境変数の解析は main 側、正数検査と設定値のコピー保持は生成 API が担当し、`NewHandler` は未初期化のゼロ値だけを拒否する。生成済みの設定と handler の可変な受付状態を区別する。設定の生成・取得は通信や利用枠の操作を行わず、新たな収集ユースケースではない。
 
-Issue #62 で、application が adapter から渡された同期的な結果処理関数を呼び、その完了後に同時枠を返す構成に修復する。JSON・SDK 応答生成は adapter に残し、application は SDK 型を含めない。結果処理の失敗でも枠を返し、収集の原因は Result.Err で処理関数へ渡す。開始前キャンセル・受付拒否も一度処理するが、確保していない枠は返さない。[ADR-0016](adr/0016-mcp-response-slot-lifetime.md) に記録する。
+Issue #62 で、application が adapter から渡された同期的な結果処理関数を呼び、その完了後に同時枠を返す構成に修復した。JSON・SDK 応答生成は adapter に残し、application は SDK 型を含めない。結果処理の失敗でも枠を返し、収集の原因は Result.Err で処理関数へ渡す。開始前キャンセル・受付拒否も一度処理するが、確保していない枠は返さない。[ADR-0016](adr/0016-mcp-response-slot-lifetime.md) に記録する。
 
 Issue #40 で MCP の公開用失敗情報と結果生成を収集の実行手順から分離した。`failure.go` が原因の分類と案内、`result.go` が JSON・分析ガイド・応答量・原因保持を担当する。入力検査は adapter の `collect`、context・利用枠と収集の順序は mcpapplication.CollectReviews に置き、収集ユースケースや新しい通信境界は増やさない。
 

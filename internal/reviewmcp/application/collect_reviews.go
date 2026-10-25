@@ -26,7 +26,8 @@ type Result struct {
 // 開始前キャンセルでは利用枠を消費せず、成功した確保は終了時に必ず返却する。
 // 開始回数は戻さない。取得用 context はここで解放し、親をキャンセルしない。
 // respond は非 nil の同期処理を渡す。成功・失敗・拒否の結果を一度だけ渡し、
-// 応答生成の完了まで枠を保持する。処理のエラーはそのまま返す。
+// 応答生成の完了まで枠を保持する。収集の失敗は Result.Err で通知し、
+// 戻り値には respond のエラーをそのまま返す。
 func CollectReviews(ctx context.Context, fetcher steamapplication.PageFetcher, appID steamdomain.AppID, options steamdomain.CollectionOptions, gate *mcpdomain.Limiter, respond func(Result) error) error {
 	if ctx.Err() == nil {
 		release, reason := gate.Acquire()

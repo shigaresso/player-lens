@@ -38,11 +38,15 @@ HTTP 200 以外はステータスを持つエラーとし、リダイレクト�
 
 `review_page_response.go` の `decodeReviewPage` が本文の JSON 解析、wrapper・件数・カーソルの検査、空配列の正規化とページ生成を担当する。Issue #43 では専用の受信データから `parseRecommendationID` で ID を10進の uint64 に変換する。省略・null・空・構文不正・範囲超過は拒否し、0は受け付ける。先頭ゼロは数値に正規化する。これらは通信しない。Issue #66 では、HTTP ステータス、Body の読み取り・2 MiB 制限、解釈の呼び出し、Close と複合エラーを `read_review_page_response.go` の `readReviewPageResponse` にまとめた。Do が成功して返した有効な応答と、正の App ID・正規化済みの条件を受け取り、Body を読み取りから Close まで所有する。解釈を終えてから Close し、Close 失敗ではページをゼロ値にして元の原因と併せて返す。読み取り中の同じ goroutine の panic も Close した後に呼び出し側へ伝える。FetchReviewsPage は入力・要求構築・送信と取得用 context を所有し、応答処理が Close を完了してから context を解放する。失敗時のゼロ値と原因保持を維持する。
 
+### レビュー1件の変換（Issue #68）
+
+Issue #68 で、受信型 reviewPageReview から1件の内部 Review を作る処理を非公開の convertReview に分離した。ID の数値変換と各項目のコピー、不正時の Review のゼロ値と ErrInvalidResponse・数値変換原因は convertReview が担当する。decodeReviewPage は JSON とページ全体を検査して変換を順に呼び、1件でも失敗した場合は先行レビューも含めて返さず、ページの完全なゼロ値と原因を返す。いずれも通信・時計・保存に依存しない。
+
 ## 検証
 
 応答解釈と ID 検査は、同じパッケージのユニットテストから非公開関数を直接呼び、HTTP を使わず検証する。ID の構文・数値境界、ページの生成・空配列・未知フィールド、不正応答でのゼロ値、JSON の構文・型エラーの原因保持を確認する。
 
-HTTP adapter の通常テストでは `httptest` とテスト用 Transport / Body を使い、実 Steam API は使わない。正常・空ページ、入力境界、HTTP エラーと非再試行、JSON・スキーマ・サイズ、期限・キャンセル、Body の解放とエラーを確認する。作業記録は [Issue #17 の記録](../worklogs/17-steam-review-page.md) と [Issue #39 の記録](../worklogs/39-steam-response-decoding.md) に残す。API を呼べることと、収集・保存・分析が実装済みであることを区別する。 Issue #64 の検査と変換の整理は [検証記録](../worklogs/64-steam-request-validation.md) に残す。 Issue #66 の応答処理と Body の所有の整理は [検証記録](../worklogs/66-steam-response-lifecycle.md) に残す。
+HTTP adapter の通常テストでは `httptest` とテスト用 Transport / Body を使い、実 Steam API は使わない。正常・空ページ、入力境界、HTTP エラーと非再試行、JSON・スキーマ・サイズ、期限・キャンセル、Body の解放とエラーを確認する。作業記録は [Issue #17 の記録](../worklogs/17-steam-review-page.md) と [Issue #39 の記録](../worklogs/39-steam-response-decoding.md) に残す。API を呼べることと、収集・保存・分析が実装済みであることを区別する。 Issue #64 の検査と変換の整理は [検証記録](../worklogs/64-steam-request-validation.md) に残す。 Issue #66 の応答処理と Body の所有の整理は [検証記録](../worklogs/66-steam-response-lifecycle.md) に残す。 Issue #68 の1件変換の分離は [検証記録](../worklogs/68-steam-review-conversion.md) に残す。
 
 ## Steam の名前付き数値型（Issue #43）
 

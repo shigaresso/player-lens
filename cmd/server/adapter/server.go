@@ -10,7 +10,8 @@ import (
 )
 
 // Serve は listener を所有し、終了時に接続と Serve の goroutine を回収する。
-func Serve(ctx context.Context, listener net.Listener, handler http.Handler, timeout time.Duration) (err error) {
+// shutdownTimeout は ctx のキャンセル後に処理中のリクエストの終了を待つ上限である。
+func Serve(ctx context.Context, listener net.Listener, handler http.Handler, shutdownTimeout time.Duration) (err error) {
 	server := &http.Server{
 		Handler:           handler,
 		ReadHeaderTimeout: 5 * time.Second,
@@ -28,7 +29,7 @@ func Serve(ctx context.Context, listener net.Listener, handler http.Handler, tim
 	case result := <-done:
 		return serveError(result)
 	case <-ctx.Done():
-		shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), timeout)
+		shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), shutdownTimeout)
 		defer cancel()
 
 		shutdownErr := server.Shutdown(shutdownCtx)

@@ -75,6 +75,8 @@ LogAttrs に request の context をそのまま渡す。キャンセル済み�
 - SIGINT/SIGTERM で新規受付を停止する。処理中のリクエストは最大10秒待ち、期限内に終了した場合は正常終了する。期限超過では接続を閉じて非0終了する。
 - 起動処理が listener を作成し、サーバー処理へ所有権を渡す。サーバー処理は終了時に listener・接続を閉じ、Serve の goroutine の終了を待つ。強制終了時の handler はリクエスト context のキャンセルに従う。
 
+終了待機の上限は Serve の shutdownTimeout 引数で渡し、run は同名の定数で10秒を指定する。通常リクエストの読み取り・書き込み期限とは独立した設定であり、今回の改名と定数化では値や終了手順を変更しない（Issue #76）。
+
 ### Steam クライアントの構築と所有
 
 サーバー起動の `run` は、server adapter の公開関数 `NewSteamFetcher` から取得クライアントと idle 接続の終了関数を受け取る。構築関数が既定の Transport を複製し、HTTP タイムアウト10秒と公式の Steam 接続先を使って組み立てる。構築中は通信しない。

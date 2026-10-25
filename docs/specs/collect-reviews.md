@@ -10,9 +10,11 @@
 
 ## 入力と正規化
 
-`CollectReviews(ctx, fetcher, appID, options)` は正の App ID、利用可能な取得依存と非 nil の context を受ける。App ID が0、取得依存が nil、または取得条件が不正なら通信せず、`Collection{}` と `ErrInvalidArgument` を返す。interface に利用不能な値を渡さない責務は呼び出し側にある。
+`CollectReviews(ctx, fetcher, appID, options)` は正の App ID、利用可能な取得依存と非 nil の context を受ける。options は有効な `CollectionOptions` を渡す。App ID が0、または取得依存が nil なら通信せず、`Collection{}` と `ErrInvalidArgument` を返す。interface に利用不能な値を渡さない責務は呼び出し側にある。
 
-`NormalizeCollectionOptions` は通信なしで既定値を適用し、入力を変更せずコピーを返す。不正時はゼロ値と `ErrInvalidArgument` を返す。正規化済みの値への再適用は値を変えない。通常の struct なので、書き換え後の有効性を型で保証しない。
+`CollectionOptionsConfig` は公開フィールドを持つ未検証の設定、`CollectionOptions` は非公開フィールドで有効な条件を保持する値とする。`NewCollectionOptions(config)` が通信なしで既定値と検査・正規化を適用し、入力を変更せずコピーを保持する。不正時はゼロ値と `ErrInvalidArgument` を保持するエラーを返す。呼び出し側はエラーを処理してから収集操作へ渡す。公開の NormalizeCollectionOptions は生成 API へ移行し、互換ラッパーは残さない。
+
+`CollectionOptions{}` 自体も以下の有効な既定条件を表す。明示した既定条件の生成値も同じゼロ値に揃える。`Config()` は設定のコピーを返し、生成元やコピーの変更は生成済みの値に影響しない。コピーからの再生成は同じ値になる。利用側は条件を再検査せず、ゼロ値からの取得も固定の既定値を返す。判断は [ADR-0015](../adr/0015-collection-options-boundary.md) に記録する。
 
 | 項目 | 既定値 | 有効範囲 |
 | --- | --- | --- |
@@ -29,7 +31,7 @@
 - `FirstPageCursor` から始め、取得した `NextCursor` を加工せず次の入力へ渡す。
 - 1ページの要求件数は `min(PageSize, MaxReviews - 重複除外後の件数)` とする。
 - `RecommendationID` の数値が同じレビューは1回の収集内で一度だけ返し、最初に取得した本文・時刻などの値と取得順を保持する。短いページや重複だけのページでも、終了条件に達していなければ続ける。
-- `Collection` は AppID、正規化した元の Options、Reviews、PagesFetched、StopReason を保持する。PagesFetched は空ページを含む成功ページ数で、失敗したページは含めない。成功したレビューが0件でも Reviews は空配列とする。
+- `Collection` は AppID、元の条件のコピー（Options: CollectionOptionsConfig）、Reviews、PagesFetched、StopReason を保持する。PagesFetched は空ページを含む成功ページ数で、失敗したページは含めない。成功したレビューが0件でも Reviews は空配列とする。
 
 終了の判定順序は空ページ、レビュー件数上限、カーソル循環、ページ上限とする。循環判定は取得に使った全カーソルとの比較で行う。
 
@@ -45,7 +47,7 @@
 
 ## 収集状態の境界（Issue #58）
 
-steam/domain の CollectionState は結果・既読 ID・既読カーソルと次の取得条件を非公開で持つ。NewCollectionState が正の App ID と条件を検査・正規化し、ゼロ値は使用しない。CollectReviews は取得依存を確認してから生成 API を使い、App ID と条件を重複して検査しない。不正入力の戻り値と ErrInvalidArgument の原因識別は維持する。
+steam/domain の CollectionState は結果・既読 ID・既読カーソルと次の取得条件を非公開で持つ。NewCollectionState が正の App ID を検査し、有効な CollectionOptions の設定コピーを保持する。状態のゼロ値は使用しない。条件の検査・正規化は NewCollectionOptions で完了しており、状態では繰り返さない。CollectReviews は取得依存を確認してから状態を生成し、App ID の検査を重複させない。不正入力の戻り値と ErrInvalidArgument の原因識別は維持する。
 
 NextPage は次の条件と続行可否、AddPage は成功ページの反映と循環のエラー、Fail は取得や context 失敗の結果への反映を担当する。終了後は NextPage がゼロ値と false を返し、AddPage と Fail は結果を変更しない。終了後の AddPage は nil を返す。
 

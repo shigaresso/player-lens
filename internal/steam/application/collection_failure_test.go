@@ -39,8 +39,8 @@ func TestCollectReviewsFailure(t *testing.T) {
 				}
 				return steamdomain.ReviewPage{AppID: 440, Options: options, Reviews: collectionReviews(1), NextCursor: "A"}, nil
 			})
-			options := steamdomain.CollectionOptions{PageSize: 1, MaxReviews: 3, MaxPages: 4}
-			got, err := steamapplication.CollectReviews(context.Background(), fetcher, 440, options)
+			options := steamdomain.CollectionOptionsConfig{PageSize: 1, MaxReviews: 3, MaxPages: 4}
+			got, err := steamapplication.CollectReviews(context.Background(), fetcher, 440, collectionOptions(t, options))
 			want := []steamdomain.Review{}
 			if tt.failOn > 1 {
 				want = collectionReviews(1)

@@ -88,8 +88,8 @@ func TestEncodeCollectionResultEncodingFailureCause(t *testing.T) {
 		collection steamdomain.Collection
 		wantErr    error
 	}{
-		{"省略後も大きい場合に変換と収集の原因を保持する", steamdomain.Collection{Options: steamdomain.CollectionOptions{Language: strings.Repeat("x", maxResultBytes+1)}}, errResponseTooLarge},
-		{"JSON変換が失敗した場合も変換と収集の原因を保持する", steamdomain.Collection{Options: steamdomain.CollectionOptions{ReviewType: steamdomain.ReviewType(3)}}, steamdomain.ErrInvalidArgument},
+		{"省略後も大きい場合に変換と収集の原因を保持する", steamdomain.Collection{Options: steamdomain.CollectionOptionsConfig{Language: strings.Repeat("x", maxResultBytes+1)}}, errResponseTooLarge},
+		{"JSON変換が失敗した場合も変換と収集の原因を保持する", steamdomain.Collection{Options: steamdomain.CollectionOptionsConfig{ReviewType: steamdomain.ReviewType(3)}}, steamdomain.ErrInvalidArgument},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			result, err := encodeCollectionResult(tc.collection, cause)

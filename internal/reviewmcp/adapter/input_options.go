@@ -27,7 +27,7 @@ func normalizeToolInput(input toolInput) (steamdomain.AppID, steamdomain.Collect
 	if err != nil {
 		return 0, steamdomain.CollectionOptions{}, steamdomain.ErrInvalidArgument
 	}
-	options, err := steamdomain.NormalizeCollectionOptions(steamdomain.CollectionOptions{
+	options, err := steamdomain.NewCollectionOptions(steamdomain.CollectionOptionsConfig{
 		ReviewType: reviewType, Language: input.Language, PageSize: input.PageSize, MaxReviews: input.MaxReviews, MaxPages: input.MaxPages,
 	})
 	if err != nil {

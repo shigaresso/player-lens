@@ -36,7 +36,7 @@ func TestCollectReviewsCursorCycle(t *testing.T) {
 				page.AppID, page.Options = appID, options
 				return page, nil
 			})
-			got, err := steamapplication.CollectReviews(context.Background(), fetcher, 440, steamdomain.CollectionOptions{PageSize: 1, MaxReviews: tt.limit, MaxPages: len(tt.pages)})
+			got, err := steamapplication.CollectReviews(context.Background(), fetcher, 440, collectionOptions(t, steamdomain.CollectionOptionsConfig{PageSize: 1, MaxReviews: tt.limit, MaxPages: len(tt.pages)}))
 			if (err != nil) != tt.failed || got.StopReason != tt.reason || got.PagesFetched != len(tt.pages) || calls != len(tt.pages) || !reflect.DeepEqual(got.Reviews, tt.want) {
 				t.Fatalf("result=%#v calls=%d error=%v", got, calls, err)
 			}

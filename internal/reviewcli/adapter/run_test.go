@@ -64,13 +64,13 @@ func TestRunWithInjectedSaver(t *testing.T) {
 		name     string
 		args     []string
 		id       steamdomain.AppID
-		options  steamdomain.CollectionOptions
+		options  steamdomain.CollectionOptionsConfig
 		fetchErr error
 		saveErr  error
 	}{
-		{"既定値で保存する", []string{"--app-id=440"}, 440, steamdomain.CollectionOptions{Language: "english", PageSize: 100, MaxReviews: 1000, MaxPages: 100}, nil, nil},
-		{"指定条件で別の保存先を使う", []string{"--app-id=4294967295", "--language=japanese", "--page-size=2", "--max-reviews=3", "--max-pages=4"}, 4294967295, steamdomain.CollectionOptions{Language: "japanese", PageSize: 2, MaxReviews: 3, MaxPages: 4}, nil, nil},
-		{"途中失敗も保存して原因を返す", []string{"--app-id=440"}, 440, steamdomain.CollectionOptions{Language: "english", PageSize: 100, MaxReviews: 1000, MaxPages: 100}, io.ErrUnexpectedEOF, io.ErrClosedPipe},
+		{"既定値で保存する", []string{"--app-id=440"}, 440, steamdomain.CollectionOptionsConfig{Language: "english", PageSize: 100, MaxReviews: 1000, MaxPages: 100}, nil, nil},
+		{"指定条件で別の保存先を使う", []string{"--app-id=4294967295", "--language=japanese", "--page-size=2", "--max-reviews=3", "--max-pages=4"}, 4294967295, steamdomain.CollectionOptionsConfig{Language: "japanese", PageSize: 2, MaxReviews: 3, MaxPages: 4}, nil, nil},
+		{"途中失敗も保存して原因を返す", []string{"--app-id=440"}, 440, steamdomain.CollectionOptionsConfig{Language: "english", PageSize: 100, MaxReviews: 1000, MaxPages: 100}, io.ErrUnexpectedEOF, io.ErrClosedPipe},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			test.options.ReviewType = steamdomain.ReviewTypeAll

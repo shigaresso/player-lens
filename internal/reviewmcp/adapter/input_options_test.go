@@ -11,17 +11,17 @@ func TestNormalizeToolInput(t *testing.T) {
 	for _, tc := range []struct {
 		name  string
 		input toolInput
-		want  steamdomain.CollectionOptions
+		want  steamdomain.CollectionOptionsConfig
 	}{
-		{"省略とゼロ値へ MCP の既定値を適用する", toolInput{AppID: 440}, steamdomain.CollectionOptions{ReviewType: steamdomain.ReviewTypeAll, Language: "english", PageSize: 100, MaxReviews: 20, MaxPages: 3}},
-		{"最小の条件とおすすめを変換する", toolInput{AppID: 1, ReviewType: "positive", Language: "all", PageSize: 1, MaxReviews: 1, MaxPages: 1}, steamdomain.CollectionOptions{ReviewType: steamdomain.ReviewTypePositive, Language: "all", PageSize: 1, MaxReviews: 1, MaxPages: 1}},
-		{"最大の条件と非おすすめを変換する", toolInput{AppID: 4294967295, ReviewType: "negative", Language: "japanese", PageSize: 100, MaxReviews: 100, MaxPages: 5}, steamdomain.CollectionOptions{ReviewType: steamdomain.ReviewTypeNegative, Language: "japanese", PageSize: 100, MaxReviews: 100, MaxPages: 5}},
-		{"明示した全評価と省略した条件を正規化する", toolInput{AppID: 440, ReviewType: "all"}, steamdomain.CollectionOptions{ReviewType: steamdomain.ReviewTypeAll, Language: "english", PageSize: 100, MaxReviews: 20, MaxPages: 3}},
+		{"省略とゼロ値へ MCP の既定値を適用する", toolInput{AppID: 440}, steamdomain.CollectionOptionsConfig{ReviewType: steamdomain.ReviewTypeAll, Language: "english", PageSize: 100, MaxReviews: 20, MaxPages: 3}},
+		{"最小の条件とおすすめを変換する", toolInput{AppID: 1, ReviewType: "positive", Language: "all", PageSize: 1, MaxReviews: 1, MaxPages: 1}, steamdomain.CollectionOptionsConfig{ReviewType: steamdomain.ReviewTypePositive, Language: "all", PageSize: 1, MaxReviews: 1, MaxPages: 1}},
+		{"最大の条件と非おすすめを変換する", toolInput{AppID: 4294967295, ReviewType: "negative", Language: "japanese", PageSize: 100, MaxReviews: 100, MaxPages: 5}, steamdomain.CollectionOptionsConfig{ReviewType: steamdomain.ReviewTypeNegative, Language: "japanese", PageSize: 100, MaxReviews: 100, MaxPages: 5}},
+		{"明示した全評価と省略した条件を正規化する", toolInput{AppID: 440, ReviewType: "all"}, steamdomain.CollectionOptionsConfig{ReviewType: steamdomain.ReviewTypeAll, Language: "english", PageSize: 100, MaxReviews: 20, MaxPages: 3}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			input := tc.input
 			appID, options, err := normalizeToolInput(input)
-			if err != nil || appID != tc.input.AppID || options != tc.want {
+			if err != nil || appID != tc.input.AppID || options.Config() != tc.want {
 				t.Fatalf("appID = %d, options = %+v, err = %v", appID, options, err)
 			}
 			if input != tc.input {

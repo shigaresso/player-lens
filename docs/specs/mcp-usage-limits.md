@@ -28,7 +28,7 @@ LimitsConfig・Limits・NewLimits・DefaultLimits と Limiter は reviewmcp/doma
 
 ## 受付と固定窓
 
-1. 入力を検査する。不正入力は既存の `invalid_input` を返す。
+1. adapter が入力を検査し、MCP の既定値・上限を適用した CollectionOptionsConfig から NewCollectionOptions で有効な条件を生成する。不正入力は既存の `invalid_input` を返し、利用枠を消費しない。application は有効な CollectionOptions を受け取り、条件を再正規化しない（[ADR-0015](../adr/0015-collection-options-boundary.md)）。
 2. context が開始前に終了している場合は、回数を消費せず既存のキャンセル・期限エラーを返す。
 3. mutex 内で時計を読み、日次・分次・同時数の順に判定する。上限に達していれば取得せず拒否する。
 4. 全条件を満たした場合だけ、日次・分次の回数と同時数を増やす。取得・JSON 変換・応答量の判定を終えるまで同時枠を保有し、defer で返却する。

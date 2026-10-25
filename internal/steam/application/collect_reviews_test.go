@@ -27,19 +27,19 @@ func collectionReviews(ids ...steamdomain.RecommendationID) []steamdomain.Review
 func TestCollectReviewsPages(t *testing.T) {
 	cases := []struct {
 		name     string
-		options  steamdomain.CollectionOptions
+		options  steamdomain.CollectionOptionsConfig
 		pages    []steamdomain.ReviewPage
 		requests []steamdomain.PageOptions
 		want     []steamdomain.Review
 		reason   steamdomain.StopReason
 	}{
-		{"空の先頭ページで終了する", steamdomain.CollectionOptions{}, []steamdomain.ReviewPage{{}}, []steamdomain.PageOptions{{Language: "english", Cursor: "*", PageSize: 100}}, []steamdomain.Review{}, steamdomain.StopExhausted},
-		{"短いページでも次のカーソルを取得し空ページで終了する", steamdomain.CollectionOptions{PageSize: 2, MaxReviews: 5}, []steamdomain.ReviewPage{{Reviews: collectionReviews(1, 2), NextCursor: "A+/="}, {Reviews: collectionReviews(3), NextCursor: "B"}, {}}, []steamdomain.PageOptions{{Language: "english", Cursor: "*", PageSize: 2}, {Language: "english", Cursor: "A+/=", PageSize: 2}, {Language: "english", Cursor: "B", PageSize: 2}}, collectionReviews(1, 2, 3), steamdomain.StopExhausted},
-		{"残件数を要求し件数上限をページ上限より優先する", steamdomain.CollectionOptions{PageSize: 2, MaxReviews: 3, MaxPages: 2}, []steamdomain.ReviewPage{{Reviews: collectionReviews(1, 2), NextCursor: "A"}, {Reviews: collectionReviews(3), NextCursor: "B"}}, []steamdomain.PageOptions{{Language: "english", Cursor: "*", PageSize: 2}, {Language: "english", Cursor: "A", PageSize: 1}}, collectionReviews(1, 2, 3), steamdomain.StopReviewLimit},
-		{"重複は最初の本文と順序を維持する", steamdomain.CollectionOptions{PageSize: 3, MaxReviews: 4}, []steamdomain.ReviewPage{{Reviews: collectionReviews(1, 2), NextCursor: "A"}, {Reviews: []steamdomain.Review{{RecommendationID: 2, Text: "更新された本文"}, {RecommendationID: 3, Text: "本文3", Language: "english"}}, NextCursor: "B"}, {Reviews: collectionReviews(4), NextCursor: "C"}}, []steamdomain.PageOptions{{Language: "english", Cursor: "*", PageSize: 3}, {Language: "english", Cursor: "A", PageSize: 2}, {Language: "english", Cursor: "B", PageSize: 1}}, collectionReviews(1, 2, 3, 4), steamdomain.StopReviewLimit},
-		{"ページ上限で追加取得を止める", steamdomain.CollectionOptions{PageSize: 2, MaxReviews: 10, MaxPages: 2}, []steamdomain.ReviewPage{{Reviews: collectionReviews(1, 2), NextCursor: "A"}, {Reviews: collectionReviews(3, 4), NextCursor: "B"}}, []steamdomain.PageOptions{{Language: "english", Cursor: "*", PageSize: 2}, {Language: "english", Cursor: "A", PageSize: 2}}, collectionReviews(1, 2, 3, 4), steamdomain.StopPageLimit},
-		{"重複だけでもページ上限で終了する", steamdomain.CollectionOptions{PageSize: 2, MaxReviews: 2, MaxPages: 2}, []steamdomain.ReviewPage{{Reviews: collectionReviews(1), NextCursor: "A"}, {Reviews: collectionReviews(1), NextCursor: "B"}}, []steamdomain.PageOptions{{Language: "english", Cursor: "*", PageSize: 2}, {Language: "english", Cursor: "A", PageSize: 1}}, collectionReviews(1), steamdomain.StopPageLimit},
-		{"空ページをページ上限より優先する", steamdomain.CollectionOptions{Language: "japanese", PageSize: 1, MaxReviews: 2, MaxPages: 2}, []steamdomain.ReviewPage{{Reviews: collectionReviews(1), NextCursor: "A"}, {}}, []steamdomain.PageOptions{{Language: "japanese", Cursor: "*", PageSize: 1}, {Language: "japanese", Cursor: "A", PageSize: 1}}, collectionReviews(1), steamdomain.StopExhausted},
+		{"空の先頭ページで終了する", steamdomain.CollectionOptionsConfig{}, []steamdomain.ReviewPage{{}}, []steamdomain.PageOptions{{Language: "english", Cursor: "*", PageSize: 100}}, []steamdomain.Review{}, steamdomain.StopExhausted},
+		{"短いページでも次のカーソルを取得し空ページで終了する", steamdomain.CollectionOptionsConfig{PageSize: 2, MaxReviews: 5}, []steamdomain.ReviewPage{{Reviews: collectionReviews(1, 2), NextCursor: "A+/="}, {Reviews: collectionReviews(3), NextCursor: "B"}, {}}, []steamdomain.PageOptions{{Language: "english", Cursor: "*", PageSize: 2}, {Language: "english", Cursor: "A+/=", PageSize: 2}, {Language: "english", Cursor: "B", PageSize: 2}}, collectionReviews(1, 2, 3), steamdomain.StopExhausted},
+		{"残件数を要求し件数上限をページ上限より優先する", steamdomain.CollectionOptionsConfig{PageSize: 2, MaxReviews: 3, MaxPages: 2}, []steamdomain.ReviewPage{{Reviews: collectionReviews(1, 2), NextCursor: "A"}, {Reviews: collectionReviews(3), NextCursor: "B"}}, []steamdomain.PageOptions{{Language: "english", Cursor: "*", PageSize: 2}, {Language: "english", Cursor: "A", PageSize: 1}}, collectionReviews(1, 2, 3), steamdomain.StopReviewLimit},
+		{"重複は最初の本文と順序を維持する", steamdomain.CollectionOptionsConfig{PageSize: 3, MaxReviews: 4}, []steamdomain.ReviewPage{{Reviews: collectionReviews(1, 2), NextCursor: "A"}, {Reviews: []steamdomain.Review{{RecommendationID: 2, Text: "更新された本文"}, {RecommendationID: 3, Text: "本文3", Language: "english"}}, NextCursor: "B"}, {Reviews: collectionReviews(4), NextCursor: "C"}}, []steamdomain.PageOptions{{Language: "english", Cursor: "*", PageSize: 3}, {Language: "english", Cursor: "A", PageSize: 2}, {Language: "english", Cursor: "B", PageSize: 1}}, collectionReviews(1, 2, 3, 4), steamdomain.StopReviewLimit},
+		{"ページ上限で追加取得を止める", steamdomain.CollectionOptionsConfig{PageSize: 2, MaxReviews: 10, MaxPages: 2}, []steamdomain.ReviewPage{{Reviews: collectionReviews(1, 2), NextCursor: "A"}, {Reviews: collectionReviews(3, 4), NextCursor: "B"}}, []steamdomain.PageOptions{{Language: "english", Cursor: "*", PageSize: 2}, {Language: "english", Cursor: "A", PageSize: 2}}, collectionReviews(1, 2, 3, 4), steamdomain.StopPageLimit},
+		{"重複だけでもページ上限で終了する", steamdomain.CollectionOptionsConfig{PageSize: 2, MaxReviews: 2, MaxPages: 2}, []steamdomain.ReviewPage{{Reviews: collectionReviews(1), NextCursor: "A"}, {Reviews: collectionReviews(1), NextCursor: "B"}}, []steamdomain.PageOptions{{Language: "english", Cursor: "*", PageSize: 2}, {Language: "english", Cursor: "A", PageSize: 1}}, collectionReviews(1), steamdomain.StopPageLimit},
+		{"空ページをページ上限より優先する", steamdomain.CollectionOptionsConfig{Language: "japanese", PageSize: 1, MaxReviews: 2, MaxPages: 2}, []steamdomain.ReviewPage{{Reviews: collectionReviews(1), NextCursor: "A"}, {}}, []steamdomain.PageOptions{{Language: "japanese", Cursor: "*", PageSize: 1}, {Language: "japanese", Cursor: "A", PageSize: 1}}, collectionReviews(1), steamdomain.StopExhausted},
 	}
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
@@ -56,11 +56,20 @@ func TestCollectReviewsPages(t *testing.T) {
 				page.AppID, page.Options = appID, options
 				return page, nil
 			})
-			got, err := steamapplication.CollectReviews(context.Background(), fetcher, 440, tt.options)
-			wantOptions, normalizeErr := steamdomain.NormalizeCollectionOptions(tt.options)
-			if err != nil || normalizeErr != nil || got.AppID != 440 || got.Options != wantOptions || got.PagesFetched != len(tt.pages) || got.StopReason != tt.reason || !reflect.DeepEqual(got.Reviews, tt.want) || !reflect.DeepEqual(requests, tt.requests) {
+			got, err := steamapplication.CollectReviews(context.Background(), fetcher, 440, collectionOptions(t, tt.options))
+			wantOptions, normalizeErr := steamdomain.NewCollectionOptions(tt.options)
+			if err != nil || normalizeErr != nil || got.AppID != 440 || got.Options != wantOptions.Config() || got.PagesFetched != len(tt.pages) || got.StopReason != tt.reason || !reflect.DeepEqual(got.Reviews, tt.want) || !reflect.DeepEqual(requests, tt.requests) {
 				t.Fatalf("result=%#v requests=%#v error=%v", got, requests, err)
 			}
 		})
 	}
+}
+
+func collectionOptions(t *testing.T, config steamdomain.CollectionOptionsConfig) steamdomain.CollectionOptions {
+	t.Helper()
+	options, err := steamdomain.NewCollectionOptions(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return options
 }

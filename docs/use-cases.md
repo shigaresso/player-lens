@@ -20,9 +20,9 @@ Issue #38 で adapter 内のリクエスト変換を分離した。Issue #43 で
 
 Issue #39 で応答解釈も分離した。`decodeReviewPage` は本文と取得条件からページを作り、Issue #43 の `parseRecommendationID` は ID の文字列を0を含む uint64 に変換する。Body の読み取り・サイズ制限・解放は `FetchReviewsPage` に残す。
 
-Issue #58 で、重複・カーソル・成功ページ数・終了判断を steam/domain の CollectionState にまとめた。生成時に App ID と条件を検査・正規化し、NextPage と AddPage で続行と状態更新を扱う。CollectReviews は取得・期限・キャンセルと失敗の原因、Fail による失敗確定を担当する。Result はレビュー配列もコピーして返す。状態は通信や context を持たず、新しいユースケースではない。[ADR-0014](adr/0014-steam-collection-state.md) に境界を記録する。
+Issue #58 で、重複・カーソル・成功ページ数・終了判断を steam/domain の CollectionState にまとめた。状態生成時に App ID を検査し、生成済みの CollectionOptions から設定のコピーを保持する。条件の検査は Issue #60 で NewCollectionOptions へ移し、状態では繰り返さない。NextPage と AddPage で続行と状態更新を扱う。CollectReviews は取得・期限・キャンセルと失敗の原因、Fail による失敗確定を担当する。Result はレビュー配列もコピーして返す。状態は通信や context を持たず、新しいユースケースではない。[ADR-0014](adr/0014-steam-collection-state.md) に境界を記録する。
 
-`NormalizePageOptions` と `NormalizeCollectionOptions` は通信しない取得条件の正規化と検査を担当する。`jsonoutput.MarshalCollection` は通信しない JSON 変換、`jsonoutput.Saver` は writer への出力を担当する。DB の永続保存・分析・レポート生成は未導入とする。
+`NormalizePageOptions` は1ページの取得条件を検査・正規化する。収集条件は `NewCollectionOptions` が未検証の `CollectionOptionsConfig` から生成し、検査・正規化とコピーの保持を担当する。`CollectionOptions` のゼロ値も有効な既定条件で、`Config()` はコピーを返す。結果の `Collection.Options` は表示・保存用の Config とし、空の Collection の未指定項目を保つ。旧公開 NormalizeCollectionOptions は残さず、条件が不正なテストの契約を生成 API・CLI/MCP の入口へ引き継ぐ。[ADR-0015](adr/0015-collection-options-boundary.md) に境界を記録する。`jsonoutput.MarshalCollection` は通信しない JSON 変換、`jsonoutput.Saver` は writer への出力を担当する。DB の永続保存・分析・レポート生成は未導入とする。
 
 入口側が HTTP クライアントと `Client` を組み立て、同じ `CollectReviews` へ渡す。操作内に具体的な HTTP クライアントや DB を固定せず、同じ Go アプリケーション内の呼び出しに HTTP・MCP 通信を挟まない。
 
@@ -32,7 +32,7 @@ MCP の `reviewmcp.NewHandler` は HTTP/SDK と共有する制限状態を組み
 
 Issue #50 で、`newServer` から `collectReviewsDefinition`（公開する説明・schema・annotations）と `newCollectReviewsHandler`（HTTP／SDK のキャンセル連携と終了時の解放、`collect` の呼び出し）を分離した。`newServer` は Server の生成・設定・登録を担当する。同じ MCP adapter 内の責務を整理したもので、収集ユースケースや新しい通信境界は増やさない。
 
-Issue #52 で、JSON 読み取りを MCP 受信型の `toolInput.UnmarshalJSON`、MCP 用の既定値・上限と共通正規化による収集条件の構築を `normalizeToolInput` に分離した。許可する項目名は受信型の JSON タグから取得する。`parseInput` は標準 `json.Unmarshal` と条件構築を順に呼び、既存の結果と失敗時のゼロ値・原因を維持する。いずれも MCP の入力変換であり、通信や利用枠の操作を含まない。MCP の小さい上限を収集ユースケースや CLI へ移さない。
+Issue #52 で、JSON 読み取りを MCP 受信型の `toolInput.UnmarshalJSON`、MCP 用の既定値・上限と NewCollectionOptions による収集条件の生成を `normalizeToolInput` に分離した。許可する項目名は受信型の JSON タグから取得する。`parseInput` は標準 `json.Unmarshal` と条件構築を順に呼び、既存の結果と失敗時のゼロ値・原因を維持する。いずれも MCP の入力変換であり、通信や利用枠の操作を含まない。MCP の小さい上限を収集ユースケースや CLI へ移さない。
 
 MCP の開始回数と同時数は handler が所有する入口の制限とし、収集操作・CLI へ混ぜない。limiter は受付可否と型付きの拒否理由を返し、failure.go の usageFailure が MCP の公開コードと説明文へ変換する。[利用制限仕様](specs/mcp-usage-limits.md) と [ADR-0008](adr/0008-mcp-usage-limits.md) に従う。
 
@@ -46,7 +46,7 @@ Issue #35 の `analysis_guide` は MCP の案内と結果変換の責務であ�
 
 ## 評価種別（Issue #33）
 
-Issue #43 では `PageOptions` と `CollectionOptions` の `ReviewType` は独立した数値列挙型 ReviewType の0 / 1 / 2で表す。値は公式の定数から定義し、HTTP adapter で EUserReviewsReviewType に変換する。文字列は CLI・MCP の入力境界で ParseReviewType により解析し、JSON 出力境界の FormatReviewType で戻す。未知の数値は共通正規化と送信・出力で拒否する。収集は全ページへ条件を渡し、Collection と JSON の options.review_type に保持する。CLI の --review-type と MCP の review_type は同じ操作へ接続し、独自のページングや取得後の間引きを追加しない。保存先の interface とバックエンド分析の未導入状態は維持する。
+Issue #43 では `PageOptions` と `CollectionOptionsConfig` の `ReviewType` は独立した数値列挙型 ReviewType の0 / 1 / 2で表す。値は公式の定数から定義し、HTTP adapter で EUserReviewsReviewType に変換する。文字列は CLI・MCP の入力境界で ParseReviewType により解析し、JSON 出力境界の FormatReviewType で戻す。未知の数値は共通正規化と送信・出力で拒否する。収集は全ページへ条件を渡し、Collection と JSON の options.review_type に保持する。CLI の --review-type と MCP の review_type は同じ操作へ接続し、独自のページングや取得後の間引きを追加しない。保存先の interface とバックエンド分析の未導入状態は維持する。
 
 ## Steam の数値型（Issue #43）
 

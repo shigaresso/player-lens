@@ -72,3 +72,34 @@ func TestCollectionUsageBudget(t *testing.T) {
 		})
 	}
 }
+
+func TestCollectionOptionsFailureDoesNotConsumeBudget(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		input json.RawMessage
+	}{
+		{"不正な言語で条件を生成できなければ枠を消費しない", json.RawMessage(`{"app_id":440,"language":"Japanese"}`)},
+		{"ページ件数が上限を超えて条件を生成できなければ枠を消費しない", json.RawMessage(`{"app_id":440,"page_size":101}`)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			gate := mcpdomain.NewLimiter(testLimits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 1, RequestsPerDay: 1, MaxConcurrent: 1}), time.Now)
+			calls := 0
+			fetcher := fetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+				calls++
+				return steamdomain.ReviewPage{}, nil
+			})
+			result, err := collect(t.Context(), fetcher, tc.input, gate)
+			if err != nil {
+				t.Fatal(err)
+			}
+			out := decodeOutput(t, result)
+			if !result.IsError || out.ErrorCode != "invalid_input" || calls != 0 || out.Collection.AppID != 0 || out.Collection.Options.Language != "" || out.Collection.Options.PageSize != 0 {
+				t.Fatalf("拒否=%+v calls=%d", out, calls)
+			}
+			result, err = collect(t.Context(), fetcher, json.RawMessage(`{"app_id":440}`), gate)
+			if err != nil || result.IsError || calls != 1 {
+				t.Fatalf("後続の有効な入力=%+v err=%v calls=%d", result, err, calls)
+			}
+		})
+	}
+}

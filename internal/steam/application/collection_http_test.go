@@ -50,7 +50,7 @@ func TestCollectReviewsWithHTTPClient(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	got, err := steamapplication.CollectReviews(context.Background(), client, 440, steamdomain.CollectionOptions{PageSize: 2, MaxReviews: 3})
+	got, err := steamapplication.CollectReviews(context.Background(), client, 440, collectionOptions(t, steamdomain.CollectionOptionsConfig{PageSize: 2, MaxReviews: 3}))
 	mu.Lock()
 	defer mu.Unlock()
 	wantRequests := []steamdomain.PageOptions{{Language: "english", Cursor: "*", PageSize: 2}, {Language: "english", Cursor: "A+/=", PageSize: 1}}
@@ -82,7 +82,7 @@ func TestCollectReviewsNumericRecommendationIDs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	got, err := steamapplication.CollectReviews(t.Context(), client, 440, steamdomain.CollectionOptions{PageSize: 2, MaxReviews: 4, MaxPages: 3})
+	got, err := steamapplication.CollectReviews(t.Context(), client, 440, collectionOptions(t, steamdomain.CollectionOptionsConfig{PageSize: 2, MaxReviews: 4, MaxPages: 3}))
 	want := []steamdomain.Review{
 		{RecommendationID: 0, Text: "最初のゼロ"},
 		{RecommendationID: 1, Text: "最初の1"},

@@ -38,7 +38,7 @@ func TestParseInputReviewType(t *testing.T) {
 				if err == nil || id != 0 || options != (steamdomain.CollectionOptions{}) {
 					t.Fatalf("id=%d options=%+v err=%v", id, options, err)
 				}
-			} else if err != nil || id != 440 || options.ReviewType != tt.want {
+			} else if err != nil || id != 440 || options.Config().ReviewType != tt.want {
 				t.Fatalf("id=%d options=%+v err=%v", id, options, err)
 			}
 		})

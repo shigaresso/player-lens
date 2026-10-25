@@ -42,7 +42,7 @@ func TestCollectReviewsReviewType(t *testing.T) {
 				}
 				return steamdomain.ReviewPage{Reviews: []steamdomain.Review{{RecommendationID: recommendationID, Recommended: tt.kind == steamdomain.ReviewTypePositive}}, NextCursor: "next"}, nil
 			})
-			result, err := steamapplication.CollectReviews(t.Context(), fetcher, 440, steamdomain.CollectionOptions{ReviewType: tt.kind, PageSize: 1, MaxReviews: 2, MaxPages: 2})
+			result, err := steamapplication.CollectReviews(t.Context(), fetcher, 440, collectionOptions(t, steamdomain.CollectionOptionsConfig{ReviewType: tt.kind, PageSize: 1, MaxReviews: 2, MaxPages: 2}))
 			wantCount, wantReason := 2, steamdomain.StopReviewLimit
 			if tt.fail {
 				wantCount, wantReason = 1, steamdomain.StopFailed

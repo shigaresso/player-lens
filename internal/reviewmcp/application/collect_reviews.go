@@ -29,7 +29,7 @@ func CollectReviews(ctx context.Context, fetcher steamapplication.PageFetcher, a
 	if ctx.Err() == nil {
 		release, reason := gate.Acquire()
 		if reason != mcpdomain.NotRejected {
-			return Result{Collection: steamdomain.Collection{AppID: appID, Options: options, StopReason: steamdomain.StopFailed}, Rejection: reason}
+			return Result{Collection: steamdomain.Collection{AppID: appID, Options: options.Config(), StopReason: steamdomain.StopFailed}, Rejection: reason}
 		}
 		defer release()
 	}

@@ -27,13 +27,13 @@ reviewmcp の内部は domain（上限と受付）、application（期限・枠�
 
 ### 入力変換の境界（Issue #52）
 
-`parseInput` は JSON の読み取りと収集条件の構築を順に行い、成功時は AppID と正規化した CollectionOptions、失敗時はゼロ値と `steamdomain.ErrInvalidArgument` を保持する既存のエラーを返す。
+`parseInput` は JSON の読み取りと収集条件の構築を順に行い、成功時は AppID と生成済みの有効な CollectionOptions、失敗時はゼロ値と `steamdomain.ErrInvalidArgument` を保持する既存のエラーを返す。
 
 `tool_input.go` の `toolInput.UnmarshalJSON` が JSON のオブジェクト・正確な項目名・null・型・型に収まる数値を検査する。許可する項目名は `toolInput` の明示した JSON タグから初期化時に一度だけ取得し、以後は変更しない。項目名の別の一覧や `switch` を持たない。受信型への読み取りであり、steam の領域型へ JSON 処理を追加しない。
 
 `parseInput` は標準の `json.Unmarshal` で読み取ってから条件を構築する。JSON 構文と末尾の不正は標準 Unmarshal が拒否し、メソッド内部も入力全体を検査する。2回目の Decode や DisallowUnknownFields の設定は置かない。メソッドを持たない同じフィールドの一時値へ読み、成功時だけ受信先へ反映する。失敗時は受信先を変更せず、省略項目は以前の値を引き継がずゼロ値にする。標準 Unmarshal が先に構文エラーを返す場合も、`parseInput` は既存と同じゼロ値と `steamdomain.ErrInvalidArgument` を保持するエラーへ変換する。読み取り段階では既定値・MCP 上限・言語や評価種別の条件を適用しない。
 
-`input_options.go` の `normalizeToolInput` は `toolInput` を値で受け、App ID と MCP の件数・ページ上限を検査し、MCP 用の既定値を適用する。評価種別の文字列を `steamdomain.ParseReviewType` で変換し、共通の `steamdomain.NormalizeCollectionOptions` で言語・ページ件数などを正規化する。呼び出し側の入力は変更せず、失敗時はゼロ値と `steamdomain.ErrInvalidArgument` を返す。両処理は通信・時刻・利用制限に依存しない。`collect` による `invalid_input` 応答と、不正入力時に取得・利用枠を消費しない順序を維持する。
+`input_options.go` の `normalizeToolInput` は `toolInput` を値で受け、App ID と MCP の件数・ページ上限を検査し、MCP 用の既定値を適用する。評価種別の文字列を `steamdomain.ParseReviewType` で変換し、`steamdomain.CollectionOptionsConfig` から `steamdomain.NewCollectionOptions` で言語・ページ件数などを検査・正規化した値を生成する。呼び出し側の入力は変更せず、失敗時はゼロ値と `steamdomain.ErrInvalidArgument` を返す。生成失敗のゼロ値を有効な既定条件として実行せず、`collect` がエラーを処理して空の Collection から失敗応答を作る。生成済みの値を application と収集状態へ渡し、条件の検査を繰り返さない（[ADR-0015](../adr/0015-collection-options-boundary.md)）。両処理は通信・時刻・利用制限に依存しない。`collect` による `invalid_input` 応答と、不正入力時に取得・利用枠を消費しない順序を維持する。
 
 ## 結果・失敗・資源
 

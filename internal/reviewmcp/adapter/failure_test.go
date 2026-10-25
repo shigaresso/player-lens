@@ -9,7 +9,6 @@ import (
 	"time"
 
 	mcpdomain "github.com/shigaresso/player-lens/internal/reviewmcp/domain"
-	steamapplication "github.com/shigaresso/player-lens/internal/steam/application"
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
 )
 
@@ -24,7 +23,7 @@ func TestCollectFailure(t *testing.T) {
 		{"最初の取得失敗は空の部分結果を返す", errors.New("secret: upstream failure"), "fetch_failed", false},
 		{"キャンセルは区別して部分結果を返す", context.Canceled, "cancelled", true},
 		{"期限超過は区別して部分結果を返す", context.DeadlineExceeded, "deadline_exceeded", true},
-		{"カーソル異常も取得失敗とする", steamapplication.ErrCursorCycle, "fetch_failed", true},
+		{"カーソル異常も取得失敗とする", steamdomain.ErrCursorCycle, "fetch_failed", true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			calls := 0

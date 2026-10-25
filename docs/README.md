@@ -41,6 +41,7 @@
 | [ADR-0011：クライアント向け分析ガイド](adr/0011-client-review-analysis-guide.md) | MCP 結果へのガイド添付と分析の担当・制約 | 採用。版付きの本文を埋め込み、クライアントの最終回答は強制しない |
 | [ADR-0012：Steam の名前付き数値型](adr/0012-steam-domain-types.md) | Steam の ID・時刻・API 列挙値、JSON 境界との変換 | 採用。実装・検証は Issue #43 と作業記録に記載する |
 | [ADR-0013：各領域内のレイヤー分類](adr/0013-domain-folder-layers.md) | 既存領域を維持した domain・application・adapter の配置・依存 | 採用。各領域内の分類と依存検査を導入した。[検証記録](worklogs/56-domain-folder-layers.md) に実施結果を残す |
+| [ADR-0014：Steam の収集状態](adr/0014-steam-collection-state.md) | 収集状態・重複・カーソル・終了と取得手順の境界 | 採用。収集状態と取得手順を分離した。[検証記録](worklogs/58-steam-collection-state.md) に実施結果を残す |
 
 変更が複数の範囲にまたがる場合は、対応する文書をすべて読む。参照した節と ADR、要件に対応する検証を Issue・PR に記録する。ADR を追加・置換するときは、この一覧と適用範囲を更新する。
 

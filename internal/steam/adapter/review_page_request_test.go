@@ -25,6 +25,22 @@ func TestNewReviewPageRequest(t *testing.T) {
 			},
 		},
 		{
+			name:    "全評価をAPIの全評価へ変換する",
+			options: steamdomain.PageOptions{ReviewType: steamdomain.ReviewTypeAll, Language: "japanese", Cursor: "次+/=&?", PageSize: 7},
+			want: reviewPageRequest{
+				AppID: 440, Filter: 1, Languages: []string{"japanese"},
+				Cursor: "次+/=&?", PageSize: 7, ReviewType: 0, PurchaseType: 1, FilterOfftopic: true,
+			},
+		},
+		{
+			name:    "おすすめをAPIのおすすめへ変換する",
+			options: steamdomain.PageOptions{ReviewType: steamdomain.ReviewTypePositive, Language: "japanese", Cursor: "次+/=&?", PageSize: 7},
+			want: reviewPageRequest{
+				AppID: 440, Filter: 1, Languages: []string{"japanese"},
+				Cursor: "次+/=&?", PageSize: 7, ReviewType: 1, PurchaseType: 1, FilterOfftopic: true,
+			},
+		},
+		{
 			name:    "未知の評価種別ではゼロ値と入力エラーを返す",
 			options: steamdomain.PageOptions{ReviewType: 3, Language: "japanese", PageSize: 7},
 			invalid: true,

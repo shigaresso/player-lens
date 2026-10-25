@@ -20,6 +20,29 @@ def verify_lint(directory):
     module.mkdir()
     (module / "go.mod").write_text("module example.invalid/lintfixture\n\ngo 1.27.1\n")
     (module / ".golangci.yml").write_bytes((ROOT / ".golangci.yml").read_bytes())
+    error_group = '''package example
+import "strconv"
+func Value() (int, error) {
+    value, err := strconv.Atoi("1")
+    if err != nil {
+        return 0, err
+    }
+
+    return value, nil
+}
+'''
+    cleanup_group = '''package example
+func prepare() (func(), error) { return func() {}, nil }
+func Run() error {
+    release, err := prepare()
+    if err != nil {
+        return err
+    }
+    defer release()
+
+    return nil
+}
+'''
     cases = [
         ("正常", "source.go", "package example\nfunc Value() int { return 1 }\n", None),
         ("未確認エラー", "source.go", 'package example\nimport "os"\nfunc Run() { os.Chdir("/") }\n', "errcheck"),
@@ -29,6 +52,22 @@ def verify_lint(directory):
          'package example\nimport "regexp"\nfunc Value() string { return regexp.MustCompile("[").String() }\n', "staticcheck"),
         ("無効な代入", "source.go", "package example\nfunc Value() int { value := 1; value = 2; return value }\n", "ineffassign"),
         ("未使用コード", "source.go", "package example\nfunc unusedValue() int { return 1 }\n", "unused"),
+        ("処理とエラー確認のセット", "source.go", error_group, None),
+        ("処理とエラー確認の分断", "source.go",
+         error_group.replace('strconv.Atoi("1")\n', 'strconv.Atoi("1")\n\n'), "wsl_v5"),
+        ("エラー対応と次の処理の区切りなし", "source.go",
+         error_group.replace("}\n\n    return", "}\n    return"), "wsl_v5"),
+        ("結合テストのエラー対応後の区切りなし", "source_integration_test.go",
+         '//go:build integration\n\npackage example\nimport "testing"\n'
+         'func TestRun(t *testing.T) {\n'
+         '    if t.Failed() {\n        t.Fatal("failed")\n    }\n    t.Log("done")\n}\n', "wsl_v5"),
+        ("資源取得とエラー確認とdeferのまとまり", "source.go", cleanup_group, None),
+        ("連続deferのまとまり", "source.go",
+         'package example\nfunc Value() int {\n'
+         '    first, second := func() {}, func() {}\n    defer first()\n    defer second()\n\n'
+         '    return 1\n}\n', None),
+        ("最後のdeferと次の処理の区切りなし", "source.go",
+         cleanup_group.replace("defer release()\n\n", "defer release()\n"), "wsl_v5"),
     ]
     for name, filename, source, expected in cases:
         path = module / filename
@@ -39,6 +78,8 @@ def verify_lint(directory):
             if (expected is None and result.returncode != 0) or (expected is not None and
                     (result.returncode != 1 or f"({expected})" not in result.stdout + result.stderr)):
                 raise RuntimeError(f"{name} の判定が異なる:\n{result.stdout}\n{result.stderr}")
+            if path.read_text() != source:
+                raise RuntimeError(f"{name} の検査で入力が変更された")
             print(f"リンター: {name}を確認した", flush=True)
         finally:
             path.unlink()

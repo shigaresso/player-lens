@@ -14,9 +14,16 @@ linters:
     - ineffassign
     - staticcheck
     - unused
+    - wsl_v5
   settings:
     errcheck:
       check-blank: true
+    wsl_v5:
+      default: none
+      enable:
+        - err
+        - after-block
+        - after-defer
 
 issues:
   max-issues-per-linter: 0

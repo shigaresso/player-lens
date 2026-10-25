@@ -19,6 +19,8 @@ run は http.NewServeMux でルーターを生成し、RegisterRoutes(mux, healt
 
 RegisterRoutes は GET /healthz（HEAD を含む）と、MCP が非 nil の場合の /tools を登録する。mux と healthHandler は有効な非 nil の値を渡し、登録は受付開始前に行う。競合するパターンは事前に登録しない。重複登録などは標準 ServeMux の panic に従い、独自の検査や復旧は追加しない。各 handler は並行利用可能なものを渡す。
 
+Issue #76 で、登録パターンのパスとログの http.route は同じ非公開の healthPath 定義を参照する。公開経路は /healthz のまま維持し、受信 URL・query を経路の定義へ取り込まない。公開契約を検証するテストの期待値はこの実装定数を参照せず、/healthz のリテラルで確認する。
+
 生成は New、既存の対象への登録は Register という名前で区別する。業務操作を持たない生存確認のための application/domain や、生成と登録をまとめ直す互換ラッパーは作らない。
 
 ```text
@@ -73,6 +75,8 @@ LogAttrs に request の context をそのまま渡す。キャンセル済み�
 - SIGINT/SIGTERM で新規受付を停止する。処理中のリクエストは最大10秒待ち、期限内に終了した場合は正常終了する。期限超過では接続を閉じて非0終了する。
 - 起動処理が listener を作成し、サーバー処理へ所有権を渡す。サーバー処理は終了時に listener・接続を閉じ、Serve の goroutine の終了を待つ。強制終了時の handler はリクエスト context のキャンセルに従う。
 
+終了待機の上限は Serve の shutdownTimeout 引数で渡し、run は同名の定数で10秒を指定する。通常リクエストの読み取り・書き込み期限とは独立した設定であり、今回の改名と定数化では値や終了手順を変更しない（Issue #76）。
+
 ### Steam クライアントの構築と所有
 
 サーバー起動の `run` は、server adapter の公開関数 `NewSteamFetcher` から取得クライアントと idle 接続の終了関数を受け取る。構築関数が既定の Transport を複製し、HTTP タイムアウト10秒と公式の Steam 接続先を使って組み立てる。構築中は通信しない。
@@ -90,6 +94,8 @@ LogAttrs に request の context をそのまま渡す。キャンセル済み�
 ## 検証との対応
 
 生成と登録の境界はユニットテストで確認する。health handler の生成時に時計・ログを実行しないことと、登録時に handler を呼ばないこと、渡した health/MCP handler への委譲、既存経路の保持を確認する。旧ルーター経由の応答テストは生成済み handler と明示的な登録へ移行し、ログの契約は生成済み health handler でも確認する。
+
+routes_test.go の TestRegisterRoutes は渡した handler への登録と委譲、TestHealthRoutes は実 health handler とルーターを接続した公開応答を確認する。health_test.go の TestHealthWriteFailure は本文書き込み失敗の応答とログを確認する。Issue #76 で接続テストの名前と配置をその責務に揃えた。
 
 設定と HTTP 応答はネットワークを使わないユニットテストで確認する。構造化ログは制御した時計とメモリ上の出力先で正常・書き込み失敗・ログ出力失敗・context の引き継ぎと対象経路を確認する。実 HTTP の GET/HEAD と JSON の接続、実バイナリの起動失敗と stderr・終了コードは integration タグで確認する。実際の待ち受け・応答・処理中の終了・期限超過・bind 失敗は `integration` タグの結合テストで確認し、race detector を実行する。本番用イメージの PORT・不正設定・HTTP 応答・SIGTERM は独立したスモーク検査で確認する。
 

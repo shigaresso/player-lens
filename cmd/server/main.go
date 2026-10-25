@@ -15,6 +15,8 @@ import (
 	reviewmcp "github.com/shigaresso/player-lens/internal/reviewmcp/adapter"
 )
 
+const shutdownTimeout = 10 * time.Second
+
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil)).With("service.name", "player-lens")
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -65,5 +67,5 @@ func run(ctx context.Context, port string, logger *slog.Logger) error {
 
 	logger.InfoContext(ctx, "HTTP サーバーを起動した",
 		slog.String("event", "server.started"), slog.String("address", address))
-	return serveradapter.Serve(ctx, listener, router, 10*time.Second)
+	return serveradapter.Serve(ctx, listener, router, shutdownTimeout)
 }

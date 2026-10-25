@@ -21,7 +21,7 @@ func (entry healthCheckLog) write(ctx context.Context, logger *slog.Logger) {
 	attrs := []slog.Attr{
 		slog.String("event", "health_check.completed"),
 		slog.String("http.request.method", entry.method),
-		slog.String("http.route", "/healthz"),
+		slog.String("http.route", healthPath),
 		slog.Int("http.response.status_code", http.StatusOK),
 		slog.Float64("duration_ms", float64(entry.duration)/float64(time.Millisecond)),
 	}

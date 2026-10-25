@@ -16,7 +16,7 @@
 
 `steamadapter.Client.FetchReviewsPage` は1回の HTTP 通信と入力・応答の検査、応答 Body の解放を担当する adapter とする。収集操作とは区別し、ページングや収集全体の件数・時間・部分失敗を重複させない。
 
-Issue #38 で adapter 内のリクエスト変換を分離した。Issue #43 では文字列の評価種別から数値への変換を入力境界へ移した。`newReviewPageRequest`、`encodeReviewPageQuery` は、正規化済みの条件を Steam API の入力とクエリへ変換する通信なしの処理であり、新しいユースケースではない。
+Issue #38 で adapter 内のリクエスト変換を分離した。Issue #43 では文字列の評価種別から数値への変換を入力境界へ移した。`newReviewPageRequest`、`encodeReviewPageQuery` は、正規化済みの条件を Steam API の入力とクエリへ変換する通信なしの処理であり、新しいユースケースではない。 Issue #64 で評価種別の検査を FetchReviewsPage が呼ぶ NormalizePageOptions に集約し、newReviewPageRequest は正の App ID と検査後の条件の変換だけを担当する構成にした。private の重複検査と error 戻り値を除き、公開入口で不正入力を通信前に拒否する契約を維持した。
 
 Issue #39 で応答解釈も分離した。`decodeReviewPage` は本文と取得条件からページを作り、Issue #43 の `parseRecommendationID` は ID の文字列を0を含む uint64 に変換する。Body の読み取り・サイズ制限・解放は `FetchReviewsPage` に残す。
 

@@ -3,7 +3,9 @@ package adapter_test
 import (
 	"context"
 	"errors"
+	"math"
 	"net/http"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -57,6 +59,9 @@ func TestFetchReviewsPageInvalidArguments(t *testing.T) {
 		options steamdomain.PageOptions
 	}{
 		{"未知の評価種別を通信前に拒否する", 440, steamdomain.PageOptions{ReviewType: 3}},
+		{"他の条件が有効でも未知の評価種別を拒否する", 440, steamdomain.PageOptions{ReviewType: 3, Language: "japanese", PageSize: 7}},
+		{"負の評価種別を通信前に拒否する", 440, steamdomain.PageOptions{ReviewType: -1}},
+		{"int32最大値の評価種別を通信前に拒否する", 440, steamdomain.PageOptions{ReviewType: steamdomain.ReviewType(math.MaxInt32)}},
 		{"AppIDゼロを拒否する", 0, steamdomain.PageOptions{}},
 		{"負の件数を拒否する", 440, steamdomain.PageOptions{PageSize: -1}},
 		{"101件を拒否する", 440, steamdomain.PageOptions{PageSize: 101}},
@@ -74,7 +79,7 @@ func TestFetchReviewsPageInvalidArguments(t *testing.T) {
 				t.Fatal(err)
 			}
 			page, err := client.FetchReviewsPage(context.Background(), tt.appID, tt.options)
-			if !errors.Is(err, steamdomain.ErrInvalidArgument) || calls != 0 || page.AppID != 0 || page.Reviews != nil {
+			if !errors.Is(err, steamdomain.ErrInvalidArgument) || calls != 0 || !reflect.DeepEqual(page, steamdomain.ReviewPage{}) {
 				t.Fatalf("page=%#v error=%v calls=%d", page, err, calls)
 			}
 		})

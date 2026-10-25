@@ -2,7 +2,6 @@ package adapter
 
 import (
 	"encoding/json"
-	"errors"
 	"reflect"
 	"testing"
 
@@ -14,7 +13,6 @@ func TestNewReviewPageRequest(t *testing.T) {
 		name    string
 		options steamdomain.PageOptions
 		want    reviewPageRequest
-		invalid bool
 	}{
 		{
 			name:    "取得条件を保持し固定のSteam取得条件を設定する",
@@ -25,15 +23,26 @@ func TestNewReviewPageRequest(t *testing.T) {
 			},
 		},
 		{
-			name:    "未知の評価種別ではゼロ値と入力エラーを返す",
-			options: steamdomain.PageOptions{ReviewType: 3, Language: "japanese", PageSize: 7},
-			invalid: true,
+			name:    "全評価をAPIの全評価へ変換する",
+			options: steamdomain.PageOptions{ReviewType: steamdomain.ReviewTypeAll, Language: "japanese", Cursor: "次+/=&?", PageSize: 7},
+			want: reviewPageRequest{
+				AppID: 440, Filter: 1, Languages: []string{"japanese"},
+				Cursor: "次+/=&?", PageSize: 7, ReviewType: 0, PurchaseType: 1, FilterOfftopic: true,
+			},
+		},
+		{
+			name:    "おすすめをAPIのおすすめへ変換する",
+			options: steamdomain.PageOptions{ReviewType: steamdomain.ReviewTypePositive, Language: "japanese", Cursor: "次+/=&?", PageSize: 7},
+			want: reviewPageRequest{
+				AppID: 440, Filter: 1, Languages: []string{"japanese"},
+				Cursor: "次+/=&?", PageSize: 7, ReviewType: 1, PurchaseType: 1, FilterOfftopic: true,
+			},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := newReviewPageRequest(440, tc.options)
-			if !reflect.DeepEqual(got, tc.want) || (err != nil) != tc.invalid || errors.Is(err, steamdomain.ErrInvalidArgument) != tc.invalid {
-				t.Fatalf("request=%+v error=%v want=%+v invalid=%v", got, err, tc.want, tc.invalid)
+			got := newReviewPageRequest(440, tc.options)
+			if !reflect.DeepEqual(got, tc.want) {
+				t.Fatalf("request=%+v want=%+v", got, tc.want)
 			}
 		})
 	}

@@ -64,10 +64,7 @@ func (c *Client) FetchReviewsPage(ctx context.Context, appID steamdomain.AppID, 
 	}
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	input, err := newReviewPageRequest(appID, options)
-	if err != nil {
-		return steamdomain.ReviewPage{}, err
-	}
+	input := newReviewPageRequest(appID, options)
 	query, err := encodeReviewPageQuery(input)
 	if err != nil {
 		return steamdomain.ReviewPage{}, err

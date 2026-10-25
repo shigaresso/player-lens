@@ -34,6 +34,7 @@ const (
 
 // Collection は収集結果を表す。Reviews は同じ ID の最初の本文を取得順に保持する。
 // PagesFetched は空ページを含む取得成功ページ数で、失敗したページは含まない。
+// Options は元の条件のコピーを保持する。空の Collection では未指定のままとする。
 type Collection struct {
 	AppID        AppID
 	Options      CollectionOptionsConfig

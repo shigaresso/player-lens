@@ -35,11 +35,11 @@ func Run(ctx context.Context, args []string, fetcher steamapplication.PageFetche
 	flags.SetOutput(io.Discard)
 	appID := flags.String("app-id", "", "Steam App ID")
 	reviewType := flags.String("review-type", "", "レビューの評価種別")
-	options := steamdomain.CollectionOptionsConfig{}
-	flags.StringVar(&options.Language, "language", "", "レビューの言語")
-	flags.IntVar(&options.PageSize, "page-size", 0, "要求件数")
-	flags.IntVar(&options.MaxReviews, "max-reviews", 0, "レビュー上限")
-	flags.IntVar(&options.MaxPages, "max-pages", 0, "ページ上限")
+	config := steamdomain.CollectionOptionsConfig{}
+	flags.StringVar(&config.Language, "language", "", "レビューの言語")
+	flags.IntVar(&config.PageSize, "page-size", 0, "要求件数")
+	flags.IntVar(&config.MaxReviews, "max-reviews", 0, "レビュー上限")
+	flags.IntVar(&config.MaxPages, "max-pages", 0, "ページ上限")
 	if err := flags.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return flag.ErrHelp
@@ -50,11 +50,11 @@ func Run(ctx context.Context, args []string, fetcher steamapplication.PageFetche
 	if err != nil || id == 0 || flags.NArg() != 0 {
 		return fmt.Errorf("positive uint32 --app-id and no positional arguments are required: %w", ErrUsage)
 	}
-	options.ReviewType, err = steamdomain.ParseReviewType(*reviewType)
+	config.ReviewType, err = steamdomain.ParseReviewType(*reviewType)
 	if err != nil {
 		return fmt.Errorf("prepare review collection arguments: %w", errors.Join(ErrUsage, err))
 	}
-	options, err = steamdomain.NormalizeCollectionOptions(options)
+	options, err := steamdomain.NewCollectionOptions(config)
 	if err != nil {
 		return fmt.Errorf("prepare review collection arguments: %w", errors.Join(ErrUsage, err))
 	}

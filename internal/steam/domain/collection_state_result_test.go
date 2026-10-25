@@ -19,7 +19,7 @@ func TestCollectionStateResultOwnership(t *testing.T) {
 		{"失敗結果を書き換えても状態は変わらない", steamdomain.CollectionOptionsConfig{}, true, steamdomain.StopFailed},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			state, err := steamdomain.NewCollectionState(440, tc.options)
+			state, err := steamdomain.NewCollectionState(440, collectionOptions(t, tc.options))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -35,11 +35,11 @@ func TestCollectionStateResultOwnership(t *testing.T) {
 			returned.Options.Language = "japanese"
 			returned.Reviews[0].RecommendationID = 9
 			returned.Reviews[0].Text = "外部で変更した本文"
-			normalized, err := steamdomain.NormalizeCollectionOptions(tc.options)
+			normalized, err := steamdomain.NewCollectionOptions(tc.options)
 			if err != nil {
 				t.Fatal(err)
 			}
-			want := steamdomain.Collection{AppID: 440, Options: normalized, Reviews: []steamdomain.Review{first}, PagesFetched: 1, StopReason: tc.reason}
+			want := steamdomain.Collection{AppID: 440, Options: normalized.Config(), Reviews: []steamdomain.Review{first}, PagesFetched: 1, StopReason: tc.reason}
 			if got := state.Result(); !reflect.DeepEqual(got, want) {
 				t.Fatalf("result=%#v; want=%#v", got, want)
 			}

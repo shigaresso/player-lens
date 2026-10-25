@@ -22,7 +22,7 @@ func TestParseInput(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.options.ReviewType = steamdomain.ReviewTypeAll
 			appID, options, err := parseInput([]byte(tc.input))
-			if err != nil || appID != tc.appID || options != tc.options {
+			if err != nil || appID != tc.appID || options.Config() != tc.options {
 				t.Fatalf("parseInput = %d, %+v, %v", appID, options, err)
 			}
 		})
@@ -41,7 +41,7 @@ func TestParseInput(t *testing.T) {
 	} {
 		t.Run(name+"ため拒否する", func(t *testing.T) {
 			appID, options, err := parseInput([]byte(input))
-			if !errors.Is(err, steamdomain.ErrInvalidArgument) || appID != 0 || options != (steamdomain.CollectionOptionsConfig{}) {
+			if !errors.Is(err, steamdomain.ErrInvalidArgument) || appID != 0 || options != (steamdomain.CollectionOptions{}) {
 				t.Fatalf("不正入力の結果 = %d, %+v, %v", appID, options, err)
 			}
 		})

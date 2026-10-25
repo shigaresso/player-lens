@@ -33,7 +33,7 @@ func TestCollectionStatePages(t *testing.T) {
 		{"重複除外後の件数が足りなくてもページ上限で終了する", steamdomain.CollectionOptionsConfig{MaxReviews: 5, MaxPages: 2}, []steamdomain.ReviewPage{{Reviews: stateReviews(1), NextCursor: "A"}, {Reviews: stateReviews(1), NextCursor: "B"}}, stateReviews(1), steamdomain.StopPageLimit, steamdomain.PageOptions{}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			state, err := steamdomain.NewCollectionState(440, tc.options)
+			state, err := steamdomain.NewCollectionState(440, collectionOptions(t, tc.options))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -46,11 +46,11 @@ func TestCollectionStatePages(t *testing.T) {
 				}
 			}
 			result := state.Result()
-			normalized, err := steamdomain.NormalizeCollectionOptions(tc.options)
+			normalized, err := steamdomain.NewCollectionOptions(tc.options)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if result.AppID != 440 || result.Options != normalized || result.PagesFetched != len(tc.pages) || result.StopReason != tc.reason || !reflect.DeepEqual(result.Reviews, tc.want) {
+			if result.AppID != 440 || result.Options != normalized.Config() || result.PagesFetched != len(tc.pages) || result.StopReason != tc.reason || !reflect.DeepEqual(result.Reviews, tc.want) {
 				t.Fatalf("result=%#v", result)
 			}
 			next, ok := state.NextPage()

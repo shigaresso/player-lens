@@ -18,7 +18,7 @@ func TestCollectionStateFail(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			options := steamdomain.CollectionOptionsConfig{Language: "japanese", PageSize: 2, MaxReviews: 3, MaxPages: 4}
-			state, err := steamdomain.NewCollectionState(440, options)
+			state, err := steamdomain.NewCollectionState(440, collectionOptions(t, options))
 			if err != nil {
 				t.Fatal(err)
 			}

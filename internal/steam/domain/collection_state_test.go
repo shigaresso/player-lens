@@ -21,7 +21,7 @@ func TestNewCollectionState(t *testing.T) {
 		{"件数上限がページ件数より小さければ要求件数を減らす", 440, steamdomain.CollectionOptionsConfig{MaxReviews: 1}, steamdomain.CollectionOptionsConfig{ReviewType: steamdomain.ReviewTypeAll, Language: "english", PageSize: 100, MaxReviews: 1, MaxPages: 100}, 1},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			state, err := steamdomain.NewCollectionState(tc.appID, tc.options)
+			state, err := steamdomain.NewCollectionState(tc.appID, collectionOptions(t, tc.options))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -42,15 +42,21 @@ func TestNewCollectionState(t *testing.T) {
 		options steamdomain.CollectionOptionsConfig
 	}{
 		{"App ID が0なら状態を作らない", 0, steamdomain.CollectionOptionsConfig{}},
-		{"不正な言語なら状態を作らない", 440, steamdomain.CollectionOptionsConfig{Language: "Japanese"}},
-		{"件数上限の超過なら状態を作らない", 440, steamdomain.CollectionOptionsConfig{MaxReviews: 10001}},
-		{"ページ上限の超過なら状態を作らない", 440, steamdomain.CollectionOptionsConfig{MaxPages: 101}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			state, err := steamdomain.NewCollectionState(tc.appID, tc.options)
+			state, err := steamdomain.NewCollectionState(tc.appID, collectionOptions(t, tc.options))
 			if state != nil || !errors.Is(err, steamdomain.ErrInvalidArgument) {
 				t.Fatalf("state=%v err=%v", state, err)
 			}
 		})
 	}
+}
+
+func collectionOptions(t *testing.T, config steamdomain.CollectionOptionsConfig) steamdomain.CollectionOptions {
+	t.Helper()
+	options, err := steamdomain.NewCollectionOptions(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return options
 }

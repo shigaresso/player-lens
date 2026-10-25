@@ -33,7 +33,7 @@ func TestCollectReviews(t *testing.T) {
 		}
 		return steamdomain.ReviewPage{}, nil
 	})
-	result := mcpapplication.CollectReviews(t.Context(), fetcher, 440, steamdomain.CollectionOptionsConfig{Language: "japanese"}, gate)
+	result := mcpapplication.CollectReviews(t.Context(), fetcher, 440, collectionOptions(t, steamdomain.CollectionOptionsConfig{Language: "japanese"}), gate)
 	if result.Err != nil || result.Rejection != mcpdomain.NotRejected || result.Collection.AppID != 440 || result.Collection.StopReason != steamdomain.StopExhausted {
 		t.Fatalf("result=%+v", result)
 	}
@@ -48,4 +48,13 @@ func TestCollectReviews(t *testing.T) {
 	if release, reason := gate.Acquire(); release != nil || reason != mcpdomain.MinuteLimitReached {
 		t.Fatal("開始回数を戻した", reason)
 	}
+}
+
+func collectionOptions(t *testing.T, config steamdomain.CollectionOptionsConfig) steamdomain.CollectionOptions {
+	t.Helper()
+	options, err := steamdomain.NewCollectionOptions(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return options
 }

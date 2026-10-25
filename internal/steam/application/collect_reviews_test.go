@@ -56,11 +56,20 @@ func TestCollectReviewsPages(t *testing.T) {
 				page.AppID, page.Options = appID, options
 				return page, nil
 			})
-			got, err := steamapplication.CollectReviews(context.Background(), fetcher, 440, tt.options)
-			wantOptions, normalizeErr := steamdomain.NormalizeCollectionOptions(tt.options)
-			if err != nil || normalizeErr != nil || got.AppID != 440 || got.Options != wantOptions || got.PagesFetched != len(tt.pages) || got.StopReason != tt.reason || !reflect.DeepEqual(got.Reviews, tt.want) || !reflect.DeepEqual(requests, tt.requests) {
+			got, err := steamapplication.CollectReviews(context.Background(), fetcher, 440, collectionOptions(t, tt.options))
+			wantOptions, normalizeErr := steamdomain.NewCollectionOptions(tt.options)
+			if err != nil || normalizeErr != nil || got.AppID != 440 || got.Options != wantOptions.Config() || got.PagesFetched != len(tt.pages) || got.StopReason != tt.reason || !reflect.DeepEqual(got.Reviews, tt.want) || !reflect.DeepEqual(requests, tt.requests) {
 				t.Fatalf("result=%#v requests=%#v error=%v", got, requests, err)
 			}
 		})
 	}
+}
+
+func collectionOptions(t *testing.T, config steamdomain.CollectionOptionsConfig) steamdomain.CollectionOptions {
+	t.Helper()
+	options, err := steamdomain.NewCollectionOptions(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return options
 }

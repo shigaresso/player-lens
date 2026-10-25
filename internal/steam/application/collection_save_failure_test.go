@@ -40,7 +40,7 @@ func TestCollectAndSaveReviewsFailure(t *testing.T) {
 				saved = result
 				return test.saveErr
 			})
-			result, err := steamapplication.CollectAndSaveReviews(t.Context(), fetcher, saver, 440, steamdomain.CollectionOptionsConfig{})
+			result, err := steamapplication.CollectAndSaveReviews(t.Context(), fetcher, saver, 440, collectionOptions(t, steamdomain.CollectionOptionsConfig{}))
 			if saves != 1 || !reflect.DeepEqual(saved, result) || result.AppID != 440 {
 				t.Fatalf("result=%+v saved=%+v saves=%d err=%v", result, saved, saves, err)
 			}

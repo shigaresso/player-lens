@@ -12,18 +12,15 @@ type CollectionState struct {
 	seenCursors map[string]bool
 }
 
-// NewCollectionState は正の App ID と条件を検査・正規化し、先頭からの収集状態を返す。
-// 入力を変更せず、不正なら nil と ErrInvalidArgument を保持するエラーを返す。
-func NewCollectionState(appID AppID, options CollectionOptionsConfig) (*CollectionState, error) {
+// NewCollectionState は正の App ID を検査し、有効な条件で先頭からの収集状態を返す。
+// 条件は再検査せずコピーを保持する。App ID が不正なら nil と ErrInvalidArgument の原因を返す。
+func NewCollectionState(appID AppID, options CollectionOptions) (*CollectionState, error) {
 	if appID == 0 {
 		return nil, fmt.Errorf("positive AppID is required: %w", ErrInvalidArgument)
 	}
-	normalized, err := NormalizeCollectionOptions(options)
-	if err != nil {
-		return nil, err
-	}
+	config := options.Config()
 	return &CollectionState{
-		result:      Collection{AppID: appID, Options: normalized, Reviews: []Review{}},
+		result:      Collection{AppID: appID, Options: config, Reviews: []Review{}},
 		cursor:      FirstPageCursor,
 		seenIDs:     make(map[RecommendationID]bool),
 		seenCursors: map[string]bool{FirstPageCursor: true},

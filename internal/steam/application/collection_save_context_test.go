@@ -52,7 +52,7 @@ func TestCollectAndSaveReviewsSaveContext(t *testing.T) {
 				}
 				return test.saveErr
 			})
-			_, err := steamapplication.CollectAndSaveReviews(parent, fetcher, saver, 440, steamdomain.CollectionOptionsConfig{})
+			_, err := steamapplication.CollectAndSaveReviews(parent, fetcher, saver, 440, collectionOptions(t, steamdomain.CollectionOptionsConfig{}))
 			if captured == nil || !errors.Is(captured.Err(), context.Canceled) || parent.Err() != before {
 				t.Fatalf("派生contextの解放または親の保持: captured=%v parent=%v", captured, parent.Err())
 			}

@@ -28,7 +28,7 @@ func TestCollectAndSaveReviews(t *testing.T) {
 		saved = result
 		return nil
 	})
-	result, err := steamapplication.CollectAndSaveReviews(t.Context(), fetcher, saver, 440, steamdomain.CollectionOptionsConfig{MaxReviews: 1})
+	result, err := steamapplication.CollectAndSaveReviews(t.Context(), fetcher, saver, 440, collectionOptions(t, steamdomain.CollectionOptionsConfig{MaxReviews: 1}))
 	if err != nil || !reflect.DeepEqual(saved, result) || result.StopReason != steamdomain.StopReviewLimit || !reflect.DeepEqual(events, []string{"fetch", "save"}) {
 		t.Fatalf("result=%+v saved=%+v events=%v err=%v", result, saved, events, err)
 	}
@@ -42,7 +42,6 @@ func TestCollectAndSaveReviewsInvalidInput(t *testing.T) {
 		nilSaver bool
 	}{
 		{"AppIDが0ならI/Oしない", 0, steamdomain.CollectionOptionsConfig{}, false},
-		{"条件が不正ならI/Oしない", 440, steamdomain.CollectionOptionsConfig{MaxReviews: -1}, false},
 		{"保存先がnilならI/Oしない", 440, steamdomain.CollectionOptionsConfig{}, true},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -57,7 +56,7 @@ func TestCollectAndSaveReviewsInvalidInput(t *testing.T) {
 			if test.nilSaver {
 				saver = nil
 			}
-			result, err := steamapplication.CollectAndSaveReviews(t.Context(), fetcher, saver, test.appID, test.options)
+			result, err := steamapplication.CollectAndSaveReviews(t.Context(), fetcher, saver, test.appID, collectionOptions(t, test.options))
 			if !errors.Is(err, steamdomain.ErrInvalidArgument) || !reflect.DeepEqual(result, steamdomain.Collection{}) {
 				t.Fatalf("result=%+v err=%v", result, err)
 			}

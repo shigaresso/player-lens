@@ -25,7 +25,7 @@ func TestCollectionStateCursor(t *testing.T) {
 		{"空ページを循環より優先する", []steamdomain.ReviewPage{{NextCursor: "*"}}, 10, []steamdomain.Review{}, steamdomain.StopExhausted, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			state, err := steamdomain.NewCollectionState(440, steamdomain.CollectionOptionsConfig{MaxReviews: tc.limit, MaxPages: len(tc.pages)})
+			state, err := steamdomain.NewCollectionState(440, collectionOptions(t, steamdomain.CollectionOptionsConfig{MaxReviews: tc.limit, MaxPages: len(tc.pages)}))
 			if err != nil {
 				t.Fatal(err)
 			}

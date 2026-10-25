@@ -21,7 +21,7 @@ func TestNormalizeToolInput(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			input := tc.input
 			appID, options, err := normalizeToolInput(input)
-			if err != nil || appID != tc.input.AppID || options != tc.want {
+			if err != nil || appID != tc.input.AppID || options.Config() != tc.want {
 				t.Fatalf("appID = %d, options = %+v, err = %v", appID, options, err)
 			}
 			if input != tc.input {
@@ -48,7 +48,7 @@ func TestNormalizeToolInput(t *testing.T) {
 		t.Run(tc.name+"なら入力を変更せずゼロ値と原因を返す", func(t *testing.T) {
 			input := tc.input
 			appID, options, err := normalizeToolInput(input)
-			if !errors.Is(err, steamdomain.ErrInvalidArgument) || appID != 0 || options != (steamdomain.CollectionOptionsConfig{}) {
+			if !errors.Is(err, steamdomain.ErrInvalidArgument) || appID != 0 || options != (steamdomain.CollectionOptions{}) {
 				t.Fatalf("appID = %d, options = %+v, err = %v", appID, options, err)
 			}
 			if input != tc.input {

@@ -18,12 +18,13 @@ type CollectionOptionsConfig struct {
 	MaxPages   int
 }
 
-// NormalizeCollectionOptions は通信せずに収集条件の既定値を適用し、上限を検査する。
+// normalizeCollectionOptions は通信せずに収集条件の既定値を適用し、上限を検査する。
 // 入力を変更せず、不正な場合はゼロ値と ErrInvalidArgument を返す。
 // 評価種別・言語・ページ件数には NormalizePageOptions の規則を使う。
-func NormalizeCollectionOptions(options CollectionOptionsConfig) (CollectionOptionsConfig, error) {
+func normalizeCollectionOptions(options CollectionOptionsConfig) (CollectionOptionsConfig, error) {
+	defaults := defaultCollectionOptionsConfig()
 	if options.PageSize == 0 {
-		options.PageSize = MaxPageSize
+		options.PageSize = defaults.PageSize
 	}
 	page, err := NormalizePageOptions(PageOptions{ReviewType: options.ReviewType, Language: options.Language, PageSize: options.PageSize})
 	if err != nil {
@@ -32,10 +33,10 @@ func NormalizeCollectionOptions(options CollectionOptionsConfig) (CollectionOpti
 	options.Language = page.Language
 	options.ReviewType = page.ReviewType
 	if options.MaxReviews == 0 {
-		options.MaxReviews = 1000
+		options.MaxReviews = defaults.MaxReviews
 	}
 	if options.MaxPages == 0 {
-		options.MaxPages = MaxCollectionPages
+		options.MaxPages = defaults.MaxPages
 	}
 	if options.MaxReviews < 1 || options.MaxReviews > MaxCollectionReviews {
 		return CollectionOptionsConfig{}, fmt.Errorf("collection review limit must be between 1 and %d: %w", MaxCollectionReviews, ErrInvalidArgument)
@@ -55,8 +56,9 @@ type CollectionOptions struct {
 
 // NewCollectionOptions は設定を検査・正規化してコピーを保持する。
 // 入力を変更せず、不正ならゼロ値と ErrInvalidArgument を保持するエラーを返す。
+// ゼロ値自体も有効な既定条件のため、呼び出し側は必ず戻りエラーを処理する。
 func NewCollectionOptions(config CollectionOptionsConfig) (CollectionOptions, error) {
-	normalized, err := NormalizeCollectionOptions(config)
+	normalized, err := normalizeCollectionOptions(config)
 	if err != nil {
 		return CollectionOptions{}, err
 	}
@@ -67,6 +69,7 @@ func NewCollectionOptions(config CollectionOptionsConfig) (CollectionOptions, er
 }
 
 // Config は設定のコピーを返す。コピーの変更は元の値に影響しない。
+// ゼロ値からも既定条件を返し、検査・正規化・通信を繰り返さない。
 func (options CollectionOptions) Config() CollectionOptionsConfig {
 	if options.config == (CollectionOptionsConfig{}) {
 		return defaultCollectionOptionsConfig()

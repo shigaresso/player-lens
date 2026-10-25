@@ -24,7 +24,7 @@ func TestCollectionStateStopped(t *testing.T) {
 		{"取得の失敗で終了した状態を変更しない", steamdomain.CollectionOptionsConfig{}, steamdomain.ReviewPage{Reviews: stateReviews(1), NextCursor: "A"}, steamdomain.StopFailed, true, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			state, err := steamdomain.NewCollectionState(440, tc.options)
+			state, err := steamdomain.NewCollectionState(440, collectionOptions(t, tc.options))
 			if err != nil {
 				t.Fatal(err)
 			}

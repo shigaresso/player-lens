@@ -17,6 +17,7 @@ type trackedBody struct {
 	reader            io.Reader
 	readErr, closeErr error
 	closed, bytesRead int
+	onClose           func()
 }
 
 func (b *trackedBody) Read(p []byte) (int, error) {
@@ -27,7 +28,13 @@ func (b *trackedBody) Read(p []byte) (int, error) {
 	b.bytesRead += n
 	return n, err
 }
-func (b *trackedBody) Close() error { b.closed++; return b.closeErr }
+func (b *trackedBody) Close() error {
+	b.closed++
+	if b.onClose != nil {
+		b.onClose()
+	}
+	return b.closeErr
+}
 
 func TestFetchReviewsPageBodyLifecycle(t *testing.T) {
 	readFailure, closeFailure := errors.New("read failure"), errors.New("close failure")
@@ -45,16 +52,28 @@ func TestFetchReviewsPageBodyLifecycle(t *testing.T) {
 		{"Close失敗では成功したページを返さない", `{"response":{}}`, 200, nil, closeFailure, closeFailure, 0},
 		{"読み取りとCloseの両原因を保持する", "", 200, readFailure, closeFailure, readFailure, 0},
 		{"HTTP失敗とCloseの両原因を保持する", "", 429, nil, closeFailure, closeFailure, 429},
+		{"JSON解釈とCloseの両原因を保持する", `{`, 200, nil, closeFailure, steamadapter.ErrInvalidResponse, 0},
+		{"サイズ超過とCloseの両原因を保持する", `{"response":{}}` + strings.Repeat(" ", 3*1024*1024), 200, nil, closeFailure, steamadapter.ErrResponseTooLarge, 0},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			body := &trackedBody{reader: strings.NewReader(tt.content), readErr: tt.readErr, closeErr: tt.closeErr}
-			client, err := steamadapter.NewClient(&http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
+			var requestContext context.Context
+			body.onClose = func() {
+				if requestContext == nil || requestContext.Err() != nil {
+					t.Error("Body を閉じる前に取得用 context を解放した")
+				}
+			}
+			client, err := steamadapter.NewClient(&http.Client{Transport: roundTripFunc(func(request *http.Request) (*http.Response, error) {
+				requestContext = request.Context()
 				return &http.Response{StatusCode: tt.status, Body: body, Header: make(http.Header)}, nil
 			})}, "")
 			if err != nil {
 				t.Fatal(err)
 			}
 			page, err := client.FetchReviewsPage(context.Background(), 440, steamdomain.PageOptions{})
+			if requestContext == nil || !errors.Is(requestContext.Err(), context.Canceled) {
+				t.Error("操作終了後に取得用 context を解放しなかった")
+			}
 			if body.closed != 1 || body.bytesRead > 2*1024*1024+1 || (tt.status != 200 && body.bytesRead != 0) {
 				t.Fatalf("Body closed=%d bytes=%d", body.closed, body.bytesRead)
 			}

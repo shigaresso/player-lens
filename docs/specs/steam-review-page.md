@@ -22,7 +22,7 @@ HTTP クライアントと接続先は外から渡す。空の接続先は公式
 
 ### リクエスト変換の境界（Issue #38）
 
-`FetchReviewsPage` は必ず `NormalizePageOptions` を通し、未知の評価種別を通信前に `ErrInvalidArgument` で拒否する。Issue #64 では、その成功後に呼ぶ `review_page_request.go` の `newReviewPageRequest` から同じ検査を除いた。正の App ID と正規化済みの条件を渡すことを呼び出し側の契約とし、内部の ReviewType を EUserReviewsReviewType へ変換して固定の API 条件を設定する。変換だけを行うため error 戻り値は持たない。`encodeReviewPageQuery` は JSON とクエリへ変換する。これらは通信・時刻・保存に依存しない。既定値と入力検査は `NormalizePageOptions`、期限・通信・応答 Body の解放は `FetchReviewsPage` が担当する。
+`FetchReviewsPage` は必ず `NormalizePageOptions` を通し、未知の評価種別を通信前に `ErrInvalidArgument` で拒否する。Issue #64 では、その成功後に呼ぶ `review_page_request.go` の `newReviewPageRequest` から同じ検査を除いた。正の App ID と正規化済みの条件を渡すことを呼び出し側の契約とし、内部の ReviewType を EUserReviewsReviewType へ変換して固定の API 条件を設定する。変換だけを行うため error 戻り値は持たない。`encodeReviewPageQuery` は JSON とクエリへ変換する。これらは通信・時刻・保存に依存しない。既定値と入力検査は `NormalizePageOptions`、期限と送信は `FetchReviewsPage`、応答処理と Body の Close は `readReviewPageResponse` が担当する。
 
 API 側の数値定数は [公式の列挙名](https://partner.steamgames.com/doc/webapi/IUserReviewsService#Enums) と同じ `k_EUserReviewsReviewType_All`・`k_EUserReviewsReviewType_Positive`・`k_EUserReviewsReviewType_Negative`、`k_EUserReviewsAppReviewsFilter_Recent`、`k_EUserReviewsPurchaseType_All` を使う。これらは非公開とし、API へ送る値を明示的な数値で定義する。
 
@@ -36,7 +36,7 @@ HTTP 200 以外はステータスを持つエラーとし、リダイレクト�
 
 ### 応答解釈の境界（Issue #39）
 
-`review_page_response.go` の `decodeReviewPage` が本文の JSON 解析、wrapper・件数・カーソルの検査、空配列の正規化とページ生成を担当する。Issue #43 では専用の受信データから `parseRecommendationID` で ID を10進の uint64 に変換する。省略・null・空・構文不正・範囲超過は拒否し、0は受け付ける。先頭ゼロは数値に正規化する。これらは通信しない。`FetchReviewsPage` は HTTP ステータス、Body の読み取り・2 MiB 制限・Close と複合エラーを管理し、解釈へ有効な取得条件と本文を渡す。失敗時のゼロ値と原因保持を維持する。
+`review_page_response.go` の `decodeReviewPage` が本文の JSON 解析、wrapper・件数・カーソルの検査、空配列の正規化とページ生成を担当する。Issue #43 では専用の受信データから `parseRecommendationID` で ID を10進の uint64 に変換する。省略・null・空・構文不正・範囲超過は拒否し、0は受け付ける。先頭ゼロは数値に正規化する。これらは通信しない。Issue #66 では、HTTP ステータス、Body の読み取り・2 MiB 制限、解釈の呼び出し、Close と複合エラーを `read_review_page_response.go` の `readReviewPageResponse` にまとめた。Do が成功して返した有効な応答と、正の App ID・正規化済みの条件を受け取り、Body を読み取りから Close まで所有する。解釈を終えてから Close し、Close 失敗ではページをゼロ値にして元の原因と併せて返す。読み取り中の同じ goroutine の panic も Close した後に呼び出し側へ伝える。FetchReviewsPage は入力・要求構築・送信と取得用 context を所有し、応答処理が Close を完了してから context を解放する。失敗時のゼロ値と原因保持を維持する。
 
 ## 検証
 

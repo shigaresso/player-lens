@@ -8,7 +8,7 @@
 | --- | --- | --- | --- | --- |
 | `steamapplication.CollectReviews` | レビューを上限付きで収集し、カーソル・重複・終了条件を管理する | context、PageFetcher、App ID、CollectionOptions | Collection と終了理由。不正入力はゼロ値、途中失敗は部分結果と原因を保持したエラー | 収集・保存操作、MCP、テストと手動確認から呼び出した |
 | `steamapplication.CollectAndSaveReviews` | 収集と結果保存の順序、部分結果・複合失敗・保存期限を管理する | context、PageFetcher、CollectionSaver、App ID、CollectionOptions | Collection と収集/保存の原因を保持したエラー。保存は一度だけ行う | CLI から接続した。MCP は保存しないためこの操作を使わない。Web は未接続 |
-| `mcpapplication.CollectReviews` | MCP の開始回数・同時枠と8秒の期限を管理し、共通の収集操作を実行する | context、PageFetcher、解析済みの App ID と CollectionOptions、共有 Limiter | Result に収集結果・拒否理由・元の失敗を分けて保持する。枠は終了時に返却する | MCP adapter が入力検査後に呼び出す |
+| `mcpapplication.CollectReviews` | MCP の開始回数・同時枠と8秒の期限を管理し、共通の収集操作を実行する | context、PageFetcher、解析済みの App ID と CollectionOptions、共有 Limiter、同期的な結果処理関数 | Result に収集結果・拒否理由・元の失敗を保持して一度処理し、処理のエラーを返す。枠は結果処理の完了後に返す | MCP adapter が入力検査後に呼び出す |
 
 [収集仕様](specs/collect-reviews.md) と [ADR-0005](adr/0005-bounded-review-collection.md) に契約と判断を記載する。
 
@@ -37,6 +37,8 @@ Issue #52 で、JSON 読み取りを MCP 受信型の `toolInput.UnmarshalJSON`�
 MCP の開始回数と同時数は handler が所有する入口の制限とし、収集操作・CLI へ混ぜない。limiter は受付可否と型付きの拒否理由を返し、failure.go の usageFailure が MCP の公開コードと説明文へ変換する。[利用制限仕様](specs/mcp-usage-limits.md) と [ADR-0008](adr/0008-mcp-usage-limits.md) に従う。
 
 Issue #54 で、利用制限の設定は未検証の `LimitsConfig` から `NewLimits` で生成する構成にした。環境変数の解析は main 側、正数検査と設定値のコピー保持は生成 API が担当し、`NewHandler` は未初期化のゼロ値だけを拒否する。生成済みの設定と handler の可変な受付状態を区別する。設定の生成・取得は通信や利用枠の操作を行わず、新たな収集ユースケースではない。
+
+Issue #62 で、application が adapter から渡された同期的な結果処理関数を呼び、その完了後に同時枠を返す構成に修復する。JSON・SDK 応答生成は adapter に残し、application は SDK 型を含めない。結果処理の失敗でも枠を返し、収集の原因は Result.Err で処理関数へ渡す。開始前キャンセル・受付拒否も一度処理するが、確保していない枠は返さない。[ADR-0016](adr/0016-mcp-response-slot-lifetime.md) に記録する。
 
 Issue #40 で MCP の公開用失敗情報と結果生成を収集の実行手順から分離した。`failure.go` が原因の分類と案内、`result.go` が JSON・分析ガイド・応答量・原因保持を担当する。入力検査は adapter の `collect`、context・利用枠と収集の順序は mcpapplication.CollectReviews に置き、収集ユースケースや新しい通信境界は増やさない。
 

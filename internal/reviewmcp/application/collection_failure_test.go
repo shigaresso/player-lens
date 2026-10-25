@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	mcpapplication "github.com/shigaresso/player-lens/internal/reviewmcp/application"
 	mcpdomain "github.com/shigaresso/player-lens/internal/reviewmcp/domain"
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
 )
@@ -37,7 +36,7 @@ func TestCollectReviewsRejection(t *testing.T) {
 				release()
 			}
 			options := steamdomain.CollectionOptionsConfig{Language: "english", PageSize: 100, MaxReviews: 20, MaxPages: 3}
-			result := mcpapplication.CollectReviews(t.Context(), fetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+			result := collectResult(t, t.Context(), fetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				t.Fatal("拒否した操作で取得した")
 				return steamdomain.ReviewPage{}, nil
 			}), 440, collectionOptions(t, options), gate)
@@ -52,7 +51,7 @@ func TestCollectReviewsFailure(t *testing.T) {
 	cause := errors.New("fetch failed")
 	calls := 0
 	var fetchedContext context.Context
-	result := mcpapplication.CollectReviews(t.Context(), fetchFunc(func(ctx context.Context, _ steamdomain.AppID, _ steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+	result := collectResult(t, t.Context(), fetchFunc(func(ctx context.Context, _ steamdomain.AppID, _ steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 		fetchedContext = ctx
 		calls++
 		if calls == 1 {
@@ -76,7 +75,7 @@ func TestCollectReviewsCancelledBeforeStart(t *testing.T) {
 	gate := mcpdomain.NewLimiter(limits, time.Now)
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
-	result := mcpapplication.CollectReviews(ctx, fetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+	result := collectResult(t, ctx, fetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 		t.Fatal("開始前キャンセルで取得した")
 		return steamdomain.ReviewPage{}, nil
 	}), 440, collectionOptions(t, steamdomain.CollectionOptionsConfig{}), gate)

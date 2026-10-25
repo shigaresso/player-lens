@@ -44,3 +44,5 @@ cmd は main と起動の組み立てを root に維持する。既存の I/O �
 - ADR-0004〜0009・0011・0012。実施結果は Issue #56 の作業記録に残す。
 
 収集状態の生成・ページ反映と application の取得手順の境界は [ADR-0014](0014-steam-collection-state.md) で具体化する。
+
+利用枠は応答変換の完了まで保持する。Issue #62 で application に同期的な結果処理関数を渡し、adapter が変換を行う間も同じ defer の範囲に含める。[ADR-0016](0016-mcp-response-slot-lifetime.md) に契約を具体化する。

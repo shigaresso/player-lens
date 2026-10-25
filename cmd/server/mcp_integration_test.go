@@ -4,6 +4,8 @@ package main
 
 import (
 	"context"
+	"io"
+	"log/slog"
 	"sync"
 	"testing"
 	"time"
@@ -40,7 +42,7 @@ func TestMCPShutdownWaitsForActiveCollection(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	url, httpClient, cancel, done, closed := startTestServer(t, serveradapter.NewHandler(mcpHandler), 2*time.Second)
+	url, httpClient, cancel, done, closed := startTestServer(t, serveradapter.NewHandler(mcpHandler, slog.New(slog.NewJSONHandler(io.Discard, nil)), time.Now), 2*time.Second)
 	client := mcp.NewClient(&mcp.Implementation{Name: "server-integration", Version: "1"}, nil)
 	ctx, stop := context.WithTimeout(context.Background(), 5*time.Second)
 	defer stop()

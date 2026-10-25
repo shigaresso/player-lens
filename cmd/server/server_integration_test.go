@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"log/slog"
 	"net"
 	"net/http"
 	"strconv"
@@ -81,7 +82,7 @@ func TestRunBindFailure(t *testing.T) {
 		}
 	})
 	port := strconv.Itoa(listener.Addr().(*net.TCPAddr).Port)
-	err = run(t.Context(), port)
+	err = run(t.Context(), port, slog.New(slog.NewJSONHandler(io.Discard, nil)))
 	var operation *net.OpError
 	if !errors.As(err, &operation) || operation.Op != "listen" {
 		t.Fatalf("待ち受け失敗の原因が保持されなかった: %v", err)
@@ -125,7 +126,7 @@ func startTestServer(t *testing.T, handler http.Handler, timeout time.Duration) 
 }
 
 func TestServerHealthAndShutdown(t *testing.T) {
-	url, client, cancel, done, _ := startTestServer(t, serveradapter.NewHandler(nil), time.Second)
+	url, client, cancel, done, _ := startTestServer(t, serveradapter.NewHandler(nil, slog.New(slog.NewJSONHandler(io.Discard, nil)), time.Now), time.Second)
 	response, err := client.Get(url + "/healthz")
 	if err != nil {
 		t.Fatal(err)

@@ -16,6 +16,7 @@ func TestPublicMCPAccess(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	handler, err := NewHandler(fetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 		t.Fatal("受付検査でSteamに接続した")
 		return steamdomain.ReviewPage{}, nil
@@ -23,6 +24,7 @@ func TestPublicMCPAccess(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	for _, tc := range []struct {
 		name, host, origin, body string
 		status                   int
@@ -41,14 +43,17 @@ func TestPublicMCPAccess(t *testing.T) {
 			if tc.origin != "" {
 				request.Header.Set("Origin", tc.origin)
 			}
+
 			response := httptest.NewRecorder()
 			handler.ServeHTTP(response, request)
 			if response.Code != tc.status {
 				t.Fatalf("status=%d body=%s", response.Code, response.Body)
 			}
+
 			if response.Header().Get("WWW-Authenticate") != "" {
 				t.Fatal("OAuthのchallengeを返した")
 			}
+
 			if tc.status == 200 && !strings.Contains(response.Body.String(), "collect_reviews") {
 				t.Fatal(response.Body.String())
 			}

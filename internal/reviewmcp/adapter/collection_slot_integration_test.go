@@ -21,10 +21,12 @@ func TestMCPSlotDuringResponseConversion(t *testing.T) {
 		t.Run(version+"で応答変換中は別セッションを拒否し完了後に受付する", func(t *testing.T) {
 			ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 			defer cancel()
+
 			converting := make(chan struct{})
 			proceed := make(chan struct{})
 			unblock := sync.OnceFunc(func() { close(proceed) })
 			defer unblock()
+
 			cause := &conversionProbeError{classify: sync.OnceFunc(func() {
 				close(converting)
 				select {
@@ -37,11 +39,13 @@ func TestMCPSlotDuringResponseConversion(t *testing.T) {
 				if calls.Add(1) == 1 {
 					return steamdomain.ReviewPage{}, cause
 				}
+
 				return steamdomain.ReviewPage{}, nil
 			}), testLimits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 10, RequestsPerDay: 10, MaxConcurrent: 1}), nil)
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			server := httptest.NewServer(handler)
 			t.Cleanup(server.Close)
 			first := connectClient(t, server.URL, version)
@@ -55,6 +59,7 @@ func TestMCPSlotDuringResponseConversion(t *testing.T) {
 			finished := make(chan struct{})
 			go func() {
 				defer close(finished)
+
 				result, err := first.CallTool(ctx, params)
 				done <- response{result, err}
 			}()
@@ -68,10 +73,12 @@ func TestMCPSlotDuringResponseConversion(t *testing.T) {
 			case <-ctx.Done():
 				t.Fatal("応答変換が始まらなかった", ctx.Err())
 			}
+
 			busy, err := second.CallTool(ctx, params)
 			if err != nil || busy == nil || !busy.IsError || decodeOutput(t, busy).ErrorCode != "busy" || calls.Load() != 1 {
 				t.Fatalf("応答変換中の別セッション=%+v err=%v calls=%d", busy, err, calls.Load())
 			}
+
 			unblock()
 			select {
 			case firstResponse := <-done:
@@ -81,6 +88,7 @@ func TestMCPSlotDuringResponseConversion(t *testing.T) {
 			case <-ctx.Done():
 				t.Fatal("応答変換が完了しなかった", ctx.Err())
 			}
+
 			result, err := second.CallTool(ctx, params)
 			if err != nil || result == nil || result.IsError || calls.Load() != 2 {
 				t.Fatalf("応答変換後の再受付=%+v err=%v calls=%d", result, err, calls.Load())

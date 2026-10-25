@@ -38,6 +38,7 @@ func TestCollectAndSaveReviewsSaveContext(t *testing.T) {
 					cancel()
 				}
 			}
+
 			before := parent.Err()
 			var captured context.Context
 			fetcher := pageFetcherFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
@@ -50,15 +51,18 @@ func TestCollectAndSaveReviewsSaveContext(t *testing.T) {
 				if ctx.Err() != nil || ctx.Value(traceKey{}) != "trace" || !ok || remaining <= 4*time.Second || remaining > 5*time.Second {
 					t.Errorf("保存用context: err=%v value=%v remaining=%v deadline=%v", ctx.Err(), ctx.Value(traceKey{}), remaining, ok)
 				}
+
 				return test.saveErr
 			})
 			_, err := steamapplication.CollectAndSaveReviews(parent, fetcher, saver, 440, collectionOptions(t, steamdomain.CollectionOptionsConfig{}))
 			if captured == nil || !errors.Is(captured.Err(), context.Canceled) || parent.Err() != before {
 				t.Fatalf("派生contextの解放または親の保持: captured=%v parent=%v", captured, parent.Err())
 			}
+
 			if before != nil && !errors.Is(err, before) {
 				t.Fatalf("収集の失敗を失った: %v", err)
 			}
+
 			if test.saveErr != nil && !errors.Is(err, test.saveErr) {
 				t.Fatalf("保存の失敗を失った: %v", err)
 			}

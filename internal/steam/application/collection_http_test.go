@@ -22,6 +22,7 @@ func TestCollectReviewsWithHTTPClient(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		defer mu.Unlock()
+
 		var input struct {
 			AppID     steamdomain.AppID `json:"appid"`
 			Cursor    string            `json:"cursor"`
@@ -33,14 +34,17 @@ func TestCollectReviewsWithHTTPClient(t *testing.T) {
 			http.Error(w, "invalid request", 400)
 			return
 		}
+
 		if input.AppID != 440 || !reflect.DeepEqual(input.Languages, []string{"english"}) {
 			t.Errorf("input=%#v", input)
 		}
+
 		requests = append(requests, steamdomain.PageOptions{Language: "english", Cursor: input.Cursor, PageSize: input.PageSize})
 		response := `{"response":{"reviews":[{"recommendationid":"1"},{"recommendationid":"2"}],"cursor":"A+/="}}`
 		if len(requests) == 2 {
 			response = `{"response":{"reviews":[{"recommendationid":"3"}],"cursor":"B"}}`
 		}
+
 		if _, err := fmt.Fprint(w, response); err != nil {
 			t.Error(err)
 		}
@@ -50,9 +54,11 @@ func TestCollectReviewsWithHTTPClient(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	got, err := steamapplication.CollectReviews(context.Background(), client, 440, collectionOptions(t, steamdomain.CollectionOptionsConfig{PageSize: 2, MaxReviews: 3}))
 	mu.Lock()
 	defer mu.Unlock()
+
 	wantRequests := []steamdomain.PageOptions{{Language: "english", Cursor: "*", PageSize: 2}, {Language: "english", Cursor: "A+/=", PageSize: 1}}
 	if err != nil || got.StopReason != steamdomain.StopReviewLimit || got.PagesFetched != 2 || len(got.Reviews) != 3 || got.Reviews[2].RecommendationID != 3 || !reflect.DeepEqual(requests, wantRequests) {
 		t.Fatalf("result=%#v requests=%#v error=%v", got, requests, err)
@@ -73,6 +79,7 @@ func TestCollectReviewsNumericRecommendationIDs(t *testing.T) {
 			http.Error(w, "unexpected page", http.StatusInternalServerError)
 			return
 		}
+
 		if _, err := fmt.Fprint(w, responses[i]); err != nil {
 			t.Error(err)
 		}
@@ -82,6 +89,7 @@ func TestCollectReviewsNumericRecommendationIDs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	got, err := steamapplication.CollectReviews(t.Context(), client, 440, collectionOptions(t, steamdomain.CollectionOptionsConfig{PageSize: 2, MaxReviews: 4, MaxPages: 3}))
 	want := []steamdomain.Review{
 		{RecommendationID: 0, Text: "最初のゼロ"},

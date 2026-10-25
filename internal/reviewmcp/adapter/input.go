@@ -16,9 +16,11 @@ func parseInput(data []byte) (steamdomain.AppID, steamdomain.CollectionOptions, 
 	if err := json.Unmarshal(data, &input); err != nil {
 		return invalid()
 	}
+
 	appID, options, err := normalizeToolInput(input)
 	if err != nil {
 		return invalid()
 	}
+
 	return appID, options, nil
 }

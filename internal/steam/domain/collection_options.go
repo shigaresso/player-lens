@@ -26,24 +26,30 @@ func normalizeCollectionOptions(options CollectionOptionsConfig) (CollectionOpti
 	if options.PageSize == 0 {
 		options.PageSize = defaults.PageSize
 	}
+
 	page, err := NormalizePageOptions(PageOptions{ReviewType: options.ReviewType, Language: options.Language, PageSize: options.PageSize})
 	if err != nil {
 		return CollectionOptionsConfig{}, fmt.Errorf("prepare collection page options: %w", err)
 	}
+
 	options.Language = page.Language
 	options.ReviewType = page.ReviewType
 	if options.MaxReviews == 0 {
 		options.MaxReviews = defaults.MaxReviews
 	}
+
 	if options.MaxPages == 0 {
 		options.MaxPages = defaults.MaxPages
 	}
+
 	if options.MaxReviews < 1 || options.MaxReviews > MaxCollectionReviews {
 		return CollectionOptionsConfig{}, fmt.Errorf("collection review limit must be between 1 and %d: %w", MaxCollectionReviews, ErrInvalidArgument)
 	}
+
 	if options.MaxPages < 1 || options.MaxPages > MaxCollectionPages {
 		return CollectionOptionsConfig{}, fmt.Errorf("collection page limit must be between 1 and %d: %w", MaxCollectionPages, ErrInvalidArgument)
 	}
+
 	return options, nil
 }
 
@@ -62,9 +68,11 @@ func NewCollectionOptions(config CollectionOptionsConfig) (CollectionOptions, er
 	if err != nil {
 		return CollectionOptions{}, err
 	}
+
 	if normalized == defaultCollectionOptionsConfig() {
 		return CollectionOptions{}, nil
 	}
+
 	return CollectionOptions{config: normalized}, nil
 }
 
@@ -74,6 +82,7 @@ func (options CollectionOptions) Config() CollectionOptionsConfig {
 	if options.config == (CollectionOptionsConfig{}) {
 		return defaultCollectionOptionsConfig()
 	}
+
 	return options.config
 }
 

@@ -34,14 +34,17 @@ func TestMCPNumericRecommendationIDs(t *testing.T) {
 				if appID != 4294967295 {
 					t.Errorf("appID=%d", appID)
 				}
+
 				if calls.Add(1) > 1 {
 					return steamdomain.ReviewPage{}, io.ErrUnexpectedEOF
 				}
+
 				return steamdomain.ReviewPage{Reviews: []steamdomain.Review{{RecommendationID: 0}, {RecommendationID: 18446744073709551615}}, NextCursor: "next"}, nil
 			}), mcpdomain.DefaultLimits(), nil)
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			server := httptest.NewServer(handler)
 			t.Cleanup(server.Close)
 			session := connectClient(t, server.URL, "2026-07-28")
@@ -49,10 +52,12 @@ func TestMCPNumericRecommendationIDs(t *testing.T) {
 			if err != nil || result.IsError != tc.partial {
 				t.Fatalf("result=%+v error=%v", result, err)
 			}
+
 			out := decodeOutput(t, result)
 			if out.Collection.AppID != 4294967295 || out.ErrorCode != tc.wantCode || out.Collection.StopReason != tc.wantReason || out.ReturnedCount != 2 || len(out.Collection.Reviews) != 2 || calls.Load() != tc.wantCalls {
 				t.Fatalf("output=%+v calls=%d", out, calls.Load())
 			}
+
 			if ids := []string{out.Collection.Reviews[0].RecommendationID, out.Collection.Reviews[1].RecommendationID}; !reflect.DeepEqual(ids, []string{"0", "18446744073709551615"}) {
 				t.Fatalf("ID=%v", ids)
 			}

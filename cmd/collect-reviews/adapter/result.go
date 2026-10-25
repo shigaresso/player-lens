@@ -18,16 +18,20 @@ func Run(ctx context.Context, args []string, fetcher steamapplication.PageFetche
 	if err == nil {
 		return 0
 	}
+
 	if errors.Is(err, flag.ErrHelp) {
 		if _, err := fmt.Fprint(stderr, reviewcli.Usage); err != nil {
 			return 1
 		}
+
 		return 0
 	}
+
 	code := 1
 	if errors.Is(err, reviewcli.ErrUsage) {
 		code = 2
 	}
+
 	return Report(stderr, err, code)
 }
 
@@ -36,5 +40,6 @@ func Report(stderr io.Writer, err error, code int) int {
 	if _, err := fmt.Fprintln(stderr, err); err != nil {
 		return 1
 	}
+
 	return code
 }

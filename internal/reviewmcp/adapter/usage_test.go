@@ -31,16 +31,19 @@ func TestCollectionUsageBudget(t *testing.T) {
 			if err != nil || result.IsError {
 				t.Fatalf("初回=%+v %v", result, err)
 			}
+
 			result, err = collect(context.Background(), fetcher, input, gate)
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			out := decodeOutput(t, result)
 			if !result.IsError || out.ErrorCode != tc.code || calls != 1 || out.ReturnedCount != 0 || out.Collection.PagesFetched != 0 || out.Collection.Reviews == nil || len(out.Collection.Reviews) != 0 || out.Collection.StopReason != steamdomain.StopFailed || out.Collection.AppID != 440 || out.Collection.Options.Language != "all" || out.Collection.Options.MaxReviews != 1 || out.Collection.Options.MaxPages != 1 || out.Message == "" {
 				t.Fatalf("拒否=%+v calls=%d", out, calls)
 			}
 		})
 	}
+
 	for _, tc := range []struct {
 		name    string
 		invalid bool
@@ -52,12 +55,14 @@ func TestCollectionUsageBudget(t *testing.T) {
 			gate := mcpdomain.NewLimiter(testLimits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 1, RequestsPerDay: 1, MaxConcurrent: 1}), time.Now)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
+
 			input := json.RawMessage(`{"app_id":440}`)
 			if tc.invalid {
 				input = json.RawMessage(`{"app_id":0}`)
 			} else {
 				cancel()
 			}
+
 			fetcher := fetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				return steamdomain.ReviewPage{}, nil
 			})
@@ -65,6 +70,7 @@ func TestCollectionUsageBudget(t *testing.T) {
 			if err != nil || !result.IsError {
 				t.Fatalf("拒否=%+v %v", result, err)
 			}
+
 			result, err = collect(context.Background(), fetcher, json.RawMessage(`{"app_id":440}`), gate)
 			if err != nil || result.IsError {
 				t.Fatalf("回数が消費された: %+v %v", result, err)
@@ -92,10 +98,12 @@ func TestCollectionOptionsFailureDoesNotConsumeBudget(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			out := decodeOutput(t, result)
 			if !result.IsError || out.ErrorCode != "invalid_input" || calls != 0 || out.Collection.AppID != 0 || out.Collection.Options.Language != "" || out.Collection.Options.PageSize != 0 {
 				t.Fatalf("拒否=%+v calls=%d", out, calls)
 			}
+
 			result, err = collect(t.Context(), fetcher, json.RawMessage(`{"app_id":440}`), gate)
 			if err != nil || result.IsError || calls != 1 {
 				t.Fatalf("後続の有効な入力=%+v err=%v calls=%d", result, err, calls)

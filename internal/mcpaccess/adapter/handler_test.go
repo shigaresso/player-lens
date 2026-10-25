@@ -38,10 +38,12 @@ func TestProtect(t *testing.T) {
 			if publicURL == "" {
 				publicURL = "https://reviews.example/tools"
 			}
+
 			access, err := mcpaccess.New(publicURL)
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			calls := 0
 			handler, err := accessadapter.Protect(access, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				calls++
@@ -50,27 +52,33 @@ func TestProtect(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			request := httptest.NewRequest("POST", "https://reviews.example/tools", nil)
 			request.Host = tc.host
 			if tc.origin != "" {
 				request.Header.Set("Origin", tc.origin)
 			}
+
 			if tc.fetchSite != "" {
 				request.Header.Set("Sec-Fetch-Site", tc.fetchSite)
 			}
+
 			if tc.forwarded != "" {
 				request.Header.Set("Forwarded", "host="+tc.forwarded)
 				request.Header.Set("X-Forwarded-Host", tc.forwarded)
 			}
+
 			response := httptest.NewRecorder()
 			handler.ServeHTTP(response, request)
 			expectedCalls := 0
 			if tc.status == 202 {
 				expectedCalls = 1
 			}
+
 			if response.Code != tc.status || calls != expectedCalls {
 				t.Fatalf("status=%d calls=%d", response.Code, calls)
 			}
+
 			if response.Header().Get("WWW-Authenticate") != "" {
 				t.Fatal("OAuthのchallengeを返した")
 			}
@@ -83,6 +91,7 @@ func TestProtectConfiguration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	for _, tc := range []struct {
 		name   string
 		access *mcpaccess.Access

@@ -40,13 +40,16 @@ func NewClient(httpClient *http.Client, endpoint string) (*Client, error) {
 	if httpClient == nil {
 		return nil, fmt.Errorf("HTTP client is required: %w", steamdomain.ErrInvalidArgument)
 	}
+
 	if endpoint == "" {
 		endpoint = defaultEndpoint
 	}
+
 	parsed, err := url.Parse(endpoint)
 	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Hostname() == "" || parsed.User != nil || parsed.RawQuery != "" || parsed.ForceQuery || parsed.Fragment != "" {
 		return nil, fmt.Errorf("invalid Steam review endpoint: %w", steamdomain.ErrInvalidArgument)
 	}
+
 	clientCopy := *httpClient
 	clientCopy.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
 	return &Client{httpClient: &clientCopy, endpoint: endpoint}, nil
@@ -57,24 +60,30 @@ func (c *Client) FetchReviewsPage(ctx context.Context, appID steamdomain.AppID, 
 	if appID == 0 {
 		return steamdomain.ReviewPage{}, fmt.Errorf("invalid Steam AppID: %w", steamdomain.ErrInvalidArgument)
 	}
+
 	options, err := steamdomain.NormalizePageOptions(options)
 	if err != nil {
 		return steamdomain.ReviewPage{}, fmt.Errorf("prepare Steam review page options: %w", err)
 	}
+
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
+
 	input := newReviewPageRequest(appID, options)
 	query, err := encodeReviewPageQuery(input)
 	if err != nil {
 		return steamdomain.ReviewPage{}, err
 	}
+
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, c.endpoint+"?"+query.Encode(), nil)
 	if err != nil {
 		return steamdomain.ReviewPage{}, fmt.Errorf("create Steam review request: %w", err)
 	}
+
 	response, err := c.httpClient.Do(request)
 	if err != nil {
 		return steamdomain.ReviewPage{}, fmt.Errorf("fetch Steam reviews: %w", err)
 	}
+
 	return readReviewPageResponse(response, appID, options)
 }

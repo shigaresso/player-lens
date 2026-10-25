@@ -21,6 +21,7 @@ func collect(ctx context.Context, fetcher steamapplication.PageFetcher, input js
 		}
 		return encodeResult(steamdomain.Collection{}, failure)
 	}
+
 	var response *mcp.CallToolResult
 	err = mcpapplication.CollectReviews(ctx, fetcher, appID, options, gate, func(result mcpapplication.Result) error {
 		var encodeErr error
@@ -29,6 +30,7 @@ func collect(ctx context.Context, fetcher steamapplication.PageFetcher, input js
 		} else {
 			response, encodeErr = encodeCollectionResult(result.Collection, result.Err)
 		}
+
 		return encodeErr
 	})
 	return response, err

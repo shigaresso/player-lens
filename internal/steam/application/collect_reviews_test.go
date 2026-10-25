@@ -21,6 +21,7 @@ func collectionReviews(ids ...steamdomain.RecommendationID) []steamdomain.Review
 	for _, id := range ids {
 		result = append(result, steamdomain.Review{RecommendationID: id, Text: fmt.Sprintf("本文%d", id), Language: "english"})
 	}
+
 	return result
 }
 
@@ -46,11 +47,13 @@ func TestCollectReviewsPages(t *testing.T) {
 			for i := range tt.requests {
 				tt.requests[i].ReviewType = steamdomain.ReviewTypeAll
 			}
+
 			var requests []steamdomain.PageOptions
 			fetcher := pageFetcherFunc(func(_ context.Context, appID steamdomain.AppID, options steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				if appID != 440 || len(requests) >= len(tt.pages) {
 					t.Fatalf("予期しない取得: appID=%d 回数=%d", appID, len(requests)+1)
 				}
+
 				page := tt.pages[len(requests)]
 				requests = append(requests, options)
 				page.AppID, page.Options = appID, options
@@ -71,5 +74,6 @@ func collectionOptions(t *testing.T, config steamdomain.CollectionOptionsConfig)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	return options
 }

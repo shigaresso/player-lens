@@ -60,6 +60,7 @@ func TestToolInputJSONReceiver(t *testing.T) {
 			} else if err != nil {
 				t.Fatal(err)
 			}
+
 			if got != tc.want {
 				t.Fatalf("input = %+v; want %+v", got, tc.want)
 			}

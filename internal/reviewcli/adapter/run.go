@@ -44,20 +44,25 @@ func Run(ctx context.Context, args []string, fetcher steamapplication.PageFetche
 		if errors.Is(err, flag.ErrHelp) {
 			return flag.ErrHelp
 		}
+
 		return fmt.Errorf("parse review collection arguments: %w", errors.Join(ErrUsage, err))
 	}
+
 	id, err := strconv.ParseUint(*appID, 10, 32)
 	if err != nil || id == 0 || flags.NArg() != 0 {
 		return fmt.Errorf("positive uint32 --app-id and no positional arguments are required: %w", ErrUsage)
 	}
+
 	config.ReviewType, err = steamdomain.ParseReviewType(*reviewType)
 	if err != nil {
 		return fmt.Errorf("prepare review collection arguments: %w", errors.Join(ErrUsage, err))
 	}
+
 	options, err := steamdomain.NewCollectionOptions(config)
 	if err != nil {
 		return fmt.Errorf("prepare review collection arguments: %w", errors.Join(ErrUsage, err))
 	}
+
 	_, err = steamapplication.CollectAndSaveReviews(ctx, fetcher, saver, steamdomain.AppID(id), options)
 	return err
 }

@@ -36,6 +36,7 @@ func NewLimits(config LimitsConfig) (Limits, error) {
 			return Limits{}, fmt.Errorf("MCP の%sの上限は正の整数で指定する: %w", item.name, steamdomain.ErrInvalidArgument)
 		}
 	}
+
 	return Limits{config: config}, nil
 }
 

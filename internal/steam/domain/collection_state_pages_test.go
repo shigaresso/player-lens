@@ -12,6 +12,7 @@ func stateReviews(ids ...steamdomain.RecommendationID) []steamdomain.Review {
 	for _, id := range ids {
 		reviews = append(reviews, steamdomain.Review{RecommendationID: id})
 	}
+
 	return reviews
 }
 
@@ -37,22 +38,27 @@ func TestCollectionStatePages(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			for _, page := range tc.pages {
 				if _, ok := state.NextPage(); !ok {
 					t.Fatal("終了条件の前に停止した")
 				}
+
 				if err := state.AddPage(page); err != nil {
 					t.Fatal(err)
 				}
 			}
+
 			result := state.Result()
 			normalized, err := steamdomain.NewCollectionOptions(tc.options)
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			if result.AppID != 440 || result.Options != normalized.Config() || result.PagesFetched != len(tc.pages) || result.StopReason != tc.reason || !reflect.DeepEqual(result.Reviews, tc.want) {
 				t.Fatalf("result=%#v", result)
 			}
+
 			next, ok := state.NextPage()
 			if ok != (tc.reason == "") || next != tc.next {
 				t.Fatalf("next=%#v available=%v", next, ok)

@@ -51,6 +51,7 @@ func TestNewSteamFetcherCleanup(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	t.Cleanup(closeIdleConnections)
 	fetchPage := func() {
 		t.Helper()

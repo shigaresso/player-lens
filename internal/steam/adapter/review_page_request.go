@@ -46,5 +46,6 @@ func encodeReviewPageQuery(input reviewPageRequest) (url.Values, error) {
 	if err != nil {
 		return nil, fmt.Errorf("encode Steam review request: %w", err)
 	}
+
 	return url.Values{"format": {"json"}, "input_json": {string(data)}}, nil
 }

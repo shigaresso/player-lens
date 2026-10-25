@@ -12,6 +12,7 @@ func NewHandler(mcpHandler http.Handler) http.Handler {
 	if mcpHandler != nil {
 		mux.Handle("/tools", mcpHandler)
 	}
+
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		if r.Method == http.MethodGet {

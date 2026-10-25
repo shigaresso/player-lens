@@ -31,14 +31,17 @@ func TestHealthHandler(t *testing.T) {
 			if response.Code != tt.status {
 				t.Fatalf("status=%d; want=%d", response.Code, tt.status)
 			}
+
 			if tt.status == http.StatusOK {
 				if response.Body.String() != tt.body {
 					t.Errorf("body=%q; want=%q", response.Body.String(), tt.body)
 				}
+
 				if got := response.Header().Get("Content-Type"); got != "text/plain; charset=utf-8" {
 					t.Errorf("Content-Type=%q", got)
 				}
 			}
+
 			if tt.status == http.StatusMethodNotAllowed && response.Header().Get("Allow") != "GET, HEAD" {
 				t.Errorf("Allow=%q", response.Header().Get("Allow"))
 			}

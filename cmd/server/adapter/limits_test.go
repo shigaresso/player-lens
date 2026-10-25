@@ -24,6 +24,7 @@ func TestReadMCPLimits(t *testing.T) {
 			}
 		})
 	}
+
 	for _, key := range []string{"MCP_REQUESTS_PER_MINUTE", "MCP_REQUESTS_PER_DAY", "MCP_MAX_CONCURRENT"} {
 		for _, input := range []string{"0", "-1", "+1", " 1", "1.5", "none", "2147483648"} {
 			t.Run(key+"の不正値"+input+"を拒否する", func(t *testing.T) {
@@ -31,6 +32,7 @@ func TestReadMCPLimits(t *testing.T) {
 					if name == key {
 						return input
 					}
+
 					return ""
 				})
 				if err == nil || limits != (mcpdomain.Limits{}) {

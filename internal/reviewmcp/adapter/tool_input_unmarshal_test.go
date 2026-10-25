@@ -26,6 +26,7 @@ func TestToolInputUnmarshalJSON(t *testing.T) {
 			}
 		})
 	}
+
 	for _, tc := range []struct {
 		name  string
 		input string

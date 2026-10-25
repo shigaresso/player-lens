@@ -24,6 +24,7 @@ func (b *trackedBody) Read(p []byte) (int, error) {
 	if b.readErr != nil {
 		return 0, b.readErr
 	}
+
 	n, err := b.reader.Read(p)
 	b.bytesRead += n
 	return n, err
@@ -33,6 +34,7 @@ func (b *trackedBody) Close() error {
 	if b.onClose != nil {
 		b.onClose()
 	}
+
 	return b.closeErr
 }
 
@@ -70,25 +72,31 @@ func TestFetchReviewsPageBodyLifecycle(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			page, err := client.FetchReviewsPage(context.Background(), 440, steamdomain.PageOptions{})
 			if requestContext == nil || !errors.Is(requestContext.Err(), context.Canceled) {
 				t.Error("操作終了後に取得用 context を解放しなかった")
 			}
+
 			if body.closed != 1 || body.bytesRead > 2*1024*1024+1 || (tt.status != 200 && body.bytesRead != 0) {
 				t.Fatalf("Body closed=%d bytes=%d", body.closed, body.bytesRead)
 			}
+
 			if tt.wantErr != nil && !errors.Is(err, tt.wantErr) {
 				t.Errorf("error=%v want=%v", err, tt.wantErr)
 			}
+
 			if tt.closeErr != nil && !errors.Is(err, tt.closeErr) {
 				t.Errorf("Closeの原因を失った: %v", err)
 			}
+
 			if tt.wantStatus != 0 {
 				var statusError *steamadapter.HTTPStatusError
 				if !errors.As(err, &statusError) || statusError.StatusCode != tt.wantStatus {
 					t.Errorf("HTTPの原因を失った: %v", err)
 				}
 			}
+
 			if tt.wantErr != nil || tt.wantStatus != 0 {
 				if !reflect.DeepEqual(page, steamdomain.ReviewPage{}) {
 					t.Errorf("部分結果を返した: %#v", page)

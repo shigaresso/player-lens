@@ -29,7 +29,9 @@ func TestCollectReviewsContextDeadline(t *testing.T) {
 				cancel()
 				parent, cancel = context.WithTimeout(context.WithValue(context.Background(), collectionContextKey{}, "trace"), tt.duration)
 			}
+
 			defer cancel()
+
 			start := time.Now()
 			var captured context.Context
 			fetcher := pageFetcherFunc(func(ctx context.Context, appID steamdomain.AppID, options steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
@@ -45,18 +47,22 @@ func TestCollectReviewsContextDeadline(t *testing.T) {
 				} else if remaining := deadline.Sub(start); remaining < 119*time.Second || remaining > 121*time.Second {
 					t.Errorf("収集の期限=%v", remaining)
 				}
+
 				if ctx.Value(collectionContextKey{}) != "trace" {
 					t.Error("呼び出し側の context 値を失った")
 				}
+
 				return steamdomain.ReviewPage{AppID: appID, Options: options, Reviews: collectionReviews(1), NextCursor: "A"}, nil
 			})
 			got, err := steamapplication.CollectReviews(parent, fetcher, 440, collectionOptions(t, steamdomain.CollectionOptionsConfig{MaxReviews: 1}))
 			if err != nil || got.StopReason != steamdomain.StopReviewLimit {
 				t.Fatalf("result=%#v error=%v", got, err)
 			}
+
 			if captured == nil || !errors.Is(captured.Err(), context.Canceled) {
 				t.Error("収集後に派生 context を解放していない")
 			}
+
 			if parent.Err() != nil {
 				t.Errorf("呼び出し側の context を終了した: %v", parent.Err())
 			}
@@ -80,6 +86,7 @@ func TestCollectReviewsStoppedContext(t *testing.T) {
 				ctx, cancel = context.WithDeadline(context.Background(), time.Now().Add(-time.Second))
 				defer cancel()
 			}
+
 			fetcher := pageFetcherFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				t.Fatal("終了済み context で取得した")
 				return steamdomain.ReviewPage{}, nil
@@ -95,6 +102,7 @@ func TestCollectReviewsStoppedContext(t *testing.T) {
 func TestCollectReviewsCancellationBetweenPages(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
 	calls := 0
 	var captured context.Context
 	fetcher := pageFetcherFunc(func(pageCtx context.Context, appID steamdomain.AppID, options steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
@@ -102,6 +110,7 @@ func TestCollectReviewsCancellationBetweenPages(t *testing.T) {
 		if calls > 1 {
 			t.Fatal("キャンセル後に次のページを取得した")
 		}
+
 		captured = pageCtx
 		cancel()
 		return steamdomain.ReviewPage{AppID: appID, Options: options, Reviews: collectionReviews(1), NextCursor: "A"}, nil

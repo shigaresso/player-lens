@@ -50,6 +50,7 @@ func TestInputSchemaReviewType(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	var schema struct {
 		Required   []string `json:"required"`
 		Properties map[string]struct {
@@ -62,6 +63,7 @@ func TestInputSchemaReviewType(t *testing.T) {
 	if err := json.Unmarshal(data, &schema); err != nil {
 		t.Fatal(err)
 	}
+
 	field := schema.Properties["review_type"]
 	if field.Type != "string" || field.Default != "all" || field.Description == "" || !reflect.DeepEqual(field.Enum, []string{"", "all", "positive", "negative"}) || !reflect.DeepEqual(schema.Required, []string{"app_id"}) {
 		t.Fatalf("schema=%s", data)
@@ -75,15 +77,18 @@ func TestCollectionReviewTypePartialFailure(t *testing.T) {
 		if options.ReviewType != steamdomain.ReviewTypeNegative {
 			t.Fatalf("options=%+v", options)
 		}
+
 		if calls == 2 {
 			return steamdomain.ReviewPage{}, io.ErrUnexpectedEOF
 		}
+
 		return steamdomain.ReviewPage{Reviews: []steamdomain.Review{{RecommendationID: 1, Text: "取得済み"}}, NextCursor: "next"}, nil
 	})
 	result, err := collect(t.Context(), fetcher, json.RawMessage(`{"app_id":440,"review_type":"negative","page_size":1,"max_reviews":2,"max_pages":2}`), mcpdomain.NewLimiter(mcpdomain.DefaultLimits(), time.Now))
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	out := decodeOutput(t, result)
 	if !result.IsError || out.ErrorCode != "fetch_failed" || out.ReturnedCount != 1 || out.Collection.Options.ReviewType != "negative" || out.Collection.PagesFetched != 1 || out.Collection.StopReason != steamdomain.StopFailed || calls != 2 {
 		t.Fatalf("out=%+v calls=%d", out, calls)

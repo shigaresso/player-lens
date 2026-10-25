@@ -18,6 +18,7 @@ func NewCollectionState(appID AppID, options CollectionOptions) (*CollectionStat
 	if appID == 0 {
 		return nil, fmt.Errorf("positive AppID is required: %w", ErrInvalidArgument)
 	}
+
 	config := options.Config()
 	return &CollectionState{
 		result:      Collection{AppID: appID, Options: config, Reviews: []Review{}},
@@ -33,6 +34,7 @@ func (s *CollectionState) NextPage() (PageOptions, bool) {
 	if s.result.StopReason != "" {
 		return PageOptions{}, false
 	}
+
 	return PageOptions{
 		ReviewType: s.result.Options.ReviewType,
 		Language:   s.result.Options.Language,
@@ -59,30 +61,36 @@ func (s *CollectionState) AddPage(page ReviewPage) error {
 	if s.result.StopReason != "" {
 		return nil
 	}
+
 	s.result.PagesFetched++
 	if len(page.Reviews) == 0 {
 		s.result.StopReason = StopExhausted
 		return nil
 	}
+
 	for _, review := range page.Reviews {
 		if !s.seenIDs[review.RecommendationID] {
 			s.seenIDs[review.RecommendationID] = true
 			s.result.Reviews = append(s.result.Reviews, review)
 		}
 	}
+
 	if len(s.result.Reviews) >= s.result.Options.MaxReviews {
 		s.result.StopReason = StopReviewLimit
 		return nil
 	}
+
 	if s.seenCursors[page.NextCursor] {
 		s.result.StopReason = StopFailed
 		return ErrCursorCycle
 	}
+
 	s.seenCursors[page.NextCursor] = true
 	s.cursor = page.NextCursor
 	if s.result.PagesFetched >= s.result.Options.MaxPages {
 		s.result.StopReason = StopPageLimit
 	}
+
 	return nil
 }
 

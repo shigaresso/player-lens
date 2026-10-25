@@ -28,9 +28,11 @@ func TestUsageFailure(t *testing.T) {
 						t.Fatal("未定義の拒否理由を受け付けた")
 					}
 				}()
+
 				usageFailure(tc.reason)
 				return
 			}
+
 			if got := usageFailure(tc.reason); got != tc.want {
 				t.Fatalf("info=%+v want=%+v", got, tc.want)
 			}

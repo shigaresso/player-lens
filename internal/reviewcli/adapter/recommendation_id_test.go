@@ -25,14 +25,17 @@ func TestRunNumericRecommendationIDs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	var output bytes.Buffer
 	saver, err := jsonoutput.NewSaver(&output)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if err := reviewcli.Run(t.Context(), []string{"--app-id=4294967295", "--max-reviews=2"}, client, saver); err != nil {
 		t.Fatal(err)
 	}
+
 	var got struct {
 		AppID   uint32 `json:"app_id"`
 		Reviews []struct {
@@ -43,9 +46,11 @@ func TestRunNumericRecommendationIDs(t *testing.T) {
 	if err := json.Unmarshal(output.Bytes(), &got); err != nil {
 		t.Fatal(err)
 	}
+
 	if got.AppID != 4294967295 || got.StopReason != "review_limit" || len(got.Reviews) != 2 {
 		t.Fatalf("JSON=%s", output.Bytes())
 	}
+
 	if ids := []string{got.Reviews[0].ID, got.Reviews[1].ID}; !reflect.DeepEqual(ids, []string{"0", "18446744073709551615"}) {
 		t.Fatalf("ID=%v", ids)
 	}

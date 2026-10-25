@@ -22,6 +22,7 @@ func clientWithResponse(t *testing.T, body io.ReadCloser) *steamadapter.Client {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	return client
 }
 
@@ -80,8 +81,10 @@ func TestFetchReviewsPageResponseSize(t *testing.T) {
 				if err == nil || !reflect.DeepEqual(page, steamdomain.ReviewPage{}) {
 					t.Fatalf("page=%#v error=%v", page, err)
 				}
+
 				return
 			}
+
 			if err != nil || page.AppID != 440 || len(page.Reviews) != 0 {
 				t.Fatalf("page=%#v error=%v", page, err)
 			}

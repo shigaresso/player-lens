@@ -11,6 +11,7 @@ func TestAccessPolicy(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	for _, tc := range []struct {
 		name                 string
 		access               *mcpaccess.Access

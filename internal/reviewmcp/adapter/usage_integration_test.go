@@ -38,31 +38,38 @@ func TestMCPSharedUsageWindows(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
+
 				server := httptest.NewServer(handler)
 				t.Cleanup(server.Close)
 				first := connectClient(t, server.URL, version)
 				second := connectClient(t, server.URL, versions[(i+1)%len(versions)])
 				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 				defer cancel()
+
 				if _, err := second.ListTools(ctx, nil); err != nil {
 					t.Fatal(err)
 				}
+
 				invalid, err := second.CallTool(ctx, &mcp.CallToolParams{Name: "collect_reviews", Arguments: map[string]any{"app_id": 0}})
 				if err != nil || !invalid.IsError || decodeOutput(t, invalid).ErrorCode != "invalid_input" {
 					t.Fatalf("不正入力=%+v %v", invalid, err)
 				}
+
 				if _, err := second.CallTool(ctx, &mcp.CallToolParams{Name: "missing", Arguments: json.RawMessage(`{}`)}); err == nil {
 					t.Fatal("未定義ツールが成功した")
 				}
+
 				params := &mcp.CallToolParams{Name: "collect_reviews", Arguments: map[string]any{"app_id": 440}}
 				result, err := first.CallTool(ctx, params)
 				if err != nil || result.IsError || calls.Load() != 1 {
 					t.Fatalf("初期処理が枠を消費した: %+v %v", result, err)
 				}
+
 				result, err = second.CallTool(ctx, params)
 				if err != nil {
 					t.Fatal(err)
 				}
+
 				out := decodeOutput(t, result)
 				if !result.IsError || out.ErrorCode != tc.code || calls.Load() != 1 || out.Collection.PagesFetched != 0 || out.Collection.StopReason != steamdomain.StopFailed || out.ReturnedCount != 0 {
 					t.Fatalf("共有制限=%+v calls=%d", out, calls.Load())
@@ -79,6 +86,7 @@ func TestMCPSharedConcurrentSlots(t *testing.T) {
 			proceed := make(chan struct{})
 			unblock := sync.OnceFunc(func() { close(proceed) })
 			defer unblock()
+
 			var calls atomic.Int32
 			handler, err := NewHandler(fetchFunc(func(ctx context.Context, _ steamdomain.AppID, _ steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				if calls.Add(1) == 1 {
@@ -89,17 +97,20 @@ func TestMCPSharedConcurrentSlots(t *testing.T) {
 						return steamdomain.ReviewPage{}, ctx.Err()
 					}
 				}
+
 				return steamdomain.ReviewPage{}, nil
 			}), testLimits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 2, RequestsPerDay: 2, MaxConcurrent: 1}), nil)
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			server := httptest.NewServer(handler)
 			t.Cleanup(server.Close)
 			first := connectClient(t, server.URL, version)
 			second := connectClient(t, server.URL, version)
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
+
 			params := &mcp.CallToolParams{Name: "collect_reviews", Arguments: map[string]any{"app_id": 440}}
 			done := make(chan error, 1)
 			finished := make(chan struct{})
@@ -108,12 +119,15 @@ func TestMCPSharedConcurrentSlots(t *testing.T) {
 				unblock()
 				<-finished
 			}()
+
 			go func() {
 				defer close(finished)
+
 				result, err := first.CallTool(ctx, params)
 				if err == nil && result.IsError {
 					err = errors.New("受付済みの収集が失敗した")
 				}
+
 				done <- err
 			}()
 			select {
@@ -121,10 +135,12 @@ func TestMCPSharedConcurrentSlots(t *testing.T) {
 			case <-ctx.Done():
 				t.Fatal("取得が開始しなかった")
 			}
+
 			result, err := second.CallTool(ctx, params)
 			if err != nil || !result.IsError || decodeOutput(t, result).ErrorCode != "busy" || calls.Load() != 1 {
 				t.Fatalf("実行中=%+v %v", result, err)
 			}
+
 			unblock()
 			select {
 			case err := <-done:
@@ -134,10 +150,12 @@ func TestMCPSharedConcurrentSlots(t *testing.T) {
 			case <-ctx.Done():
 				t.Fatal("取得が完了しなかった")
 			}
+
 			result, err = second.CallTool(ctx, params)
 			if err != nil || result.IsError || calls.Load() != 2 {
 				t.Fatalf("返却後=%+v %v", result, err)
 			}
+
 			result, err = second.CallTool(ctx, params)
 			if err != nil || !result.IsError || decodeOutput(t, result).ErrorCode != "daily_limit_reached" || calls.Load() != 2 {
 				t.Fatalf("開始回数=%+v %v", result, err)

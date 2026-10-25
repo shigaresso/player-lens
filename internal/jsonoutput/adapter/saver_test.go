@@ -26,9 +26,11 @@ func (w *testWriter) Write(data []byte) (int, error) {
 	if w.err != nil {
 		return 0, w.err
 	}
+
 	if w.short {
 		return len(data) - 1, nil
 	}
+
 	return w.Buffer.Write(data)
 }
 func (w *testWriter) Close() error { w.closed = true; return nil }
@@ -55,27 +57,32 @@ func TestSaveCollection(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			var destination steamapplication.CollectionSaver = saver
 			ctx, cancel := context.WithCancel(t.Context())
 			t.Cleanup(cancel)
 			if test.canceled {
 				cancel()
 			}
+
 			if test.expired {
 				var stop context.CancelFunc
 				ctx, stop = context.WithDeadline(ctx, time.Now().Add(-time.Second))
 				t.Cleanup(stop)
 			}
+
 			input := steamdomain.Collection{AppID: 440, Reviews: []steamdomain.Review{}, StopReason: steamdomain.StopExhausted}
 			err = destination.SaveCollection(ctx, input)
 			if !errors.Is(err, test.wantErr) || writer.calls != test.calls || writer.closed {
 				t.Fatalf("err=%v calls=%d closed=%v", err, writer.calls, writer.closed)
 			}
+
 			if test.wantErr == nil {
 				want, err := jsonoutput.MarshalCollection(input)
 				if err != nil {
 					t.Fatal(err)
 				}
+
 				if !bytes.Equal(writer.Bytes(), append(want, '\n')) {
 					t.Fatalf("JSONと改行: %q", writer.Bytes())
 				}

@@ -34,9 +34,11 @@ func TestCollectReviewsFailure(t *testing.T) {
 				if calls > tt.failOn {
 					t.Fatal("失敗後に再取得した")
 				}
+
 				if calls == tt.failOn {
 					return steamdomain.ReviewPage{}, errors.Join(tt.cause, tt.otherCause)
 				}
+
 				return steamdomain.ReviewPage{AppID: 440, Options: options, Reviews: collectionReviews(1), NextCursor: "A"}, nil
 			})
 			options := steamdomain.CollectionOptionsConfig{PageSize: 1, MaxReviews: 3, MaxPages: 4}
@@ -45,12 +47,15 @@ func TestCollectReviewsFailure(t *testing.T) {
 			if tt.failOn > 1 {
 				want = collectionReviews(1)
 			}
+
 			if calls != tt.failOn || got.AppID != 440 || got.Options.Language != "english" || got.Options.PageSize != 1 || got.Options.MaxReviews != 3 || got.Options.MaxPages != 4 || got.PagesFetched != tt.failOn-1 || got.StopReason != steamdomain.StopFailed || !reflect.DeepEqual(got.Reviews, want) || !errors.Is(err, tt.cause) {
 				t.Fatalf("result=%#v calls=%d error=%v", got, calls, err)
 			}
+
 			if tt.otherCause != nil && !errors.Is(err, tt.otherCause) {
 				t.Fatalf("追加の原因を失った: %v", err)
 			}
+
 			var status *steamadapter.HTTPStatusError
 			if errors.As(tt.cause, &status) {
 				var gotStatus *steamadapter.HTTPStatusError

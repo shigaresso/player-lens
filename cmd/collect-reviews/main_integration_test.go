@@ -17,6 +17,7 @@ func TestCLIProcessHelpAndInvalidInput(t *testing.T) {
 	if output, err := build.CombinedOutput(); err != nil {
 		t.Fatalf("CLIビルド: %s err=%v", output, err)
 	}
+
 	for _, test := range []struct {
 		name string
 		args []string
@@ -38,21 +39,26 @@ func TestCLIProcessHelpAndInvalidInput(t *testing.T) {
 				if !errors.As(err, &exit) {
 					t.Fatal(err)
 				}
+
 				code = exit.ExitCode()
 			}
+
 			if code != test.code || stdout.Len() != 0 || stderr.Len() == 0 {
 				t.Fatalf("code=%d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
 			}
 		})
 	}
+
 	t.Run("診断先の閉じたpipeも終了コード1で報告する", func(t *testing.T) {
 		reader, writer, err := os.Pipe()
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		if err := reader.Close(); err != nil {
 			t.Fatal(err)
 		}
+
 		t.Cleanup(func() {
 			if err := writer.Close(); err != nil {
 				t.Error(err)

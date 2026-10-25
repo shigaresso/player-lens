@@ -17,5 +17,6 @@ func testLimits(t *testing.T, config LimitsConfig) Limits {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	return limits
 }

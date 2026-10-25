@@ -33,22 +33,27 @@ func TestFetchReviewsPageReviewType(t *testing.T) {
 				if err := json.Unmarshal([]byte(r.URL.Query().Get("input_json")), &input); err != nil {
 					t.Fatal(err)
 				}
+
 				if input.ReviewType == nil || *input.ReviewType != tt.wantType {
 					t.Errorf("review_type=%v want=%d", input.ReviewType, tt.wantType)
 				}
+
 				body := `{"response":{"reviews":[{"recommendationid":"123","voted_up":false}],"cursor":"next"}}`
 				if tt.recommended {
 					body = strings.Replace(body, "false", "true", 1)
 				}
+
 				return &http.Response{StatusCode: 200, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(body))}, nil
 			})}, "")
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			got, err := client.FetchReviewsPage(t.Context(), 440, steamdomain.PageOptions{ReviewType: tt.input, PageSize: 1})
 			if err != nil || calls != 1 || len(got.Reviews) != 1 || got.Reviews[0].Recommended != tt.recommended {
 				t.Fatalf("page=%+v calls=%d err=%v", got, calls, err)
 			}
+
 			want := tt.input
 			if got.Options.ReviewType != want {
 				t.Fatalf("条件を失った: %+v", got.Options)

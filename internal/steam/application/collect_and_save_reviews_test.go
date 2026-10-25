@@ -56,6 +56,7 @@ func TestCollectAndSaveReviewsInvalidInput(t *testing.T) {
 			if test.nilSaver {
 				saver = nil
 			}
+
 			result, err := steamapplication.CollectAndSaveReviews(t.Context(), fetcher, saver, test.appID, collectionOptions(t, test.options))
 			if !errors.Is(err, steamdomain.ErrInvalidArgument) || !reflect.DeepEqual(result, steamdomain.Collection{}) {
 				t.Fatalf("result=%+v err=%v", result, err)

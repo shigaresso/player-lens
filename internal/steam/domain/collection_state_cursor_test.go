@@ -29,16 +29,19 @@ func TestCollectionStateCursor(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			for i, page := range tc.pages {
 				err = state.AddPage(page)
 				if i < len(tc.pages)-1 && err != nil {
 					t.Fatal(err)
 				}
 			}
+
 			result := state.Result()
 			if (err != nil) != tc.failed || (tc.failed && !errors.Is(err, steamdomain.ErrCursorCycle)) || result.PagesFetched != len(tc.pages) || result.StopReason != tc.reason || !reflect.DeepEqual(result.Reviews, tc.want) {
 				t.Fatalf("result=%#v err=%v", result, err)
 			}
+
 			if next, ok := state.NextPage(); ok || next != (steamdomain.PageOptions{}) {
 				t.Fatalf("終了後の next=%#v available=%v", next, ok)
 			}

@@ -25,6 +25,7 @@ func TestCollectReviewsPanicReleasesSlot(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			gate := mcpdomain.NewLimiter(limits, time.Now)
 			cause := errors.New("panic cause")
 			var fetchedContext context.Context
@@ -33,6 +34,7 @@ func TestCollectReviewsPanicReleasesSlot(t *testing.T) {
 				if tc.duringFetch {
 					panic(cause)
 				}
+
 				return steamdomain.ReviewPage{}, nil
 			})
 			responses := 0
@@ -42,6 +44,7 @@ func TestCollectReviewsPanicReleasesSlot(t *testing.T) {
 						t.Errorf("panic の原因=%v; want=%v", got, cause)
 					}
 				}()
+
 				err := mcpapplication.CollectReviews(t.Context(), fetcher, 440, steamdomain.CollectionOptions{}, gate, func(mcpapplication.Result) error {
 					responses++
 					panic(cause)
@@ -51,13 +54,16 @@ func TestCollectReviewsPanicReleasesSlot(t *testing.T) {
 			if responses != tc.wantResponses {
 				t.Fatalf("応答変換の呼び出し回数=%d; want=%d", responses, tc.wantResponses)
 			}
+
 			if fetchedContext == nil || !errors.Is(fetchedContext.Err(), context.Canceled) || t.Context().Err() != nil {
 				t.Fatal("panic 後に所有する context だけを解放しなかった")
 			}
+
 			release, reason := gate.Acquire()
 			if reason != mcpdomain.NotRejected {
 				t.Fatalf("panic 後に同時枠を返却しなかった: %v", reason)
 			}
+
 			release()
 			if release, reason := gate.Acquire(); release != nil || reason != mcpdomain.MinuteLimitReached {
 				t.Fatalf("panic 後に開始回数を戻した: %v", reason)

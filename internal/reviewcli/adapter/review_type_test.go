@@ -34,6 +34,7 @@ func TestRunReviewType(t *testing.T) {
 				if tt.invalid || id != 440 || options.ReviewType != tt.want {
 					t.Fatalf("取得条件=%+v", options)
 				}
+
 				return steamdomain.ReviewPage{}, nil
 			})
 			saver := saverFunc(func(_ context.Context, result steamdomain.Collection) error {
@@ -41,6 +42,7 @@ func TestRunReviewType(t *testing.T) {
 				if tt.invalid || result.Options.ReviewType != tt.want || result.StopReason != steamdomain.StopExhausted {
 					t.Fatalf("保存条件=%+v", result)
 				}
+
 				return nil
 			})
 			args := append([]string{"--app-id=440", "--max-reviews=1", "--max-pages=1"}, tt.args...)
@@ -54,6 +56,7 @@ func TestRunReviewType(t *testing.T) {
 			}
 		})
 	}
+
 	if !strings.Contains(reviewcli.Usage, "--review-type") || !strings.Contains(reviewcli.Usage, "positive") || !strings.Contains(reviewcli.Usage, "negative") {
 		t.Fatal("評価種別の使用方法がない")
 	}

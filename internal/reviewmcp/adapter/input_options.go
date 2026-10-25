@@ -17,21 +17,26 @@ func normalizeToolInput(input toolInput) (steamdomain.AppID, steamdomain.Collect
 	if input.AppID == 0 || input.MaxReviews < 0 || input.MaxReviews > maxReviews || input.MaxPages < 0 || input.MaxPages > maxPages {
 		return 0, steamdomain.CollectionOptions{}, steamdomain.ErrInvalidArgument
 	}
+
 	if input.MaxReviews == 0 {
 		input.MaxReviews = defaultReviews
 	}
+
 	if input.MaxPages == 0 {
 		input.MaxPages = defaultPages
 	}
+
 	reviewType, err := steamdomain.ParseReviewType(input.ReviewType)
 	if err != nil {
 		return 0, steamdomain.CollectionOptions{}, steamdomain.ErrInvalidArgument
 	}
+
 	options, err := steamdomain.NewCollectionOptions(steamdomain.CollectionOptionsConfig{
 		ReviewType: reviewType, Language: input.Language, PageSize: input.PageSize, MaxReviews: input.MaxReviews, MaxPages: input.MaxPages,
 	})
 	if err != nil {
 		return 0, steamdomain.CollectionOptions{}, steamdomain.ErrInvalidArgument
 	}
+
 	return input.AppID, options, nil
 }

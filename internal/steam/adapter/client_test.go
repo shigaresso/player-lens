@@ -32,14 +32,17 @@ func TestFetchReviewsPage(t *testing.T) {
 				if r.Method != http.MethodGet || r.URL.Query().Get("format") != "json" {
 					t.Errorf("request = %s %s", r.Method, r.URL)
 				}
+
 				var got map[string]any
 				if err := json.Unmarshal([]byte(r.URL.Query().Get("input_json")), &got); err != nil {
 					t.Error(err)
 				}
+
 				want := map[string]any{"appid": float64(440), "filter": float64(1), "languages": []any{tt.wantOptions.Language}, "cursor": tt.wantOptions.Cursor, "num_per_page": float64(tt.wantOptions.PageSize), "review_type": float64(0), "purchase_type": float64(1), "filter_offtopic_activity": true}
 				if !reflect.DeepEqual(got, want) {
 					t.Errorf("input_json = %#v, want %#v", got, want)
 				}
+
 				if _, err := fmt.Fprint(w, tt.response); err != nil {
 					t.Error(err)
 				}
@@ -49,10 +52,12 @@ func TestFetchReviewsPage(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			got, err := client.FetchReviewsPage(context.Background(), 440, tt.options)
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			want := steamdomain.ReviewPage{AppID: 440, Options: tt.wantOptions, Reviews: tt.wantReviews, NextCursor: tt.cursor}
 			if !reflect.DeepEqual(got, want) {
 				t.Errorf("page = %#v, want %#v", got, want)

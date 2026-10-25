@@ -17,6 +17,7 @@ func newCollectReviewsHandler(fetcher steamapplication.PageFetcher, requestConte
 		stop := context.AfterFunc(sdkContext, cancel)
 		defer stop()
 		defer cancel()
+
 		return collect(ctx, fetcher, request.Params.Arguments, gate)
 	}
 }

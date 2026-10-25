@@ -23,11 +23,14 @@ func ReadMCPLimits(getenv func(string) string) (mcpdomain.Limits, error) {
 		if value == "" {
 			continue
 		}
+
 		number, err := strconv.ParseUint(value, 10, 31)
 		if err != nil {
 			return mcpdomain.Limits{}, fmt.Errorf("%s は正の整数で指定する: %w", item.key, err)
 		}
+
 		*item.target = int(number)
 	}
+
 	return mcpdomain.NewLimits(config)
 }

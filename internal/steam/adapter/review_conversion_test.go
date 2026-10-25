@@ -70,6 +70,7 @@ func TestConvertReviewInvalidID(t *testing.T) {
 			if got != (steamdomain.Review{}) || !errors.Is(err, ErrInvalidResponse) || !errors.Is(err, tc.cause) {
 				t.Fatalf("review=%+v err=%v", got, err)
 			}
+
 			var numberError *strconv.NumError
 			if !errors.As(err, &numberError) || numberError.Num != tc.id {
 				t.Fatalf("数値変換の入力と原因を保持しなかった: %v", err)

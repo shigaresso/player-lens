@@ -23,8 +23,10 @@ func TestFetchReviewsPageHTTPStatus(t *testing.T) {
 					if _, err := fmt.Fprint(w, `{"response":{}}`); err != nil {
 						t.Error(err)
 					}
+
 					return
 				}
+
 				calls++
 				w.Header().Set("Location", "/redirect")
 				w.WriteHeader(status)
@@ -36,11 +38,13 @@ func TestFetchReviewsPageHTTPStatus(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			page, err := client.FetchReviewsPage(context.Background(), 440, steamdomain.PageOptions{})
 			var statusError *steamadapter.HTTPStatusError
 			if !errors.As(err, &statusError) || statusError.StatusCode != status || !reflect.DeepEqual(page, steamdomain.ReviewPage{}) || calls != 1 || redirects != 0 || callbacks != 0 {
 				t.Fatalf("page=%#v error=%v calls=%d redirects=%d callbacks=%d", page, err, calls, redirects, callbacks)
 			}
+
 			if err := httpClient.CheckRedirect(nil, nil); err != nil || callbacks != 1 {
 				t.Fatal("呼び出し側のクライアントを変更した")
 			}

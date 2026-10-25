@@ -29,23 +29,29 @@ func TestReviewTypeNormalization(t *testing.T) {
 			if errors.Is(pageErr, steamdomain.ErrInvalidArgument) != tt.invalid || errors.Is(collectionErr, steamdomain.ErrInvalidArgument) != tt.invalid {
 				t.Fatalf("page error=%v collection error=%v", pageErr, collectionErr)
 			}
+
 			if tt.invalid {
 				if page != (steamdomain.PageOptions{}) || collection != (steamdomain.CollectionOptions{}) {
 					t.Fatalf("拒否時に結果を返した: page=%+v collection=%+v", page, collection)
 				}
+
 				return
 			}
+
 			if pageErr != nil || collectionErr != nil || page.ReviewType != tt.want || collection.Config().ReviewType != tt.want {
 				t.Fatalf("page=%+v collection=%+v errors=%v/%v", page, collection, pageErr, collectionErr)
 			}
+
 			againPage, err := steamdomain.NormalizePageOptions(page)
 			if err != nil || againPage != page {
 				t.Fatalf("page 再適用=%+v err=%v", againPage, err)
 			}
+
 			againCollection, err := steamdomain.NewCollectionOptions(collection.Config())
 			if err != nil || againCollection != collection {
 				t.Fatalf("collection 再適用=%+v err=%v", againCollection, err)
 			}
+
 			if pageInput.ReviewType != tt.input || collectionInput.ReviewType != tt.input {
 				t.Fatal("入力を変更した")
 			}

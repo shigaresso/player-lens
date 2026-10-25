@@ -25,17 +25,20 @@ func TestNewCollectionState(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			got := state.Result()
 			want := steamdomain.Collection{AppID: tc.appID, Options: tc.want, Reviews: []steamdomain.Review{}}
 			if !reflect.DeepEqual(got, want) {
 				t.Fatalf("result=%#v; want=%#v", got, want)
 			}
+
 			next, ok := state.NextPage()
 			if !ok || next != (steamdomain.PageOptions{ReviewType: tc.want.ReviewType, Language: tc.want.Language, Cursor: steamdomain.FirstPageCursor, PageSize: tc.size}) {
 				t.Fatalf("next=%#v available=%v", next, ok)
 			}
 		})
 	}
+
 	for _, tc := range []struct {
 		name    string
 		appID   steamdomain.AppID
@@ -58,5 +61,6 @@ func collectionOptions(t *testing.T, config steamdomain.CollectionOptionsConfig)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	return options
 }

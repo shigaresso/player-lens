@@ -46,9 +46,11 @@ func encodeCollectionResult(collection steamdomain.Collection, collectErr error)
 	if err != nil {
 		return nil, &toolResultEncodingError{cause: errors.Join(err, collectErr)}
 	}
+
 	if collectErr != nil {
 		result.SetError(errors.Join(result.GetError(), collectErr))
 	}
+
 	return result, nil
 }
 
@@ -59,24 +61,30 @@ func encodeResult(collection steamdomain.Collection, failure toolFailureInfo) (*
 	if err != nil {
 		return nil, err
 	}
+
 	withinLimit, err := toolResultWithinLimit(result)
 	if err != nil {
 		return nil, err
 	}
+
 	if withinLimit {
 		return result, nil
 	}
+
 	result, err = encodeOversizedResult(collection)
 	if err != nil {
 		return nil, err
 	}
+
 	withinLimit, err = toolResultWithinLimit(result)
 	if err != nil {
 		return nil, err
 	}
+
 	if !withinLimit {
 		return nil, fmt.Errorf("encode MCP result after omitting reviews: %w", errResponseTooLarge)
 	}
+
 	return result, nil
 }
 
@@ -86,6 +94,7 @@ func toolResultWithinLimit(result *mcp.CallToolResult) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("measure MCP result: %w", err)
 	}
+
 	return len(serialized) <= maxResultBytes, nil
 }
 
@@ -102,6 +111,7 @@ func encodeOversizedResult(collection steamdomain.Collection) (*mcp.CallToolResu
 	if err != nil {
 		return nil, err
 	}
+
 	result.SetError(errResponseTooLarge)
 	return result, nil
 }
@@ -112,6 +122,7 @@ func marshalToolResult(collection steamdomain.Collection, failure toolFailureInf
 	if err != nil {
 		return nil, fmt.Errorf("convert MCP collection: %w", err)
 	}
+
 	out := toolOutput{
 		Collection: data, ReturnedCount: len(collection.Reviews), OmittedReviews: omitted,
 		ErrorCode: failure.code, Message: failure.message,
@@ -121,6 +132,7 @@ func marshalToolResult(collection steamdomain.Collection, failure toolFailureInf
 	if err != nil {
 		return nil, fmt.Errorf("encode MCP result: %w", err)
 	}
+
 	return &mcp.CallToolResult{
 		Content:           []mcp.Content{&mcp.TextContent{Text: string(content)}},
 		StructuredContent: json.RawMessage(content),

@@ -30,9 +30,11 @@ func TestCollectAndSaveReviewsFailure(t *testing.T) {
 				if calls == test.failAt {
 					return steamdomain.ReviewPage{}, io.ErrUnexpectedEOF
 				}
+
 				if calls == 1 {
 					return steamdomain.ReviewPage{Reviews: collectionReviews(1), NextCursor: "next"}, nil
 				}
+
 				return steamdomain.ReviewPage{}, nil
 			})
 			saver := collectionSaverFunc(func(_ context.Context, result steamdomain.Collection) error {
@@ -44,6 +46,7 @@ func TestCollectAndSaveReviewsFailure(t *testing.T) {
 			if saves != 1 || !reflect.DeepEqual(saved, result) || result.AppID != 440 {
 				t.Fatalf("result=%+v saved=%+v saves=%d err=%v", result, saved, saves, err)
 			}
+
 			if test.failAt > 0 {
 				if !errors.Is(err, io.ErrUnexpectedEOF) || calls != test.failAt || result.PagesFetched != test.failAt-1 || result.StopReason != steamdomain.StopFailed {
 					t.Fatalf("取得失敗と部分結果: result=%+v calls=%d err=%v", result, calls, err)
@@ -51,6 +54,7 @@ func TestCollectAndSaveReviewsFailure(t *testing.T) {
 			} else if result.StopReason != steamdomain.StopExhausted {
 				t.Fatalf("保存失敗で収集の終了理由を変えた: %+v", result)
 			}
+
 			if test.saveErr != nil && !errors.Is(err, test.saveErr) {
 				t.Fatalf("保存の原因を失った: %v", err)
 			}

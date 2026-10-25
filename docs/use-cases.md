@@ -20,6 +20,8 @@ Issue #38 で adapter 内のリクエスト変換を分離した。Issue #43 で
 
 Issue #39 で応答解釈も分離した。`decodeReviewPage` は本文と取得条件からページを作り、Issue #43 の `parseRecommendationID` は ID の文字列を0を含む uint64 に変換する。Body の読み取り・サイズ制限・解放は `FetchReviewsPage` に残す。
 
+Issue #58 で、重複・カーソル・成功ページ数・終了判断を steam/domain の CollectionState にまとめた。生成時に App ID と条件を検査・正規化し、NextPage と AddPage で続行と状態更新を扱う。CollectReviews は取得・期限・キャンセルと失敗の原因、Fail による失敗確定を担当する。Result はレビュー配列もコピーして返す。状態は通信や context を持たず、新しいユースケースではない。[ADR-0014](adr/0014-steam-collection-state.md) に境界を記録する。
+
 `NormalizePageOptions` と `NormalizeCollectionOptions` は通信しない取得条件の正規化と検査を担当する。`jsonoutput.MarshalCollection` は通信しない JSON 変換、`jsonoutput.Saver` は writer への出力を担当する。DB の永続保存・分析・レポート生成は未導入とする。
 
 入口側が HTTP クライアントと `Client` を組み立て、同じ `CollectReviews` へ渡す。操作内に具体的な HTTP クライアントや DB を固定せず、同じ Go アプリケーション内の呼び出しに HTTP・MCP 通信を挟まない。
@@ -52,7 +54,7 @@ AppID・RecommendationID・TimestampCreated・TimestampUpdated は steam/domain 
 
 ## レイヤー内の配置（Issue #56）
 
-- steam/domain は型・API 列挙値と純粋な正規化、steam/application は操作と PageFetcher・CollectionSaver、steam/adapter は HTTP と要求・応答の変換を置く。ReviewType の基底型と定数の定義元は維持した。
+- steam/domain は型・API 列挙値・純粋な正規化と収集状態、steam/application は操作と PageFetcher・CollectionSaver、steam/adapter は HTTP と要求・応答の変換を置く。ReviewType の基底型と定数の定義元は維持した。
 - reviewmcp/domain は Limits・Limiter と受付・返却、application は収集の実行と期限、adapter は HTTP/SDK と入力・結果・ガイドを置く。入力不正は取得と受付の前に拒否し、拒否時の JSON と取得失敗の原因保持を維持する。
 - reviewcli/adapter と jsonoutput/adapter は入口と出力の既存の責務を維持する。空の domain/application は追加しない。
 - mcpaccess/domain の Access は IsInitialized・AllowsHost で設定と照合を提供し、adapter.Protect が設定と next を受け取って HTTP を保護する。内部の authority 表現は公開しない。

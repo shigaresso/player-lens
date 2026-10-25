@@ -21,52 +21,34 @@ type PageFetcher interface {
 // 呼び出し側の短い期限を優先し、収集全体を最大2分とする。
 // 取得・循環・context の失敗では部分結果と StopFailed、原因を保持したエラーを返す。
 func CollectReviews(ctx context.Context, fetcher PageFetcher, appID steamdomain.AppID, options steamdomain.CollectionOptions) (steamdomain.Collection, error) {
-	if fetcher == nil || appID == 0 {
+	if fetcher == nil {
 		return steamdomain.Collection{}, fmt.Errorf("page fetcher and positive AppID are required: %w", steamdomain.ErrInvalidArgument)
 	}
-	options, err := steamdomain.NormalizeCollectionOptions(options)
+	state, err := steamdomain.NewCollectionState(appID, options)
 	if err != nil {
 		return steamdomain.Collection{}, fmt.Errorf("prepare Steam review collection: %w", err)
 	}
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
-	result := steamdomain.Collection{AppID: appID, Options: options, Reviews: []steamdomain.Review{}}
-	seenIDs := make(map[steamdomain.RecommendationID]bool)
-	seenCursors := map[string]bool{steamdomain.FirstPageCursor: true}
-	cursor := steamdomain.FirstPageCursor
-	for result.PagesFetched < options.MaxPages {
+	for {
+		next, more := state.NextPage()
+		if !more {
+			return state.Result(), nil
+		}
 		if err := ctx.Err(); err != nil {
-			result.StopReason = steamdomain.StopFailed
+			state.Fail()
+			result := state.Result()
 			return result, fmt.Errorf("collect Steam reviews before page %d: %w", result.PagesFetched+1, err)
 		}
-		size := min(options.PageSize, options.MaxReviews-len(result.Reviews))
-		page, err := fetcher.FetchReviewsPage(ctx, appID, steamdomain.PageOptions{ReviewType: options.ReviewType, Language: options.Language, Cursor: cursor, PageSize: size})
+		page, err := fetcher.FetchReviewsPage(ctx, appID, next)
 		if err != nil {
-			result.StopReason = steamdomain.StopFailed
+			state.Fail()
+			result := state.Result()
 			return result, fmt.Errorf("collect Steam review page %d: %w", result.PagesFetched+1, err)
 		}
-		result.PagesFetched++
-		if len(page.Reviews) == 0 {
-			result.StopReason = steamdomain.StopExhausted
-			return result, nil
+		if err := state.AddPage(page); err != nil {
+			result := state.Result()
+			return result, fmt.Errorf("collect Steam reviews after page %d: %w", result.PagesFetched, err)
 		}
-		for _, review := range page.Reviews {
-			if !seenIDs[review.RecommendationID] {
-				seenIDs[review.RecommendationID] = true
-				result.Reviews = append(result.Reviews, review)
-			}
-		}
-		if len(result.Reviews) >= options.MaxReviews {
-			result.StopReason = steamdomain.StopReviewLimit
-			return result, nil
-		}
-		if seenCursors[page.NextCursor] {
-			result.StopReason = steamdomain.StopFailed
-			return result, fmt.Errorf("collect Steam reviews after page %d: %w", result.PagesFetched, steamdomain.ErrCursorCycle)
-		}
-		seenCursors[page.NextCursor] = true
-		cursor = page.NextCursor
 	}
-	result.StopReason = steamdomain.StopPageLimit
-	return result, nil
 }

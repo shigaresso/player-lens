@@ -14,7 +14,7 @@
 
 | 既存フォルダ | domain | application | adapter |
 | --- | --- | --- | --- |
-| internal/steam | ID・API 数値型・レビュー・条件・結果・正規化 | 収集・収集保存と利用側 interface | HTTP クライアント・要求と応答の変換 |
+| internal/steam | ID・API 数値型・レビュー・条件・結果・正規化と収集状態 | 収集・収集保存と利用側 interface | HTTP クライアント・要求と応答の変換 |
 | internal/reviewmcp | 上限と受付・返却ルール | 8秒の期限・利用枠と収集の実行 | HTTP/SDK・入力・schema・結果・分析ガイド |
 | internal/reviewcli | 追加しない | 追加しない | 引数の解析と収集保存への接続 |
 | internal/jsonoutput | 追加しない | 追加しない | JSON 変換と writer 出力 |
@@ -42,3 +42,5 @@ cmd は main と起動の組み立てを root に維持する。既存の I/O �
 
 - [ユースケース](../use-cases.md)、[開発手順](../development.md)
 - ADR-0004〜0009・0011・0012。実施結果は Issue #56 の作業記録に残す。
+
+収集状態の生成・ページ反映と application の取得手順の境界は [ADR-0014](0014-steam-collection-state.md) で具体化する。

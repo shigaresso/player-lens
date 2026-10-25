@@ -36,3 +36,5 @@
 - [ADR-0004：公開 API と1ページ取得](0004-steam-review-api.md)
 - [データ・調査仕様](../specs/data-and-research.md)
 - [GetAppReviews](https://partner.steamgames.com/doc/webapi/IUserReviewsService#GetAppReviews)
+
+Issue #58 では [ADR-0014](0014-steam-collection-state.md) に従い、結果・重複・カーソルと終了判断を domain の収集状態へまとめる。上限と終了優先順位、部分結果の契約は維持し、取得と context の手順を application に残す。

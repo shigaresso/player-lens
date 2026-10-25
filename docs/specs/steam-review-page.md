@@ -42,7 +42,7 @@ HTTP 200 以外はステータスを持つエラーとし、リダイレクト�
 
 応答解釈と ID 検査は、同じパッケージのユニットテストから非公開関数を直接呼び、HTTP を使わず検証する。ID の構文・数値境界、ページの生成・空配列・未知フィールド、不正応答でのゼロ値、JSON の構文・型エラーの原因保持を確認する。
 
-HTTP adapter の通常テストでは `httptest` とテスト用 Transport / Body を使い、実 Steam API は使わない。正常・空ページ、入力境界、HTTP エラーと非再試行、JSON・スキーマ・サイズ、期限・キャンセル、Body の解放とエラーを確認する。作業記録は [Issue #17 の記録](../worklogs/17-steam-review-page.md) と [Issue #39 の記録](../worklogs/39-steam-response-decoding.md) に残す。API を呼べることと、収集・保存・分析が実装済みであることを区別する。
+HTTP adapter の通常テストでは `httptest` とテスト用 Transport / Body を使い、実 Steam API は使わない。正常・空ページ、入力境界、HTTP エラーと非再試行、JSON・スキーマ・サイズ、期限・キャンセル、Body の解放とエラーを確認する。作業記録は [Issue #17 の記録](../worklogs/17-steam-review-page.md) と [Issue #39 の記録](../worklogs/39-steam-response-decoding.md) に残す。API を呼べることと、収集・保存・分析が実装済みであることを区別する。 Issue #64 の検査と変換の整理は [検証記録](../worklogs/64-steam-request-validation.md) に残す。
 
 ## Steam の名前付き数値型（Issue #43）
 

@@ -22,6 +22,12 @@
 
 ID・時刻と API の3列挙値の型、recommendationid の0の受理と数値化、外部 JSON との変換は [ADR-0012](0012-steam-domain-types.md) を採用する。内部は既存の ReviewType を数値列挙型に変更し、値を公式定数から定義する。HTTP adapter で公式型 EUserReviewsReviewType に変換し、外部の文字列入力・出力との変換は CLI・MCP・JSON の境界に集約する。Issue #33 の文字列型を内部へ伝播する方針をここで置き換える。
 
+## HTTP 応答と Body の所有（Issue #66）
+
+FetchReviewsPage は入力検査・要求構築・送信と取得用 context の寿命を担当し、Do の成功後は同じ adapter の readReviewPageResponse に応答を渡す。readReviewPageResponse はステータス確認、制限付き読み取り、純粋な decodeReviewPage の呼び出しと Close を同じ範囲で担当する。現在の defer による後始末を移動し、Close の回数や順序を変えない。
+
+Body の読み取りと Close を別の担当に分ける案では、解釈と Close の複合失敗や資源の寿命が分断されるため、一連の応答処理としてまとめる。Close は解釈後・取得用 context の解放前に完了させる。Close 失敗は元の原因と併せて保持し、完全なゼロ値のページを返す。読み取り中の同じ goroutine の panic でも Close と context の解放を行い、panic は握りつぶさない。公開 API・通信上限・再試行と接続プールの所有は維持する。
+
 ## 利点と制約
 
 現行仕様に合わせて取得条件と結果を明示できる。キーなしの応答は最大10分キャッシュされ、共有の制限で429になり得る。全作品・全言語の成功や常に最新の応答を保証しない。実 API の1件の読取で `response` wrapper と文字列 ID を確認したが、通常テスト・CI は制御したローカル通信で契約を検証する。

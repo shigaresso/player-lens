@@ -6,7 +6,7 @@
 
 ## 背景と比較
 
-ユーザーの意図は、各領域フォルダの内部を domain・application・adapter のレイヤーで分類することである。複数の領域を internal/review へ統合する案と、model・handler・config などの役割名で分類する案は採用しない。
+ユーザーの意図は、各領域フォルダの内部を domain・application・adapter のレイヤーで分類することである。複数の領域を internal/review へ統合する案と、レイヤーを model・handler・config などの役割名で置き換える案は採用しない。
 
 実在する責務のあるレイヤーだけを作る。委譲だけの互換関数、型エイリアス、空のレイヤー、将来用の依存は追加しない。
 
@@ -26,9 +26,19 @@ steam/application は steam/domain と標準ライブラリに依存し、具体
 
 reviewmcp/application は reviewmcp/domain と steam の application/domain を使い、SDK の型を含めない。実行結果は収集結果・拒否理由・元の失敗を保持する。入力の不正は adapter が先に拒否し、利用枠を消費しない。application が取得開始時に枠を確保し、defer で返却する。開始回数は戻さず、開始前キャンセルは枠を消費しない。adapter は既存の結果とエラーへ変換し、公開 schema を維持する。
 
-CLI と JSON 出力の責務は adapter であり、その内部へ業務操作を複製しない。mcpaccess/domain の Access は初期化済みの判定と Host の照合を提供する。adapter.Protect は設定と next を受け取り、nil・ゼロ値・Host・Origin の既存の拒否を維持する。内部の authority 文字列表現は公開しない。
+CLI と JSON 出力の責務は adapter であり、その内部へ業務操作を複製しない。mcpaccess/domain の Access は初期化済みの判定と Host の照合を提供する。adapter/handler.Protect は設定と next を受け取り、nil・ゼロ値・Host・Origin の既存の拒否を維持する。内部の authority 文字列表現は公開しない。
 
 cmd は main と起動の組み立てを root に維持する。既存の I/O 処理を内部の adapter へ移し、listener・接続・signal・goroutine・context の終了担当を変えない。
+
+### 受付処理を探す場所（Issue #77）
+
+ルーティング先の自前の HTTP/MCP 処理と受付保護は、各領域の adapter/handler に統一する。レイヤーは維持し、handler だけを受付の固定した配置先として追加する。adapter 全体を client・config・server などの役割で細分化しない。
+
+cmd/server の生存確認、reviewmcp の HTTP/SDK とツール実行・入力・結果・埋め込みガイド、mcpaccess の Host/Origin 保護を対象とする。非公開の補助処理とテストは同じパッケージへ移し、移動のための互換ラッパーや大量の公開 API を追加しない。healthz のパスだけは登録側とログ側が同じ値を参照するため、handler.HealthPath として公開する。
+
+HTTP の RegisterRoutes は cmd/server/adapter に残し、生成済み handler を受け取る。MCP の newServer とツール定義は handler の構築補助として同じパッケージに維持し、ツール登録と実行は既存の別関数で区別する。SDK が実装するプロトコルのディスパッチは独自に複製しない。登録元・割り当て先・補助処理と検査範囲を [受付とルーティングの一覧](../handler-routing.md) に記録する。
+
+新しい配置検査は自前の ServeHTTP メソッド、http.Handler／http.HandlerFunc／mcp.ToolHandler を返す関数と handler 関数の構築を対象とする。cmd・internal の本番 Go ソースを収集し、handler 以外の配置を拒否する。構文による検査であり、動的な型や任意の独自ルーターの全到達先を証明するものではない。既存の domain/application の依存検査も維持する。
 
 ## 検証と制約
 

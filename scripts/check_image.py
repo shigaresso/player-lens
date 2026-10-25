@@ -76,7 +76,7 @@ def check_mcp(port, public_host=None):
         raise RuntimeError("MCP の不正入力を取得前に拒否しなかった")
     expected_guide = {
         "version": "1",
-        "instructions": (ROOT / "internal/reviewmcp/adapter/analysis_guide.md").read_text(encoding="utf-8"),
+        "instructions": (ROOT / "internal/reviewmcp/adapter/handler/analysis_guide.md").read_text(encoding="utf-8"),
     }
     try:
         content = invalid["content"]

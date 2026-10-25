@@ -13,13 +13,13 @@
 
 ## 起動時の生成と経路登録（Issue #74）
 
-main は logger とプロセスの context を生成し、run は各 handler とルーターを組み立てる。server adapter の NewHealthHandler(logger, now) は生存確認の handler を生成する。生成時にはリクエスト処理・時刻取得・ログ出力を行わない。MCP の handler は従来どおり reviewmcp.NewHandler で生成する。
+main は logger とプロセスの context を生成し、run は各 handler とルーターを組み立てる。server adapter/handler の NewHealthHandler(logger, now) は生存確認の handler を生成する。生成時にはリクエスト処理・時刻取得・ログ出力を行わない。MCP の handler は従来どおり reviewmcp.NewHandler で生成する。
 
 run は http.NewServeMux でルーターを生成し、RegisterRoutes(mux, healthHandler, mcpHandler) で経路を登録してから待ち受けを開始する。RegisterRoutes は既存の mux に生成済み handler を登録するだけで、依存や handler・ルーターを生成せず、handler を実行しない。無関係な既存経路は維持する。旧 server adapter の NewHandler は残さない。
 
 RegisterRoutes は GET /healthz（HEAD を含む）と、MCP が非 nil の場合の /tools を登録する。mux と healthHandler は有効な非 nil の値を渡し、登録は受付開始前に行う。競合するパターンは事前に登録しない。重複登録などは標準 ServeMux の panic に従い、独自の検査や復旧は追加しない。各 handler は並行利用可能なものを渡す。
 
-Issue #76 で、登録パターンのパスとログの http.route は同じ非公開の healthPath 定義を参照する。公開経路は /healthz のまま維持し、受信 URL・query を経路の定義へ取り込まない。公開契約を検証するテストの期待値はこの実装定数を参照せず、/healthz のリテラルで確認する。
+Issue #76 で登録パターンのパスとログの http.route を1定義へ共有し、Issue #77 で handler パッケージへ移した。登録側とログ側は公開した handler.HealthPath の1定義を参照する。公開経路は /healthz のまま維持し、受信 URL・query を経路の定義へ取り込まない。公開契約を検証するテストの期待値はこの実装定数を参照せず、/healthz のリテラルで確認する。
 
 生成は New、既存の対象への登録は Register という名前で区別する。業務操作を持たない生存確認のための application/domain や、生成と登録をまとめ直す互換ラッパーは作らない。
 
@@ -40,7 +40,7 @@ Issue #76 で、登録パターンのパスとログの http.route は同じ非�
 
 ## 生存確認の構造化ログ（Issue #72）
 
-起動側は slog の JSONHandler で stderr に出力し、service.name=player-lens を付与する。生成した slog.Logger と時刻取得関数を serveradapter.NewHealthHandler に渡し、handler はその依存を共有する。依存は有効な非 nil のものを渡し、同時実行時には並行利用に対応する。グローバル logger の差し替えは行わない。
+起動側は slog の JSONHandler で stderr に出力し、service.name=player-lens を付与する。生成した slog.Logger と時刻取得関数を serverhandler.NewHealthHandler に渡し、handler はその依存を共有する。依存は有効な非 nil のものを渡し、同時実行時には並行利用に対応する。グローバル logger の差し替えは行わない。
 
 GET/HEAD /healthz が通常 return したときに health_check.completed を1回記録する。時刻・level・msg は slog の標準項目とし、msg は「ヘルスチェックを処理した」に固定する。
 
@@ -95,7 +95,7 @@ LogAttrs に request の context をそのまま渡す。キャンセル済み�
 
 生成と登録の境界はユニットテストで確認する。health handler の生成時に時計・ログを実行しないことと、登録時に handler を呼ばないこと、渡した health/MCP handler への委譲、既存経路の保持を確認する。旧ルーター経由の応答テストは生成済み handler と明示的な登録へ移行し、ログの契約は生成済み health handler でも確認する。
 
-routes_test.go の TestRegisterRoutes は渡した handler への登録と委譲、TestHealthRoutes は実 health handler とルーターを接続した公開応答を確認する。health_test.go の TestHealthWriteFailure は本文書き込み失敗の応答とログを確認する。Issue #76 で接続テストの名前と配置をその責務に揃えた。
+routes_test.go の TestRegisterRoutes は渡した handler への登録と委譲、TestHealthRoutes は実 health handler とルーターを接続した公開応答を確認する。handler/health_test.go の TestHealthWriteFailure は本文書き込み失敗の応答とログを確認する。Issue #76 で接続テストの名前と配置をその責務に揃えた。
 
 設定と HTTP 応答はネットワークを使わないユニットテストで確認する。構造化ログは制御した時計とメモリ上の出力先で正常・書き込み失敗・ログ出力失敗・context の引き継ぎと対象経路を確認する。実 HTTP の GET/HEAD と JSON の接続、実バイナリの起動失敗と stderr・終了コードは integration タグで確認する。実際の待ち受け・応答・処理中の終了・期限超過・bind 失敗は `integration` タグの結合テストで確認し、race detector を実行する。本番用イメージの PORT・不正設定・HTTP 応答・SIGTERM は独立したスモーク検査で確認する。
 
@@ -104,3 +104,7 @@ routes_test.go の TestRegisterRoutes は渡した handler への登録と委譲
 開発用のポート選択・失敗伝播・二重起動拒否・停止は Docker やネットワークを使わない Python テストで確認する。連続ポートの使用中からの起動、Watch と停止はローカル Docker で実行して確認する。
 
 Compose と本番用イメージの相違、固定版の更新、配置の未導入事項は [ADR-0001](../adr/0001-runtime-and-deployment.md) と [開発手順](../development.md) に従う。
+
+## 受付の配置（Issue #77）
+
+healthHandler とログ、直接のテストは cmd/server/adapter/handler に配置する。ルーティングとサーバーの管理は従来の adapter に残す。ルーティングとの接続と対象外経路のログ非出力は外側の routes_test.go、応答とログの直接の契約は handler 配下で確認する。全受付の対応と配置検査は [受付とルーティングの一覧](../handler-routing.md) を参照する。

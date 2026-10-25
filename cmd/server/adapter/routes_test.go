@@ -1,12 +1,15 @@
 package adapter
 
 import (
+	"bytes"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	serverhandler "github.com/shigaresso/player-lens/cmd/server/adapter/handler"
 )
 
 func TestRegisterRoutes(t *testing.T) {
@@ -91,7 +94,7 @@ func TestHealthRoutes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			response := httptest.NewRecorder()
-			health := NewHealthHandler(slog.New(slog.NewJSONHandler(io.Discard, nil)), time.Now)
+			health := serverhandler.NewHealthHandler(slog.New(slog.NewJSONHandler(io.Discard, nil)), time.Now)
 			router := http.NewServeMux()
 			RegisterRoutes(router, health, nil)
 			router.ServeHTTP(response, httptest.NewRequest(tt.method, tt.path, nil))
@@ -111,6 +114,33 @@ func TestHealthRoutes(t *testing.T) {
 
 			if tt.status == http.StatusMethodNotAllowed && response.Header().Get("Allow") != "GET, HEAD" {
 				t.Errorf("Allow=%q", response.Header().Get("Allow"))
+			}
+		})
+	}
+}
+
+func TestOtherRoutesDoNotEmitHealthLog(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		method string
+		path   string
+		status int
+	}{
+		{"未許可メソッドは生存確認イベントに含めない", http.MethodPost, "/healthz", http.StatusMethodNotAllowed},
+		{"未定義パスは生存確認イベントに含めない", http.MethodGet, "/", http.StatusNotFound},
+		{"子パスは生存確認イベントに含めない", http.MethodGet, "/healthz/child", http.StatusNotFound},
+		{"MCPへの委譲は生存確認イベントに含めない", http.MethodPost, "/tools", http.StatusNoContent},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var output bytes.Buffer
+			logger := slog.New(slog.NewJSONHandler(&output, nil))
+			mcp := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusNoContent) })
+			response := httptest.NewRecorder()
+			router := http.NewServeMux()
+			RegisterRoutes(router, serverhandler.NewHealthHandler(logger, time.Now), mcp)
+			router.ServeHTTP(response, httptest.NewRequest(tc.method, tc.path, nil))
+			if response.Code != tc.status || output.Len() != 0 {
+				t.Fatalf("対象外の経路で契約を変更した: status=%d log=%q", response.Code, output.String())
 			}
 		})
 	}

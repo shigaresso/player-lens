@@ -1,6 +1,6 @@
 # アプリケーションのユースケース
 
-既存の領域フォルダを維持し、その内部を domain・application・adapter に分類した。[ADR-0013](adr/0013-domain-folder-layers.md) に配置と依存を記録する。以下の steamdomain・steamapplication・steamadapter は internal/steam 配下の各レイヤー、mcpdomain・mcpapplication は internal/reviewmcp 配下の各レイヤーを指す。reviewmcp・reviewcli・jsonoutput は各領域の adapter を指す。
+既存の領域フォルダを維持し、その内部を domain・application・adapter に分類した。[ADR-0013](adr/0013-domain-folder-layers.md) に配置と依存を記録する。以下の steamdomain・steamapplication・steamadapter は internal/steam 配下の各レイヤー、mcpdomain・mcpapplication は internal/reviewmcp 配下の各レイヤーを指す。reviewmcp は reviewmcp/adapter/handler、reviewcli・jsonoutput は各領域の adapter を指す。
 
 ## 導入済みの操作
 
@@ -46,7 +46,7 @@ Issue #40 で MCP の公開用失敗情報と結果生成を収集の実行手�
 
 Issue #35 の `analysis_guide` は MCP の案内と結果変換の責務であり、新たな分析ユースケースではない。共通本文をバイナリへ埋め込み、収集結果とともに提供する。steam・CLI・保存先へ分析方針を混ぜず、分析は接続元の AI、採否は人間に残す。[レビュー分析仕様](specs/review-analysis.md) に従う。
 
-`mcpaccess` の内部は domain と adapter に分ける。公開 URL と許可 Host のルールは mcpaccess/domain の `Access`、HTTP の保護は mcpaccess/adapter の `Protect`、ローカル専用時の保護は Issue #48 の `ProtectLocal` に分離する。main が公開設定を組み立てて `reviewmcp.NewHandler` へ渡し、`NewHandler` がモードに応じた保護を選ぶ。未指定はローカル専用、指定時は匿名公開とし、認証・JWT・OAuth metadata は提供しない。収集ユースケース・CLI へ公開設定を混ぜない。[公開 MCP 仕様](specs/mcp-public-access.md) と [ADR-0009](adr/0009-public-mcp-access.md) に従う。
+`mcpaccess` の内部は domain と adapter に分ける。公開 URL と許可 Host のルールは mcpaccess/domain の `Access`、HTTP の保護は mcpaccess/adapter/handler の `Protect`、ローカル専用時の保護は Issue #48 の `ProtectLocal` に分離する。main が公開設定を組み立てて `reviewmcp.NewHandler` へ渡し、`NewHandler` がモードに応じた保護を選ぶ。未指定はローカル専用、指定時は匿名公開とし、認証・JWT・OAuth metadata は提供しない。収集ユースケース・CLI へ公開設定を混ぜない。[公開 MCP 仕様](specs/mcp-public-access.md) と [ADR-0009](adr/0009-public-mcp-access.md) に従う。
 
 ## 評価種別（Issue #33）
 
@@ -61,5 +61,9 @@ AppID・RecommendationID・TimestampCreated・TimestampUpdated は steam/domain 
 - steam/domain は型・API 列挙値・純粋な正規化と収集状態、steam/application は操作と PageFetcher・CollectionSaver、steam/adapter は HTTP と要求・応答の変換を置く。ReviewType の基底型と定数の定義元は維持した。
 - reviewmcp/domain は Limits・Limiter と受付・返却、application は収集の実行と期限、adapter は HTTP/SDK と入力・結果・ガイドを置く。入力不正は取得と受付の前に拒否し、拒否時の JSON と取得失敗の原因保持を維持する。
 - reviewcli/adapter と jsonoutput/adapter は入口と出力の既存の責務を維持する。空の domain/application は追加しない。
-- mcpaccess/domain の Access は IsInitialized・AllowsHost で設定と照合を提供し、adapter.Protect が設定と next を受け取って HTTP を保護する。内部の authority 表現は公開しない。
+- mcpaccess/domain の Access は IsInitialized・AllowsHost で設定と照合を提供し、adapter/handler の Protect が設定と next を受け取って HTTP を保護する。内部の authority 表現は公開しない。
 - cmd/server と cmd/collect-reviews は main の起動順序・具体的な依存の所有と終了を維持し、既存の I/O と表示をそれぞれの adapter へ置く。
+
+## 受付処理の配置（Issue #77）
+
+ルーティングから呼ぶ自前の HTTP/MCP 受付と保護は各領域の adapter/handler に置く。healthz、MCP の SDK への接続とツール実行、Host/Origin 保護の全体対応は [受付とルーティングの一覧](handler-routing.md) を参照する。入力・応答と埋め込みガイドを MCP の handler に維持し、業務操作・利用枠・期限と同時枠の保持期間は変更しない。HTTP の経路登録は cmd/server/adapter に残し、新しいユースケースは追加しない。

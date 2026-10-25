@@ -9,6 +9,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	serverhandler "github.com/shigaresso/player-lens/cmd/server/adapter/handler"
 )
 
 type failedListener struct {
@@ -23,7 +25,7 @@ func (l *failedListener) Close() error              { l.closed.Store(true); retu
 func TestServeFailure(t *testing.T) {
 	cause := errors.New("待ち受け資源の故障")
 	listener := &failedListener{cause: cause}
-	healthHandler := NewHealthHandler(slog.New(slog.NewJSONHandler(io.Discard, nil)), time.Now)
+	healthHandler := serverhandler.NewHealthHandler(slog.New(slog.NewJSONHandler(io.Discard, nil)), time.Now)
 	router := http.NewServeMux()
 	RegisterRoutes(router, healthHandler, nil)
 	err := Serve(t.Context(), listener, router, time.Second)

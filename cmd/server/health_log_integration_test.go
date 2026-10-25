@@ -13,6 +13,7 @@ import (
 	"time"
 
 	serveradapter "github.com/shigaresso/player-lens/cmd/server/adapter"
+	serverhandler "github.com/shigaresso/player-lens/cmd/server/adapter/handler"
 )
 
 type healthLogBuffer struct {
@@ -46,7 +47,7 @@ func TestHealthStructuredLogWithHTTP(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			output := &healthLogBuffer{}
 			logger := slog.New(slog.NewJSONHandler(output, nil)).With("service.name", "player-lens")
-			healthHandler := serveradapter.NewHealthHandler(logger, time.Now)
+			healthHandler := serverhandler.NewHealthHandler(logger, time.Now)
 			router := http.NewServeMux()
 			serveradapter.RegisterRoutes(router, healthHandler, nil)
 			url, client, _, _, _ := startTestServer(t, router, time.Second)

@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	serverhandler "github.com/shigaresso/player-lens/cmd/server/adapter/handler"
 )
 
 func TestMCPRoute(t *testing.T) {
@@ -36,7 +38,7 @@ func TestMCPRoute(t *testing.T) {
 
 				w.WriteHeader(202)
 			})
-			healthHandler := NewHealthHandler(slog.New(slog.NewJSONHandler(io.Discard, nil)), time.Now)
+			healthHandler := serverhandler.NewHealthHandler(slog.New(slog.NewJSONHandler(io.Discard, nil)), time.Now)
 			router := http.NewServeMux()
 			RegisterRoutes(router, healthHandler, mcpHandler)
 			w := httptest.NewRecorder()

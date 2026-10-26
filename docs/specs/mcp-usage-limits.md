@@ -29,7 +29,7 @@ LimitsConfig・Limits・NewLimits・DefaultLimits と Limiter は reviewmcp/doma
 ## 受付と固定窓
 
 1. adapter が入力を検査し、MCP の既定値・上限を適用した CollectionOptionsConfig から NewCollectionOptions で有効な条件を生成する。不正入力は既存の `invalid_input` を返し、利用枠を消費しない。application は有効な CollectionOptions を受け取り、条件を再正規化しない（[ADR-0015](../adr/0015-collection-options-boundary.md)）。
-2. context が開始前に終了している場合は、回数を消費せず既存のキャンセル・期限エラーを返す。
+2. context が開始前に終了している場合は、MCP 用 application が共通の NewFailedCollection で空の失敗結果を作り、respond を一度呼んで早期 return する。下位の収集・期限の生成・利用枠の確保を呼ばず、開始回数・同時枠・時計を消費しない。入力条件・空の非 nil レビュー配列・StopFailed と元のキャンセル／期限超過の原因を保持する。
 3. mutex 内で時計を読み、日次・分次・同時数の順に判定する。上限に達していれば取得せず拒否する。
 4. 全条件を満たした場合だけ、日次・分次の回数と同時数を増やす。取得・JSON 変換・応答量の判定を終えるまで同時枠を保有し、defer で返却する。
 
@@ -48,6 +48,8 @@ limiter は非公開の usageRejectionReason で受付結果を返す。ゼロ�
 | 24時間の上限 | `daily_limit_reached` | 日次の窓が更新された |
 | 1分の上限 | `rate_limited` | 分次の窓が更新された |
 | 同時数の上限 | `busy` | 受付済みの処理が終了した |
+
+拒否時の Collection も steam/domain.NewFailedCollection で生成し、従来の入力条件・nil のレビュー配列・成功ページ数0と拒否理由を維持する。公開 JSON のレビュー配列は従来どおり空配列とする。
 
 HTTP 200 の MCP `CallToolResult` に `isError=true` を返す。収集条件と App ID を保持し、レビュー配列は空、`returned_count=0`、`omitted_reviews=0`、`pages_fetched=0`、`stop_reason=failed` とする。構造化結果と JSON テキストの契約を維持する。待機・自動再試行・HTTP 429 は追加しない。モデルへの案内だけで無限再試行を防いだとは判断しない。
 

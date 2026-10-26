@@ -81,7 +81,7 @@ func (s *CollectionState) AddPage(page ReviewPage) error {
 	}
 
 	if s.seenCursors[page.NextCursor] {
-		s.result.StopReason = StopFailed
+		s.Fail()
 		return ErrCursorCycle
 	}
 
@@ -98,6 +98,6 @@ func (s *CollectionState) AddPage(page ReviewPage) error {
 // 通信や context の原因は呼び出し側が保持する。終了済みなら変更しない。
 func (s *CollectionState) Fail() {
 	if s.result.StopReason == "" {
-		s.result.StopReason = StopFailed
+		s.result = NewFailedCollection(s.result)
 	}
 }

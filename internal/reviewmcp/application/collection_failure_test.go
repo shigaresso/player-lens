@@ -126,6 +126,7 @@ func TestCollectReviewsCancelledBeforeStart(t *testing.T) {
 			if reason != mcpdomain.NotRejected {
 				t.Fatalf("開始前の終了が利用枠を消費した: %v", reason)
 			}
+
 			defer release()
 		})
 	}

@@ -47,6 +47,8 @@ HTTP 本文は16 KiBまでとし、SDK が超過を413で拒否する。シリ�
 
 ツールの期限は8秒。短い呼び出し側の期限・キャンセルを優先する。旧プロトコルを含め、元の HTTP リクエストと SDK の context のキャンセルを収集へ伝える。サーバーを HTTP リクエストごとに組み立て、stateless transport が一時セッションを閉じる。タイマー・context の連携 callback はハンドラーで解放する。HTTP クライアントと接続プールは main が組み立て、終了時に idle 接続を閉じる。再試行は追加しない。
 
+Issue #84 で、MCP 用 application は開始前キャンセル／期限超過を入口で早期 return する。steam/domain.NewFailedCollection で入力条件と空配列を保持した失敗結果を作り、元の原因を MCP 用の文脈でラップして respond へ一度渡す。下位の収集をキャンセル結果の生成目的で呼ばない。受付拒否・収集中の失敗も共通の失敗結果生成を利用し、公開応答、部分結果、利用枠を応答変換完了まで保持する契約は維持する。
+
 ### ツール登録と実行の境界（Issue #50）
 
 `newServer` は Server の生成・対応プロトコルの設定・ツール登録を担当する。`collection_definition.go` の `collectReviewsDefinition` がツール名・説明・入出力 schema・annotations を構築する。各生成の可変データは独立させ、ほかの Server の定義に変更を共有しない。定義の生成では通信・収集を行わない。

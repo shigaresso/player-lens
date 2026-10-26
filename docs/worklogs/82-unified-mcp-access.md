@@ -8,12 +8,12 @@ PR #81 の統合を確認し、最新 origin/main の 68463bf4bc219000baa6519ab2
 
 ## 変更内容
 
-- Access は AllowsHost と IsPublic だけを持つ共通契約にした。mcpaccess.New は未指定時にフィールドを持たない localAccess、指定時に検査済み authority だけを保持する publicAccess を、非公開の値型として返す。localOnly フラグと IsInitialized を廃止した。Access のゼロ値は nil とし、Protect と NewHandler の公開境界で未生成として拒否する。従来の nil＝ローカル設定という Go API 契約を変更した。
+- Access は AllowsHost・IsPublic・HostRejectionMessage を持つ共通契約にした。mcpaccess.New は未指定時にフィールドを持たない localAccess、指定時に検査済み authority だけを保持する publicAccess を、非公開の値型として返す。localOnly フラグと IsInitialized を廃止した。Access のゼロ値は nil とし、Protect と NewHandler の公開境界で未生成として拒否する。従来の nil＝ローカル設定という Go API 契約を変更した。
 - ローカルの判定を domain/local.go の localAccess.AllowsHost へ移し、その本体を維持した。公開用は domain/public.go に分け、URL 解析・authority 正規化・照合の本体を維持した。両モードを同じ正規化へ変更せず、許可条件は domain、HTTP の実行手順は adapter に置いた。
-- Protect は Access と next を受け取り、Host の検査→cross-origin 保護→next を1か所で実行する。モード別の403文言を構築時に選ぶ。ProtectLocal を削除した。
+- Protect は Access と next を受け取り、Host の検査→cross-origin 保護→next を1か所で実行する。型が提供する固定の拒否理由を構築時に取得し、Protect 自身はモードで分岐しない。ProtectLocal を削除した。
 - NewHandler は常に Protect を呼び、SDK の DisableLocalhostProtection を Access.IsPublic から設定する。ローカルでは従来どおり SDK の localhost 保護を維持した。nil／ゼロ値 Access は ErrInvalidConfig を識別できる構築エラーとする。
 - ReadMCPAccess の契約と呼び出し元・通常／結合テストを更新した。MCP の既存テスト12箇所では生成済み Access をテスト専用 helper から渡し、cmd/server の結合テスト1箇所でも New から生成した。
-- [公開 MCP 仕様](../specs/mcp-public-access.md)、[MCP 仕様](../specs/review-mcp.md)、[受付一覧](../handler-routing.md)、[操作一覧](../use-cases.md)、ADR-0009・0013 を整合させた。共通契約の2メソッドは実在する保護処理と SDK 設定に必要なものに限定し、汎用 framework は追加していない。
+- [公開 MCP 仕様](../specs/mcp-public-access.md)、[MCP 仕様](../specs/review-mcp.md)、[受付一覧](../handler-routing.md)、[操作一覧](../use-cases.md)、ADR-0009・0013 を整合させた。共通契約は実在する Host 判定・拒否理由と SDK 設定に必要なものに限定し、汎用 framework は追加していない。
 
 ## 検証
 
@@ -38,14 +38,20 @@ PR #81 の統合を確認し、最新 origin/main の 68463bf4bc219000baa6519ab2
 
 IsInitialized の照会と構造体のゼロ値の検査を廃止した。interface のゼロ値は nil のため、重複する未生成ケースを Protect と NewHandler の公開境界の拒否へまとめ、生成済みの Host 判定では IsPublic・AllowsHost を確認する。HTTP の入力・期待値は維持し、内部フィールドをなぞる検査や形のためだけの Red は追加していない。関連パッケージの同じ通常テストが Green になった。
 
+### 利用側でのモード再判定の削除
+
+型を分けた後も Protect に IsPublic で拒否文言を選ぶ分岐が残っていたため、生成側で選ばれた型が固定の拒否理由を提供する HostRejectionMessage を追加した。HTTP ステータス・ヘッダー・本文形式の責務は adapter に維持した。
+
+TestAccessHostRejectionMessage を先に追加し、未実装メソッドによるコンパイル失敗の Red を確認した。両型が既存と同じ固定理由を返し、Protect がその値を使う実装で関連パッケージの Green を確認した。Protect と NewHandler のソースに IsPublic を使ってモードを選び直す if／switch がないことも確認した。NewHandler の SDK 設定は IsPublic の値をそのまま使う。Host の許可／拒否や入力エラーの条件分岐は、それぞれの判断として維持する。
+
 ### 全体検証と内容保持
 
 - `bash scripts/check-go.sh format-fix` が成功した。
 - `bash scripts/check-app.sh` が成功した。gofmt・vet・全通常テスト、lint 0 issues、Git 非依存3条件、race 付き通常／結合テストを実行した。結合テストだけの成功とは扱わない。
-- 同じ本番 image ID `sha256:78678a277b36e506709816c80fd327c74ece259b574fd30ea35a50bc1d2efda5` で、HTTP/MCP・公開／ローカルの Host/Origin・PORT・不正設定・SIGTERM/SIGINT を確認した。
+- 同じ本番 image ID `sha256:dae22536c9c91cbb8b6fbbc88e782d37fb7b8acc101e8f6b9eaa43807aae6d3a` で、HTTP/MCP・公開／ローカルの Host/Origin・PORT・不正設定・SIGTERM/SIGINT を確認した。
 - ローカルの AllowsHost と公開側の parseHTTPSURL・canonicalAuthority・allowedAuthority の本体が、型を分ける前と一致することを照合した。ローカル側と公開側で異なる判定を正規化で揃えてしまわないこともテストした。
-- 最初の実装で既存の Test 関数152個を保持し、NewHandler の未生成 Access を拒否するテスト1個を追加した。型を分ける整理でも153個の Test 関数を保持した。既存のローカル保護テストは Protect と生成済み Access へ接続し、全ケースの HTTP の期待値を維持した。
-- 実装と型を分ける整理のコミットで必須フックが成功した。文書コミットのフックと最終の差分・コミット範囲・本文・リンクの結果は Issue に記録した。
+- 最初の実装で既存の Test 関数152個を保持し、NewHandler の未生成 Access を拒否するテスト1個を追加した。型を分ける整理でも153個の Test 関数を保持した。拒否理由の契約テスト1個を追加し、最終構成は154個の Test 関数を保持している。既存のローカル保護テストは Protect と生成済み Access へ接続し、全ケースの HTTP の期待値を維持した。
+- 実装・型を分ける整理・モード再判定の削除のコミットで必須フックが成功した。文書コミットのフックと最終の差分・コミット範囲・本文・リンクの結果は Issue に記録した。
 
 ### AI のセルフレビューと制約
 

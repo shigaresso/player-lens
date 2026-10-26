@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-
 	mcpaccess "github.com/shigaresso/player-lens/internal/mcpaccess/domain"
+	"github.com/shigaresso/player-lens/internal/reviewmcp/adapter/internal/testutil"
 	mcpdomain "github.com/shigaresso/player-lens/internal/reviewmcp/domain"
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
 )
@@ -40,10 +40,10 @@ func TestPublicMCPProtocolsAndSharedBudget(t *testing.T) {
 			}
 
 			var calls atomic.Int32
-			handler, err := NewHandler(fetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+			handler, err := NewHandler(testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				calls.Add(1)
 				return steamdomain.ReviewPage{Reviews: []steamdomain.Review{{RecommendationID: 16, Text: "分析用の本文"}}, NextCursor: "next"}, nil
-			}), testLimits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 1, RequestsPerDay: 10, MaxConcurrent: 1}), access)
+			}), testutil.Limits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 1, RequestsPerDay: 10, MaxConcurrent: 1}), access)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -107,7 +107,7 @@ func TestPublicMCPProtocolsAndSharedBudget(t *testing.T) {
 			}
 
 			invalid, err := second.CallTool(ctx, &mcp.CallToolParams{Name: "collect_reviews", Arguments: map[string]any{"app_id": 0}})
-			if err != nil || !invalid.IsError || decodeOutput(t, invalid).ErrorCode != "invalid_input" {
+			if err != nil || !invalid.IsError || testutil.DecodeOutput(t, invalid).ErrorCode != "invalid_input" {
 				t.Fatalf("invalid=%+v err=%v", invalid, err)
 			}
 
@@ -117,13 +117,13 @@ func TestPublicMCPProtocolsAndSharedBudget(t *testing.T) {
 				t.Fatalf("result=%+v err=%v", result, err)
 			}
 
-			out := decodeOutput(t, result)
+			out := testutil.DecodeOutput(t, result)
 			if out.ReturnedCount != 1 || out.Collection.Reviews[0].RecommendationID != "16" || calls.Load() != 1 {
 				t.Fatalf("out=%+v calls=%d", out, calls.Load())
 			}
 
 			result, err = second.CallTool(ctx, params)
-			if err != nil || !result.IsError || decodeOutput(t, result).ErrorCode != "rate_limited" || calls.Load() != 1 {
+			if err != nil || !result.IsError || testutil.DecodeOutput(t, result).ErrorCode != "rate_limited" || calls.Load() != 1 {
 				t.Fatalf("result=%+v err=%v calls=%d", result, err, calls.Load())
 			}
 		})

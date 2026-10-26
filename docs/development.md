@@ -27,6 +27,8 @@ python3 scripts/verify_hooks.py
 
 リポジトリのルートを VS Code で開くと、`.vscode/settings.json` のワークスペース設定で実装と関連テストをまとめる。通常テストと integration テストは同名の Go 実装の下に、`client.go` と MCP の `collection.go`・`handler.go` の複数の契約テストは同じ親の下に表示する。`go.sum` は存在する場合に `go.mod` の下へまとめる。初期状態は折り畳みとする。
 
+Issue #77 で handler 直下の collect_reviews.go と health.go に関連する契約テストをまとめ、SDK 構築の server.go に通常／結合テストをまとめた。補助処理のサブフォルダを折りたたむと Controller を探せる表示にした。同名の Steam 収集操作のテストも既存の配置で表示できるパターンを維持した。
+
 Python は同じディレクトリの `test_<実装名>.py` を `<実装名>.py` の下へまとめる。たとえば `github.py` の下に `test_github.py` を表示する。`validate.py` は `test_validate.py` と `test_main_range.py` をまとめる。対応する Python の親ファイルがないテストは単独表示とする。
 
 この設定はエクスプローラーの表示を整理する。Go のパッケージ単位のテスト、Python のテスト収集と、実装・テストのファイル構成は維持する。関連テストを追加・改名した場合は、必要に応じて `explorer.fileNesting.patterns` を更新する。公式の設定項目は [ファイルネスティング](https://code.visualstudio.com/updates/v1_67#_explorer-file-nesting) を参照する。

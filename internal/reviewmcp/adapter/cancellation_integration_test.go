@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-
+	"github.com/shigaresso/player-lens/internal/reviewmcp/adapter/internal/testutil"
 	mcpdomain "github.com/shigaresso/player-lens/internal/reviewmcp/domain"
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
 )
@@ -19,7 +19,7 @@ func TestHTTPRequestCancellation(t *testing.T) {
 		t.Run(version+"の切断が取得へ伝播する", func(t *testing.T) {
 			started := make(chan struct{})
 			finished := make(chan error, 1)
-			handler, err := NewHandler(fetchFunc(func(ctx context.Context, _ steamdomain.AppID, _ steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+			handler, err := NewHandler(testutil.FetchFunc(func(ctx context.Context, _ steamdomain.AppID, _ steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				close(started)
 				<-ctx.Done()
 				finished <- ctx.Err()

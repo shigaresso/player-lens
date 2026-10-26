@@ -36,3 +36,5 @@ Web と共通の収集受付、初期同時数3の採否、DB による利用コ
 `ProtectLocal` の直接テストは MCP SDK や実ソケットを使わず、許可時の next の1回実行と応答維持、拒否時の非実行、Host の拒否理由と検査の優先順を確認する。`NewHandler` 経由の既存テストも維持し、保護の組み込みと SDK の本文上限・公開モードの契約を別途確認する。
 
 [ADR-0009](../adr/0009-public-mcp-access.md) を参照する。
+
+Issue #77 では Host/Origin の保護を Controller と区別し、middleware として mcpaccess/adapter に維持する。MCP の SDK 構築が保護と Controller を接続する。

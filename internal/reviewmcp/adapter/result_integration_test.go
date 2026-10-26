@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-
+	"github.com/shigaresso/player-lens/internal/reviewmcp/adapter/internal/testutil"
 	mcpdomain "github.com/shigaresso/player-lens/internal/reviewmcp/domain"
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
 )
@@ -33,7 +33,7 @@ func TestMCPResultResponse(t *testing.T) {
 		} {
 			t.Run(version+"で"+tc.name, func(t *testing.T) {
 				var calls atomic.Int32
-				handler, err := NewHandler(fetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+				handler, err := NewHandler(testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 					call := calls.Add(1)
 					if tc.code == "response_too_large" {
 						return steamdomain.ReviewPage{Reviews: []steamdomain.Review{{RecommendationID: 10, Text: strings.Repeat("x", 70000)}}, NextCursor: "next"}, nil
@@ -69,7 +69,7 @@ func TestMCPResultResponse(t *testing.T) {
 					t.Fatalf("%+v %v", result, err)
 				}
 
-				out := decodeOutput(t, result)
+				out := testutil.DecodeOutput(t, result)
 				if out.ErrorCode != tc.code || out.ReturnedCount != tc.count || out.OmittedReviews != tc.omitted || out.Collection.PagesFetched != tc.pages || out.Collection.Reviews == nil {
 					t.Fatal(out)
 				}

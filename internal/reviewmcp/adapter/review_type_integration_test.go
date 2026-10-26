@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-
+	"github.com/shigaresso/player-lens/internal/reviewmcp/adapter/internal/testutil"
 	mcpdomain "github.com/shigaresso/player-lens/internal/reviewmcp/domain"
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
 )
@@ -20,14 +20,14 @@ func TestMCPReviewType(t *testing.T) {
 	for _, version := range []string{"2026-07-28", "2025-11-25", "2025-06-18", "2025-03-26"} {
 		t.Run(version+"で評価種別と非消費と拒否結果を確認する", func(t *testing.T) {
 			var calls atomic.Int32
-			handler, err := NewHandler(fetchFunc(func(_ context.Context, id steamdomain.AppID, options steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+			handler, err := NewHandler(testutil.FetchFunc(func(_ context.Context, id steamdomain.AppID, options steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				calls.Add(1)
 				if id != 440 {
 					t.Errorf("AppID=%d", id)
 				}
 
 				return steamdomain.ReviewPage{Reviews: []steamdomain.Review{{RecommendationID: 1, Recommended: options.ReviewType == steamdomain.ReviewTypePositive}}, NextCursor: "next"}, nil
-			}), testLimits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 3, RequestsPerDay: 10, MaxConcurrent: 1}), nil)
+			}), testutil.Limits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 3, RequestsPerDay: 10, MaxConcurrent: 1}), nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -70,7 +70,7 @@ func TestMCPReviewType(t *testing.T) {
 						t.Fatalf("result=%+v err=%v", result, err)
 					}
 
-					if !result.IsError || decodeOutput(t, result).ErrorCode != "invalid_input" || calls.Load() != 0 {
+					if !result.IsError || testutil.DecodeOutput(t, result).ErrorCode != "invalid_input" || calls.Load() != 0 {
 						t.Fatalf("result=%+v calls=%d", result, calls.Load())
 					}
 				})
@@ -83,7 +83,7 @@ func TestMCPReviewType(t *testing.T) {
 						t.Fatalf("result=%+v err=%v", result, err)
 					}
 
-					out := decodeOutput(t, result)
+					out := testutil.DecodeOutput(t, result)
 					if result.IsError || out.Collection.Options.ReviewType != kind || out.ReturnedCount != 1 || calls.Load() != int32(i+1) || out.Collection.Reviews[0].Recommended != (kind == "positive") {
 						t.Fatalf("out=%+v calls=%d", out, calls.Load())
 					}
@@ -95,7 +95,7 @@ func TestMCPReviewType(t *testing.T) {
 				t.Fatalf("result=%+v err=%v", result, err)
 			}
 
-			out := decodeOutput(t, result)
+			out := testutil.DecodeOutput(t, result)
 			if !result.IsError || out.ErrorCode != "rate_limited" || out.Collection.Options.ReviewType != "negative" || out.ReturnedCount != 0 || out.Collection.PagesFetched != 0 || calls.Load() != 3 {
 				t.Fatalf("out=%+v calls=%d", out, calls.Load())
 			}

@@ -48,6 +48,6 @@ review_type=all、page_size=20、max_reviews=20、max_pages=1 で取得してく
 
 エラー・空・省略・偏りがある結果を、完成した調査として扱わない。制限や失敗に対する繰り返しの取得は行わない。Steam は匿名レビュー取得の具体的な回数上限を公表していないため、PlayerLens の毎分6回を守れば Steam 側でも必ず通るとは限らない。[Steam 公式 API](https://partner.steamgames.com/doc/webapi/IUserReviewsService) と [MCP 利用制限](specs/mcp-usage-limits.md) を参照する。
 
-ガイドの提供本文は [analysis_guide.md](../internal/reviewmcp/adapter/analysis_guide.md) を唯一の本体として埋め込む。このページの依頼例はその利用例で、別のガイド本文ではない。ガイドを改訂する際は `analysisGuideVersion`、出力 schema・テスト・本番イメージ検査の期待版を一緒に更新する。
+ガイドの提供本文は [analysis_guide.md](../internal/reviewmcp/adapter/handler/protocol/analysis_guide.md) を唯一の本体として埋め込む。このページの依頼例はその利用例で、別のガイド本文ではない。ガイドを改訂する際は `analysisGuideVersion`、出力 schema・テスト・本番イメージ検査の期待版を一緒に更新する。
 
 [架空レビューによる分析例](examples/review-analysis.md) で、意見から企画上の選択肢までのつながりを確認できる。

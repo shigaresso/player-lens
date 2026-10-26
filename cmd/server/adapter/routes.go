@@ -1,8 +1,10 @@
 package adapter
 
-import "net/http"
+import (
+	"net/http"
 
-const healthPath = "/healthz"
+	serverhandler "github.com/shigaresso/player-lens/cmd/server/adapter/handler"
+)
 
 // RegisterRoutes は生成済みの handler を mux の /healthz と /tools に登録する。
 // mux と healthHandler は有効な非 nil の値を渡す。mcpHandler が nil なら /tools は登録しない。
@@ -14,5 +16,5 @@ func RegisterRoutes(mux *http.ServeMux, healthHandler, mcpHandler http.Handler) 
 		mux.Handle("/tools", mcpHandler)
 	}
 
-	mux.Handle("GET "+healthPath, healthHandler)
+	mux.Handle("GET "+serverhandler.HealthPath, healthHandler)
 }

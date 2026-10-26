@@ -14,6 +14,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	serveradapter "github.com/shigaresso/player-lens/cmd/server/adapter"
+	serverhandler "github.com/shigaresso/player-lens/cmd/server/adapter/handler"
 	reviewmcp "github.com/shigaresso/player-lens/internal/reviewmcp/adapter"
 	mcpdomain "github.com/shigaresso/player-lens/internal/reviewmcp/domain"
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
@@ -43,7 +44,7 @@ func TestMCPShutdownWaitsForActiveCollection(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	healthHandler := serveradapter.NewHealthHandler(slog.New(slog.NewJSONHandler(io.Discard, nil)), time.Now)
+	healthHandler := serverhandler.NewHealthHandler(slog.New(slog.NewJSONHandler(io.Discard, nil)), time.Now)
 	router := http.NewServeMux()
 	serveradapter.RegisterRoutes(router, healthHandler, mcpHandler)
 	url, httpClient, cancel, done, closed := startTestServer(t, router, 2*time.Second)

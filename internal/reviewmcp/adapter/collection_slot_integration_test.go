@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-
+	"github.com/shigaresso/player-lens/internal/reviewmcp/adapter/internal/testutil"
 	mcpdomain "github.com/shigaresso/player-lens/internal/reviewmcp/domain"
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
 )
@@ -27,7 +27,7 @@ func TestMCPSlotDuringResponseConversion(t *testing.T) {
 			unblock := sync.OnceFunc(func() { close(proceed) })
 			defer unblock()
 
-			cause := &conversionProbeError{classify: sync.OnceFunc(func() {
+			cause := &testutil.ConversionProbeError{Classify: sync.OnceFunc(func() {
 				close(converting)
 				select {
 				case <-proceed:
@@ -35,13 +35,13 @@ func TestMCPSlotDuringResponseConversion(t *testing.T) {
 				}
 			})}
 			var calls atomic.Int32
-			handler, err := NewHandler(fetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+			handler, err := NewHandler(testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				if calls.Add(1) == 1 {
 					return steamdomain.ReviewPage{}, cause
 				}
 
 				return steamdomain.ReviewPage{}, nil
-			}), testLimits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 10, RequestsPerDay: 10, MaxConcurrent: 1}), nil)
+			}), testutil.Limits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 10, RequestsPerDay: 10, MaxConcurrent: 1}), nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -75,14 +75,14 @@ func TestMCPSlotDuringResponseConversion(t *testing.T) {
 			}
 
 			busy, err := second.CallTool(ctx, params)
-			if err != nil || busy == nil || !busy.IsError || decodeOutput(t, busy).ErrorCode != "busy" || calls.Load() != 1 {
+			if err != nil || busy == nil || !busy.IsError || testutil.DecodeOutput(t, busy).ErrorCode != "busy" || calls.Load() != 1 {
 				t.Fatalf("応答変換中の別セッション=%+v err=%v calls=%d", busy, err, calls.Load())
 			}
 
 			unblock()
 			select {
 			case firstResponse := <-done:
-				if firstResponse.err != nil || firstResponse.result == nil || !firstResponse.result.IsError || decodeOutput(t, firstResponse.result).ErrorCode != "fetch_failed" {
+				if firstResponse.err != nil || firstResponse.result == nil || !firstResponse.result.IsError || testutil.DecodeOutput(t, firstResponse.result).ErrorCode != "fetch_failed" {
 					t.Fatalf("最初の応答=%+v", firstResponse)
 				}
 			case <-ctx.Done():

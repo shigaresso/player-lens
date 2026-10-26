@@ -6,7 +6,7 @@
 
 ## 背景と比較
 
-ユーザーの意図は、各領域フォルダの内部を domain・application・adapter のレイヤーで分類することである。複数の領域を internal/review へ統合する案と、model・handler・config などの役割名で分類する案は採用しない。
+ユーザーの意図は、各領域フォルダの内部を domain・application・adapter のレイヤーで分類することである。複数の領域を internal/review へ統合する案と、レイヤーを model・handler・config などの役割名で置き換える案は採用しない。
 
 実在する責務のあるレイヤーだけを作る。委譲だけの互換関数、型エイリアス、空のレイヤー、将来用の依存は追加しない。
 
@@ -29,6 +29,16 @@ reviewmcp/application は reviewmcp/domain と steam の application/domain を�
 CLI と JSON 出力の責務は adapter であり、その内部へ業務操作を複製しない。mcpaccess/domain の Access は初期化済みの判定と Host の照合を提供する。adapter.Protect は設定と next を受け取り、nil・ゼロ値・Host・Origin の既存の拒否を維持する。内部の authority 文字列表現は公開しない。
 
 cmd は main と起動の組み立てを root に維持する。既存の I/O 処理を内部の adapter へ移し、listener・接続・signal・goroutine・context の終了担当を変えない。
+
+### Controller を探す場所（Issue #77）
+
+handler 直下の本番ファイルは、リクエストの事前処理・UseCase 呼び出し・事後処理を読む Controller の一覧とする。HTTP/MCP の生成関数や middleware、すべての関連処理を同列に配置する規則は採用しない。
+
+healthz は cmd/server/adapter/handler/health.go、MCP の context 連携と収集操作への接続は reviewmcp/adapter/handler/collect_reviews.go に置く。専用の入力・応答・schema・ガイドは handler/protocol、healthz のログ整形は handler/logging に置き、直下の Controller から呼ぶ。単に入口を委譲するだけのファイルへ流れを隠さない。
+
+MCP の SDK と共有 limiter の構築・Server の設定と登録・ツール定義は外側の adapter、Host/Origin の middleware は mcpaccess/adapter に配置する。生成と登録、UseCase と表現の既存の責務・寿命を維持する。補助パッケージは親の Controller や構築側を参照しない。必要な入出力・schema の API だけを公開し、非公開の受信型や JSON 出力型を一律に公開しない。
+
+登録元・Controller・補助処理と SDK 委譲の対応は [受付とルーティングの一覧](../handler-routing.md) に記録する。配置検査は Controller と直下の一覧性を確認し、生成・middleware の外側配置と専用の補助フォルダを許可する。構文による検査であり、任意の動的な型や SDK 内部の全ディスパッチを証明するものではない。既存のレイヤー依存・本番からのテスト helper 参照の禁止も維持する。
 
 ## 検証と制約
 

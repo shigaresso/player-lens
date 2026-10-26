@@ -12,6 +12,7 @@ import (
 	"time"
 
 	serveradapter "github.com/shigaresso/player-lens/cmd/server/adapter"
+	serverhandler "github.com/shigaresso/player-lens/cmd/server/adapter/handler"
 	reviewmcp "github.com/shigaresso/player-lens/internal/reviewmcp/adapter"
 )
 
@@ -56,7 +57,7 @@ func run(ctx context.Context, port string, logger *slog.Logger) error {
 		return fmt.Errorf("MCP サーバーの準備に失敗した: %w", err)
 	}
 
-	healthHandler := serveradapter.NewHealthHandler(logger, time.Now)
+	healthHandler := serverhandler.NewHealthHandler(logger, time.Now)
 	router := http.NewServeMux()
 	serveradapter.RegisterRoutes(router, healthHandler, mcpHandler)
 

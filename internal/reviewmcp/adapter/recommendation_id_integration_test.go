@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-
+	"github.com/shigaresso/player-lens/internal/reviewmcp/adapter/internal/testutil"
 	mcpdomain "github.com/shigaresso/player-lens/internal/reviewmcp/domain"
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
 )
@@ -30,7 +30,7 @@ func TestMCPNumericRecommendationIDs(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var calls atomic.Int32
-			handler, err := NewHandler(fetchFunc(func(_ context.Context, appID steamdomain.AppID, options steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+			handler, err := NewHandler(testutil.FetchFunc(func(_ context.Context, appID steamdomain.AppID, options steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				if appID != 4294967295 {
 					t.Errorf("appID=%d", appID)
 				}
@@ -53,7 +53,7 @@ func TestMCPNumericRecommendationIDs(t *testing.T) {
 				t.Fatalf("result=%+v error=%v", result, err)
 			}
 
-			out := decodeOutput(t, result)
+			out := testutil.DecodeOutput(t, result)
 			if out.Collection.AppID != 4294967295 || out.ErrorCode != tc.wantCode || out.Collection.StopReason != tc.wantReason || out.ReturnedCount != 2 || len(out.Collection.Reviews) != 2 || calls.Load() != tc.wantCalls {
 				t.Fatalf("output=%+v calls=%d", out, calls.Load())
 			}

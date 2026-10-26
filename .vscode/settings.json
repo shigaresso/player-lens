@@ -10,6 +10,9 @@
     "collect_and_save_reviews.go": "collect_and_save_reviews_test.go, collection_save_failure_test.go, collection_save_context_test.go",
     "run.go": "run_test.go, http_test.go",
     "collection.go": "collection_test.go, failure_test.go, size_test.go, context_test.go, result_integration_test.go",
-    "handler.go": "handler_test.go, handler_integration_test.go, cancellation_integration_test.go, mcp_handler_test.go, mcp_integration_test.go, public_access_test.go, public_access_integration_test.go"
+    "handler.go": "handler_test.go, handler_integration_test.go, cancellation_integration_test.go, mcp_handler_test.go, mcp_integration_test.go, public_access_test.go, public_access_integration_test.go",
+    "collect_reviews.go": "collect_reviews_test.go, collection_context_test.go, collection_cursor_test.go, collection_failure_test.go, collection_http_test.go, collection_regression_test.go, review_type_collection_test.go, collection_handler_test.go, collection_slot_test.go, concurrency_test.go, context_test.go, failure_test.go, result_failure_test.go, review_type_test.go, usage_test.go",
+    "health.go": "health_test.go, health_log_test.go, health_log_contract_test.go",
+    "server.go": "server_test.go, server_integration_test.go, handler_integration_test.go, cancellation_integration_test.go, collection_slot_integration_test.go, public_access_test.go, public_access_integration_test.go, recommendation_id_integration_test.go, result_integration_test.go, review_type_integration_test.go, usage_integration_test.go, limits_test.go"
   }
 }

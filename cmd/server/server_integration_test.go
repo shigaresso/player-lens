@@ -15,6 +15,7 @@ import (
 	"time"
 
 	serveradapter "github.com/shigaresso/player-lens/cmd/server/adapter"
+	serverhandler "github.com/shigaresso/player-lens/cmd/server/adapter/handler"
 )
 
 type trackedListener struct {
@@ -126,7 +127,7 @@ func startTestServer(t *testing.T, handler http.Handler, timeout time.Duration) 
 }
 
 func TestServerHealthAndShutdown(t *testing.T) {
-	healthHandler := serveradapter.NewHealthHandler(slog.New(slog.NewJSONHandler(io.Discard, nil)), time.Now)
+	healthHandler := serverhandler.NewHealthHandler(slog.New(slog.NewJSONHandler(io.Discard, nil)), time.Now)
 	router := http.NewServeMux()
 	serveradapter.RegisterRoutes(router, healthHandler, nil)
 	url, client, cancel, done, _ := startTestServer(t, router, time.Second)

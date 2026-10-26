@@ -23,6 +23,7 @@
 | [MCP 利用制限](specs/mcp-usage-limits.md) | MCP の開始回数・固定窓・同時実行数・設定・拒否 | Issue #27 で1プロセスの制限を導入した。共有予算・認証は未導入。公開配置の基本通信は確認済み |
 | [認証なしの公開 MCP](specs/mcp-public-access.md) | 公開 URL、許可 Host、匿名公開 | Issue #29 で URL と Host 保護を導入した。ユーザー配置の基本 HTTP 通信は成功、実 ChatGPT 接続は未確認 |
 | [Render 配置基盤](specs/render-deployment.md) | イメージ公開・digest・Render 設定・公開接続検査 | Issue #31 で配置準備を導入した。ユーザー配置の基本通信は成功、digest 経路の実配置は未実施 |
+| [受付とルーティング](handler-routing.md) | Controller の一覧性、handler 直下と詳細の境界、生成・登録・SDK 委譲 | Issue #77 で Controller の直下配置と補助フォルダを区別する構成に揃えた。[検証記録](worklogs/77-route-handler-layout.md) に実行時の契約と確認範囲を記載する |
 | [ユースケース](use-cases.md) | 操作全体の一覧・責務と adapter・入口の境界 | 収集と収集・保存操作を導入した。CLI と MCP を接続した。Web は未接続 |
 | [ADR-0001：Go・Docker・Render による実行・配置](adr/0001-runtime-and-deployment.md) | 実行環境、開発・検証用 Docker、本番用 CI、Render 配置 | 採用。Compose・本番用イメージと検証 CI、配置経路の準備を追加した。digest 配置は未確認 |
 | [開発手順と規約検査](development.md) | 規約バリデーター、Git フック、Issue・PR の作成手順とテンプレート、CI | ローカル検査と PR・Issue イベントの規約 CI を確認した |
@@ -40,7 +41,7 @@
 | [ADR-0010：Render 配置基盤](adr/0010-render-deployment.md) | 手動の GHCR 公開・Free・資格情報と配置準備の範囲 | 採用。実 CI・registry・配置は未実施 |
 | [ADR-0011：クライアント向け分析ガイド](adr/0011-client-review-analysis-guide.md) | MCP 結果へのガイド添付と分析の担当・制約 | 採用。版付きの本文を埋め込み、クライアントの最終回答は強制しない |
 | [ADR-0012：Steam の名前付き数値型](adr/0012-steam-domain-types.md) | Steam の ID・時刻・API 列挙値、JSON 境界との変換 | 採用。実装・検証は Issue #43 と作業記録に記載する |
-| [ADR-0013：各領域内のレイヤー分類](adr/0013-domain-folder-layers.md) | 既存領域を維持した domain・application・adapter の配置・依存 | 採用。各領域内の分類と依存検査を導入した。[検証記録](worklogs/56-domain-folder-layers.md) に実施結果を残す |
+| [ADR-0013：各領域内のレイヤー分類](adr/0013-domain-folder-layers.md) | 既存領域を維持した domain・application・adapter と受付の handler 配置・依存 | 採用。各領域内の分類と依存検査を導入した。[検証記録](worklogs/56-domain-folder-layers.md) に実施結果を残す |
 | [ADR-0014：Steam の収集状態](adr/0014-steam-collection-state.md) | 収集状態・重複・カーソル・終了と取得手順の境界 | 採用。収集状態と取得手順を分離した。[検証記録](worklogs/58-steam-collection-state.md) に実施結果を残す |
 | [ADR-0015：収集条件の生成と利用](adr/0015-collection-options-boundary.md) | 未検証の設定・有効な条件・ゼロ値・結果のコピーの境界 | 採用。収集条件の生成と利用を分離した。[検証記録](worklogs/60-collection-options-boundary.md) に実施結果を残す |
 | [ADR-0016：MCP の応答完了と同時枠](adr/0016-mcp-response-slot-lifetime.md) | 結果処理の同期実行と同時枠の保持・返却、レイヤー間の連携 | 採用。応答変換完了まで枠を保持する構成に修復した。[検証記録](worklogs/62-mcp-response-slot-lifetime.md) に実施結果を残す |

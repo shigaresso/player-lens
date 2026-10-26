@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-
+	"github.com/shigaresso/player-lens/internal/reviewmcp/adapter/internal/testutil"
 	mcpdomain "github.com/shigaresso/player-lens/internal/reviewmcp/domain"
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
 )
@@ -26,12 +26,12 @@ func TestMCPSharedUsageWindows(t *testing.T) {
 			limits mcpdomain.Limits
 			code   string
 		}{
-			{"分次の枠を共有する", testLimits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 1, RequestsPerDay: 10, MaxConcurrent: 1}), "rate_limited"},
-			{"日次の枠を共有する", testLimits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 10, RequestsPerDay: 1, MaxConcurrent: 1}), "daily_limit_reached"},
+			{"分次の枠を共有する", testutil.Limits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 1, RequestsPerDay: 10, MaxConcurrent: 1}), "rate_limited"},
+			{"日次の枠を共有する", testutil.Limits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 10, RequestsPerDay: 1, MaxConcurrent: 1}), "daily_limit_reached"},
 		} {
 			t.Run(version+"の別セッションと異なる版で"+tc.name, func(t *testing.T) {
 				var calls atomic.Int32
-				handler, err := NewHandler(fetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+				handler, err := NewHandler(testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 					calls.Add(1)
 					return steamdomain.ReviewPage{}, nil
 				}), tc.limits, nil)
@@ -51,7 +51,7 @@ func TestMCPSharedUsageWindows(t *testing.T) {
 				}
 
 				invalid, err := second.CallTool(ctx, &mcp.CallToolParams{Name: "collect_reviews", Arguments: map[string]any{"app_id": 0}})
-				if err != nil || !invalid.IsError || decodeOutput(t, invalid).ErrorCode != "invalid_input" {
+				if err != nil || !invalid.IsError || testutil.DecodeOutput(t, invalid).ErrorCode != "invalid_input" {
 					t.Fatalf("不正入力=%+v %v", invalid, err)
 				}
 
@@ -70,7 +70,7 @@ func TestMCPSharedUsageWindows(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				out := decodeOutput(t, result)
+				out := testutil.DecodeOutput(t, result)
 				if !result.IsError || out.ErrorCode != tc.code || calls.Load() != 1 || out.Collection.PagesFetched != 0 || out.Collection.StopReason != steamdomain.StopFailed || out.ReturnedCount != 0 {
 					t.Fatalf("共有制限=%+v calls=%d", out, calls.Load())
 				}
@@ -88,7 +88,7 @@ func TestMCPSharedConcurrentSlots(t *testing.T) {
 			defer unblock()
 
 			var calls atomic.Int32
-			handler, err := NewHandler(fetchFunc(func(ctx context.Context, _ steamdomain.AppID, _ steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+			handler, err := NewHandler(testutil.FetchFunc(func(ctx context.Context, _ steamdomain.AppID, _ steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				if calls.Add(1) == 1 {
 					close(started)
 					select {
@@ -99,7 +99,7 @@ func TestMCPSharedConcurrentSlots(t *testing.T) {
 				}
 
 				return steamdomain.ReviewPage{}, nil
-			}), testLimits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 2, RequestsPerDay: 2, MaxConcurrent: 1}), nil)
+			}), testutil.Limits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 2, RequestsPerDay: 2, MaxConcurrent: 1}), nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -137,7 +137,7 @@ func TestMCPSharedConcurrentSlots(t *testing.T) {
 			}
 
 			result, err := second.CallTool(ctx, params)
-			if err != nil || !result.IsError || decodeOutput(t, result).ErrorCode != "busy" || calls.Load() != 1 {
+			if err != nil || !result.IsError || testutil.DecodeOutput(t, result).ErrorCode != "busy" || calls.Load() != 1 {
 				t.Fatalf("実行中=%+v %v", result, err)
 			}
 
@@ -157,7 +157,7 @@ func TestMCPSharedConcurrentSlots(t *testing.T) {
 			}
 
 			result, err = second.CallTool(ctx, params)
-			if err != nil || !result.IsError || decodeOutput(t, result).ErrorCode != "daily_limit_reached" || calls.Load() != 2 {
+			if err != nil || !result.IsError || testutil.DecodeOutput(t, result).ErrorCode != "daily_limit_reached" || calls.Load() != 2 {
 				t.Fatalf("開始回数=%+v %v", result, err)
 			}
 		})

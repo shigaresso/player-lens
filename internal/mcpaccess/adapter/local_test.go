@@ -35,13 +35,10 @@ func TestProtectLocal(t *testing.T) {
 		{name: "HostとOriginの両方が不許可ならHostの説明を返す", host: "external.example", origin: "https://other.example", status: 403, hostRejected: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			access, err := mcpaccess.New("")
-			if err != nil {
-				t.Fatal(err)
-			}
+			access := mcpaccess.NewLocal()
 
 			calls := 0
-			handler, err := accessadapter.Protect(access, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			handler, err := accessadapter.Protect(access, "ローカルの Host のみ利用できます", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				calls++
 				w.Header().Set("X-Next", "reached")
 				w.WriteHeader(http.StatusAccepted)

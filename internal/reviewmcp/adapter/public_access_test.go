@@ -6,14 +6,13 @@ import (
 	"strings"
 	"testing"
 
-	mcpaccess "github.com/shigaresso/player-lens/internal/mcpaccess/domain"
 	"github.com/shigaresso/player-lens/internal/reviewmcp/adapter/internal/testutil"
 	mcpdomain "github.com/shigaresso/player-lens/internal/reviewmcp/domain"
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
 )
 
 func TestPublicMCPAccess(t *testing.T) {
-	access, err := mcpaccess.New("https://reviews.example/tools")
+	config, err := NewHTTPConfig("https://reviews.example/tools")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -21,7 +20,7 @@ func TestPublicMCPAccess(t *testing.T) {
 	handler, err := NewHandler(testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 		t.Fatal("受付検査でSteamに接続した")
 		return steamdomain.ReviewPage{}, nil
-	}), mcpdomain.DefaultLimits(), access)
+	}), mcpdomain.DefaultLimits(), config)
 	if err != nil {
 		t.Fatal(err)
 	}

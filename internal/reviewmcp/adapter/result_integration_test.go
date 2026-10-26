@@ -48,7 +48,7 @@ func TestMCPResultResponse(t *testing.T) {
 					}
 
 					return steamdomain.ReviewPage{}, nil
-				}), mcpdomain.DefaultLimits(), testutil.LocalAccess(t))
+				}), mcpdomain.DefaultLimits(), localHTTPConfig(t))
 				if err != nil {
 					t.Fatal(err)
 				}

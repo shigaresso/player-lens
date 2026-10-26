@@ -22,9 +22,9 @@ const maxRequestBodyBytes = 16 * 1024
 // limits は domain.NewLimits または domain.DefaultLimits で生成し、ゼロ値はエラーとする。
 // 利用回数はメモリ内に保持し、ハンドラーの作り直しでは引き継がない。
 // HTTP クライアントと接続プールの終了は呼び出し側が担当する。
-// access は mcpaccess.New で生成し、ローカル用・公開用ともに渡す。
-// nil・ゼロ値は構築エラーとし、許可 Host から認証なしで受け付ける。
-func NewHandler(fetcher steamapplication.PageFetcher, limits mcpdomain.Limits, access mcpaccess.Access) (http.Handler, error) {
+// config は NewHTTPConfig で生成し、ローカル用・公開用ともに渡す。
+// config のゼロ値は構築エラーとし、許可 Host から認証なしで受け付ける。
+func NewHandler(fetcher steamapplication.PageFetcher, limits mcpdomain.Limits, config HTTPConfig) (http.Handler, error) {
 	if fetcher == nil {
 		return nil, fmt.Errorf("prepare review MCP handler: %w", steamdomain.ErrInvalidArgument)
 	}
@@ -33,21 +33,15 @@ func NewHandler(fetcher steamapplication.PageFetcher, limits mcpdomain.Limits, a
 		return nil, fmt.Errorf("prepare review MCP handler: limits are required: %w", steamdomain.ErrInvalidArgument)
 	}
 
-	if access == nil {
-		return nil, fmt.Errorf("prepare review MCP handler: access is required: %w", mcpaccess.ErrInvalidConfig)
+	if config.access == nil {
+		return nil, fmt.Errorf("prepare review MCP handler: HTTP config is required: %w", mcpaccess.ErrInvalidConfig)
 	}
 
 	gate := mcpdomain.NewLimiter(limits, time.Now)
 	handler := mcp.NewStreamableHTTPHandler(func(request *http.Request) *mcp.Server {
 		return newServer(fetcher, request.Context(), gate)
-	}, &mcp.StreamableHTTPOptions{
-		Stateless:                    true,
-		JSONResponse:                 true,
-		PropagateRequestCancellation: true,
-		MaxRequestBodyBytes:          maxRequestBodyBytes,
-		DisableLocalhostProtection:   access.IsPublic(),
-	})
-	return accessadapter.Protect(access, handler)
+	}, &config.sdkOptions)
+	return accessadapter.Protect(config.access, config.deniedMessage, handler)
 }
 
 func newServer(fetcher steamapplication.PageFetcher, requestContext context.Context, gate *mcpdomain.Limiter) *mcp.Server {

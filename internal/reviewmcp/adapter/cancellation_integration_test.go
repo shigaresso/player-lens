@@ -24,7 +24,7 @@ func TestHTTPRequestCancellation(t *testing.T) {
 				<-ctx.Done()
 				finished <- ctx.Err()
 				return steamdomain.ReviewPage{}, ctx.Err()
-			}), mcpdomain.DefaultLimits(), testutil.LocalAccess(t))
+			}), mcpdomain.DefaultLimits(), localHTTPConfig(t))
 			if err != nil {
 				t.Fatal(err)
 			}

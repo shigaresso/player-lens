@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"fmt"
 	"net"
 	"net/url"
 	"strconv"
@@ -12,11 +13,17 @@ type publicAccess struct {
 	authority string
 }
 
-// IsPublic は公開 URL を持つ設定であることを返す。
-func (publicAccess) IsPublic() bool { return true }
+// NewPublic は HTTPS の正確な /tools の公開 URL を検査して許可条件を生成する。
+// 空 URL も不正設定とし、診断へ入力値を含めない。
+// 外部通信やバックグラウンド処理は開始しない。
+func NewPublic(publicURL string) (Access, error) {
+	u, authority, err := parseHTTPSURL(publicURL)
+	if err != nil || u.Path != "/tools" || u.RawPath != "" {
+		return nil, fmt.Errorf("MCP_PUBLIC_URL は HTTPS の /tools を指定する: %w", ErrInvalidConfig)
+	}
 
-// HostRejectionMessage は公開用の固定の Host 拒否理由を返す。
-func (publicAccess) HostRejectionMessage() string { return "許可されていない Host です" }
+	return publicAccess{authority: authority}, nil
+}
 
 // AllowsHost は公開 authority またはローカル Host と一致するかを返す。
 // authority を正規化して照合し、DNS 照会や通信は行わない。

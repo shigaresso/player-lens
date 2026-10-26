@@ -8,13 +8,9 @@ import (
 // localAccess は追加の設定を持たないローカル用の許可条件である。
 type localAccess struct{}
 
-// IsPublic はローカル用の設定であることを返す。
-func (localAccess) IsPublic() bool { return false }
-
-// HostRejectionMessage はローカル用の固定の Host 拒否理由を返す。
-func (localAccess) HostRejectionMessage() string {
-	return "ローカルの Host のみ利用できます"
-}
+// NewLocal は従来のローカル Host 判定を行う許可条件を生成する。
+// 外部通信やバックグラウンド処理は開始しない。
+func NewLocal() Access { return localAccess{} }
 
 // AllowsHost は従来のローカル判定で localhost・ループバックを許可する。
 // 公開 authority の正規化は適用せず、DNS 照会や通信は行わない。

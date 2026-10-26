@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	mcpaccess "github.com/shigaresso/player-lens/internal/mcpaccess/domain"
 	"github.com/shigaresso/player-lens/internal/reviewmcp/adapter/internal/testutil"
 	mcpdomain "github.com/shigaresso/player-lens/internal/reviewmcp/domain"
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
@@ -34,7 +33,7 @@ func (p publicHostTransport) RoundTrip(r *http.Request) (*http.Response, error) 
 func TestPublicMCPProtocolsAndSharedBudget(t *testing.T) {
 	for _, version := range []string{"2026-07-28", "2025-11-25", "2025-06-18", "2025-03-26"} {
 		t.Run(version+"で匿名接続し別セッションと利用枠を共有する", func(t *testing.T) {
-			access, err := mcpaccess.New("https://reviews.example/tools")
+			config, err := NewHTTPConfig("https://reviews.example/tools")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -43,7 +42,7 @@ func TestPublicMCPProtocolsAndSharedBudget(t *testing.T) {
 			handler, err := NewHandler(testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				calls.Add(1)
 				return steamdomain.ReviewPage{Reviews: []steamdomain.Review{{RecommendationID: 16, Text: "分析用の本文"}}, NextCursor: "next"}, nil
-			}), testutil.Limits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 1, RequestsPerDay: 10, MaxConcurrent: 1}), access)
+			}), testutil.Limits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 1, RequestsPerDay: 10, MaxConcurrent: 1}), config)
 			if err != nil {
 				t.Fatal(err)
 			}

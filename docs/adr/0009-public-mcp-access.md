@@ -28,14 +28,12 @@ Issue #56 では [ADR-0013](0013-domain-folder-layers.md) に従い、URL と Ho
 
 Issue #77 では HTTP の Protect／ProtectLocal を Controller と区別し、middleware として mcpaccess/adapter に維持する。MCP の生成・登録が外側から保護と Controller を接続する。Access と Host 照合、判定順と公開契約は変更しない。
 
-## 許可条件と保護手順の統一（Issue #82）
+## 許可条件と HTTP 設定・保護手順の分離（Issue #82）
 
-ユーザーの了承に基づき、ローカルにも Access を生成する方式を採用する。Issue #48 のモード別の保護関数と、URL 未指定を nil とする Go API 契約を置き換える。生成済み Access の IsPublic・AllowsHost の共通契約で条件を伝え、Protect の1実装で HTTP の保護手順を実行する。ProtectLocal と NewHandler の保護関数選択は削除する。
+ユーザーが了承した最終案に基づき、Access は Host の許可判定だけを担う共通契約とする。NewLocal と NewPublic から、設定値を持たない localAccess と authority だけを持つ publicAccess の値を生成する。公開用の URL 検査と、各型の既存の Host 判定を維持する。
 
-判定関数だけを共通の内部関数へ渡し、公開用とローカル用の入口を残す案とも比較した。今回は両モードの設定を生成済みの同じ型で渡せることと、呼び出し側が保護手順を選ぶ必要をなくすことを優先した。nil／ゼロ値の拒否と呼び出し元の変更を含むため、HTTP の保護本体の抽出だけの変更とは扱わない。
+公開／ローカルを選ぶ分岐は reviewmcp/adapter の NewHTTPConfig に1か所だけ置く。この生成関数が許可条件・固定の拒否文言・SDK のオプションを HTTPConfig の非公開フィールドへまとめ、整合した組み合わせを作る。全項目を両モードで使い、利用側は設定済みの値をそのまま使う。環境変数の読み取りは cmd の ReadMCPHTTPConfig とし、検査をクライアント構築と待ち受けより前に行う。
 
-ローカルの Host 判定と公開 authority の正規化はそれぞれ維持し、拒否の優先順・403の文言・SDK の保護設定と公開 HTTP 動作を変えない。nil／ゼロ値は未初期化であり、有効なローカル設定は New で生成する。SDK・UseCase・healthz の責務や、認証・利用枠の契約は変更しない。
+Protect は条件と拒否文言を受け取る1つの HTTP 保護手順とする。Host→Origin→next の順序、403文言、後続の応答、SDK の保護設定を維持する。未生成の HTTPConfig や nil の保護依存は構築エラーとする。旧 domain.New・IsPublic・HostRejectionMessage・ProtectLocal は残さない。
 
-ユーザーの指摘を受け、Access を localOnly と authority の組み合わせで表す構造体から共通契約へ変更する。ローカル用はフィールドを持たない localAccess、公開用は authority だけを持つ publicAccess とし、非公開の値型を New から返す。両者の種類は型で決まるためモードフラグを持たない。IsInitialized は廃止し、Access の未生成のゼロ値は nil として公開境界で拒否する。interface は実在する2つの許可条件と、それを利用する保護・SDK 設定に必要な契約に限定する。
-
-モードを選び直す分岐を利用側に残さないため、固定の Host 拒否理由も各具体型の HostRejectionMessage が提供する。Protect が IsPublic で文言を選ぶ分岐は廃止する。domain は許可条件と拒否理由を返し、HTTP ステータス・ヘッダー・本文形式は adapter に維持する。SDK の設定は型が返す IsPublic をそのまま使う。Host が許可されるかの判定や入力エラーの処理は共通手順の条件分岐として残す。
+先行実装では Access を mode フラグ付き構造体、その後は表示文言・公開状態も提供する interface としていた。前者は状態の関係が読みにくく、後者はドメインの許可判定に HTTP の表示と構築の関心を集めていた。今回は可変部分を組み立てる場所を HTTP adapter とし、ドメインの実体を分けたまま共通手順に渡す方式を採用した。段階ごとの検証は Issue と作業記録へ残す。

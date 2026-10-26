@@ -19,11 +19,13 @@ Issue #29 で、公開 MCP を OAuth なしで提供する。Go はレビュー�
 
 ### 保護の組み立ての境界（Issue #82）
 
-`Access` は AllowsHost・IsPublic・HostRejectionMessage の共通契約とし、New は URL 未指定なら設定値を持たない localAccess、指定時は検査済み authority だけを持つ publicAccess を返す。両方とも非公開の値型とし、mode フラグと空フィールドの組み合わせで表さない。正常な生成結果に nil ポインターは含まない。未指定を nil で表す従来の Go API 契約を変更する。Access のゼロ値は nil とし、Protect と NewHandler が未生成として拒否する。IsInitialized は持たず、呼び出し元は New から生成した Access を渡す。
+domain の Access は AllowsHost だけを持つ共通契約とする。NewLocal は設定値を持たない localAccess、NewPublic は HTTPS の正確な /tools を検査して authority だけを保持する publicAccess を返す。両方とも非公開の値型とし、mode フラグと空フィールドの組み合わせで表さない。NewPublic に空 URL を渡した場合は不正設定とし、ローカル用へ暗黙変換しない。
 
-両モードとも `mcpaccess/adapter.Protect(access, next)` が HTTP の保護を担当する。Access.AllowsHost は、ローカル用では従来の localHost、公開用では従来の authority 正規化と照合を使い、判定範囲を変えない。ProtectLocal は廃止する。`reviewmcp.NewHandler` は常に Protect を呼び、SDK の DisableLocalhostProtection は Access.IsPublic から決める。
+reviewmcp/adapter の NewHTTPConfig(publicURL) が公開／ローカルを選ぶ。未指定なら NewLocal、指定時は NewPublic を呼び、許可条件・固定の拒否文言・StreamableHTTPOptions を HTTPConfig の非公開フィールドへまとめる。共通の SDK 設定は1か所で定義し、公開時だけ DisableLocalhostProtection を有効にする。設定値は生成後に外部から変更できない。構築時には通信・時計・新しい資源を必要としない。
 
-Protect は有効な Access と非 nil の next を受け取り、未初期化の設定や nil の next は ErrInvalidConfig と nil handler を返す。Host の検査、Go の cross-origin 保護、next の順に処理する。Host の不許可では403と、ローカル用は「ローカルの Host のみ利用できます」、公開用は「許可されていない Host です」の説明文を返す。拒否理由は選択済みの型が返す固定の HostRejectionMessage から構築時に取得する。Protect は公開／ローカルを再判定せず、HTTP のステータス・ヘッダー・本文形式を担当する。Host または cross-origin で拒否した場合は next を呼ばず、許可時は next を1回だけ呼び、その応答を維持する。構築時に通信・時計・新しい資源を必要としない。
+cmd の ReadMCPHTTPConfig が環境変数を読み NewHTTPConfig に渡す。URL の検査はクライアント構築・待ち受けより前に行う。NewHandler は生成済みの HTTPConfig を受け取り、設定済みの値をそのまま使う。HTTPConfig のゼロ値は未生成として ErrInvalidConfig と nil handler を返す。IsPublic・HostRejectionMessage と domain.New は廃止し、利用側でモードを選び直さない。
+
+両モードとも mcpaccess/adapter.Protect(access, deniedMessage, next) が Host→cross-origin→next の共通手順を実行する。Access の nil・next の nil は ErrInvalidConfig と nil handler を返す。Host が不許可なら403と、生成時に渡された固定の拒否文言を返す。ローカル用は「ローカルの Host のみ利用できます」、公開用は「許可されていない Host です」を維持する。Host／Origin で拒否した場合は next を呼ばず、許可時は next を1回だけ呼び、その応答を維持する。ローカルと公開の Host 判定・正規化は従来の本体を引き継ぐ。
 
 ## 資源・共有範囲
 

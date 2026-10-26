@@ -43,7 +43,7 @@ func TestMCPProtocol(t *testing.T) {
 			handler, err := NewHandler(testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				calls.Add(1)
 				return steamdomain.ReviewPage{Reviews: []steamdomain.Review{{RecommendationID: 15, Text: "分析用の本文"}}, NextCursor: "next"}, nil
-			}), mcpdomain.DefaultLimits(), testutil.LocalAccess(t))
+			}), mcpdomain.DefaultLimits(), localHTTPConfig(t))
 			if err != nil {
 				t.Fatal(err)
 			}

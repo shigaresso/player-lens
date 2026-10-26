@@ -39,13 +39,13 @@ func TestProtect(t *testing.T) {
 				publicURL = "https://reviews.example/tools"
 			}
 
-			access, err := mcpaccess.New(publicURL)
+			access, err := mcpaccess.NewPublic(publicURL)
 			if err != nil {
 				t.Fatal(err)
 			}
 
 			calls := 0
-			handler, err := accessadapter.Protect(access, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			handler, err := accessadapter.Protect(access, "許可されていない Host です", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				calls++
 				w.WriteHeader(202)
 			}))
@@ -87,7 +87,7 @@ func TestProtect(t *testing.T) {
 }
 
 func TestProtectConfiguration(t *testing.T) {
-	valid, err := mcpaccess.New("https://reviews.example/tools")
+	valid, err := mcpaccess.NewPublic("https://reviews.example/tools")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,7 +101,7 @@ func TestProtectConfiguration(t *testing.T) {
 		{"nilハンドラーを拒否する", valid, nil},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			handler, err := accessadapter.Protect(tc.access, tc.next)
+			handler, err := accessadapter.Protect(tc.access, "許可されていない Host です", tc.next)
 			if handler != nil || !errors.Is(err, mcpaccess.ErrInvalidConfig) {
 				t.Fatalf("handler=%v err=%v", handler, err)
 			}

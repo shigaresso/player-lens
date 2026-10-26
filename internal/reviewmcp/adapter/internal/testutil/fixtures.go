@@ -124,7 +124,7 @@ func (e *ConversionProbeError) Is(target error) bool {
 }
 
 // LocalAccess はテスト用の生成済みローカルアクセス設定を返す。
-func LocalAccess(t *testing.T) *mcpaccess.Access {
+func LocalAccess(t *testing.T) mcpaccess.Access {
 	t.Helper()
 	access, err := mcpaccess.New("")
 	if err != nil {

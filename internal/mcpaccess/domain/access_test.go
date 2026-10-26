@@ -43,7 +43,7 @@ func TestNewAccess(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			access, err := mcpaccess.New(tc.value)
 			if tc.valid {
-				if err != nil || access == nil || !access.IsInitialized() || access.IsPublic() == tc.local {
+				if err != nil || access == nil || access.IsPublic() == tc.local {
 					t.Fatalf("access=%v err=%v", access, err)
 				}
 

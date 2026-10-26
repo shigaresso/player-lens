@@ -19,7 +19,7 @@ Issue #29 で、公開 MCP を OAuth なしで提供する。Go はレビュー�
 
 ### 保護の組み立ての境界（Issue #82）
 
-`mcpaccess.New` は URL 未指定でも初期化済みのローカル用 Access を生成し、指定時は公開用 Access を生成する。未指定を nil で表す従来の Go API 契約を変更する。IsInitialized は生成済みか、IsPublic は公開用かを返す。nil とゼロ値は未初期化として扱い、ローカルの既定値として解釈しない。
+`Access` は AllowsHost と IsPublic の共通契約とし、New は URL 未指定なら設定値を持たない localAccess、指定時は検査済み authority だけを持つ publicAccess を返す。両方とも非公開の値型とし、mode フラグと空フィールドの組み合わせで表さない。正常な生成結果に nil ポインターは含まない。未指定を nil で表す従来の Go API 契約を変更する。Access のゼロ値は nil とし、Protect と NewHandler が未生成として拒否する。IsInitialized は持たず、呼び出し元は New から生成した Access を渡す。
 
 両モードとも `mcpaccess/adapter.Protect(access, next)` が HTTP の保護を担当する。Access.AllowsHost は、ローカル用では従来の localHost、公開用では従来の authority 正規化と照合を使い、判定範囲を変えない。ProtectLocal は廃止する。`reviewmcp.NewHandler` は常に Protect を呼び、SDK の DisableLocalhostProtection は Access.IsPublic から決める。
 

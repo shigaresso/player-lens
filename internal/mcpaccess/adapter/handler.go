@@ -10,8 +10,8 @@ import (
 // Protect は生成済み Access の許可 Host と cross-origin を MCP の手前で検査する。
 // Authorization は要求しない。next は /tools を担当し、healthz は外側に置く。
 // ゼロ値・nil の設定やハンドラーは ErrInvalidConfig とする。
-func Protect(a *mcpaccess.Access, next http.Handler) (http.Handler, error) {
-	if !a.IsInitialized() || next == nil {
+func Protect(a mcpaccess.Access, next http.Handler) (http.Handler, error) {
+	if a == nil || next == nil {
 		return nil, fmt.Errorf("MCP の保護には有効な設定とハンドラーが必要: %w", mcpaccess.ErrInvalidConfig)
 	}
 

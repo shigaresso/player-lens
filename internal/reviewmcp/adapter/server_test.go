@@ -97,21 +97,14 @@ func TestLocalHost(t *testing.T) {
 }
 
 func TestNewHandlerRejectsUninitializedAccess(t *testing.T) {
-	for _, tc := range []struct {
-		name   string
-		access *mcpaccess.Access
-	}{
-		{"nil設定をローカル用として扱わない", nil},
-		{"ゼロ値設定をローカル用として扱わない", &mcpaccess.Access{}},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			handler, err := NewHandler(testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
-				t.Fatal("設定不正の構築時に取得した")
-				return steamdomain.ReviewPage{}, nil
-			}), mcpdomain.DefaultLimits(), tc.access)
-			if handler != nil || !errors.Is(err, mcpaccess.ErrInvalidConfig) {
-				t.Fatalf("handler=%v err=%v", handler, err)
-			}
-		})
-	}
+	t.Run("Accessのnil・ゼロ値をローカル用として扱わない", func(t *testing.T) {
+		var access mcpaccess.Access
+		handler, err := NewHandler(testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+			t.Fatal("設定不正の構築時に取得した")
+			return steamdomain.ReviewPage{}, nil
+		}), mcpdomain.DefaultLimits(), access)
+		if handler != nil || !errors.Is(err, mcpaccess.ErrInvalidConfig) {
+			t.Fatalf("handler=%v err=%v", handler, err)
+		}
+	})
 }

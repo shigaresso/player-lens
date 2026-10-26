@@ -61,7 +61,7 @@ AppID・RecommendationID・TimestampCreated・TimestampUpdated は steam/domain 
 - steam/domain は型・API 列挙値・純粋な正規化と収集状態、steam/application は操作と PageFetcher・CollectionSaver、steam/adapter は HTTP と要求・応答の変換を置く。ReviewType の基底型と定数の定義元は維持した。
 - reviewmcp/domain は Limits・Limiter と受付・返却、application は収集の実行と期限、adapter は HTTP/SDK と入力・結果・ガイドを置く。入力不正は取得と受付の前に拒否し、拒否時の JSON と取得失敗の原因保持を維持する。
 - reviewcli/adapter と jsonoutput/adapter は入口と出力の既存の責務を維持する。空の domain/application は追加しない。
-- mcpaccess/domain の Access は IsInitialized・AllowsHost で設定と照合を提供し、adapter の Protect が設定と next を受け取って HTTP を保護する。内部の authority 表現は公開しない。
+- mcpaccess/domain の Access は非公開のローカル用・公開用の値型が満たす AllowsHost・IsPublic の共通契約とし、adapter の Protect が設定と next を受け取って HTTP を保護する。内部の authority 表現は公開しない。
 - cmd/server と cmd/collect-reviews は main の起動順序・具体的な依存の所有と終了を維持し、既存の I/O と表示をそれぞれの adapter へ置く。
 
 ## Controller の配置（Issue #77）

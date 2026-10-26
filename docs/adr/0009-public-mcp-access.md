@@ -30,8 +30,10 @@ Issue #77 では HTTP の Protect／ProtectLocal を Controller と区別し、m
 
 ## 許可条件と保護手順の統一（Issue #82）
 
-ユーザーの了承に基づき、ローカルにも Access を生成する方式を採用する。Issue #48 のモード別の保護関数と、URL 未指定を nil とする Go API 契約を置き換える。生成済み Access の IsInitialized・IsPublic・AllowsHost で条件を伝え、Protect の1実装で HTTP の保護手順を実行する。ProtectLocal と NewHandler の保護関数選択は削除する。
+ユーザーの了承に基づき、ローカルにも Access を生成する方式を採用する。Issue #48 のモード別の保護関数と、URL 未指定を nil とする Go API 契約を置き換える。生成済み Access の IsPublic・AllowsHost の共通契約で条件を伝え、Protect の1実装で HTTP の保護手順を実行する。ProtectLocal と NewHandler の保護関数選択は削除する。
 
 判定関数だけを共通の内部関数へ渡し、公開用とローカル用の入口を残す案とも比較した。今回は両モードの設定を生成済みの同じ型で渡せることと、呼び出し側が保護手順を選ぶ必要をなくすことを優先した。nil／ゼロ値の拒否と呼び出し元の変更を含むため、HTTP の保護本体の抽出だけの変更とは扱わない。
 
 ローカルの Host 判定と公開 authority の正規化はそれぞれ維持し、拒否の優先順・403の文言・SDK の保護設定と公開 HTTP 動作を変えない。nil／ゼロ値は未初期化であり、有効なローカル設定は New で生成する。SDK・UseCase・healthz の責務や、認証・利用枠の契約は変更しない。
+
+ユーザーの指摘を受け、Access を localOnly と authority の組み合わせで表す構造体から共通契約へ変更する。ローカル用はフィールドを持たない localAccess、公開用は authority だけを持つ publicAccess とし、非公開の値型を New から返す。両者の種類は型で決まるためモードフラグを持たない。IsInitialized は廃止し、Access の未生成のゼロ値は nil として公開境界で拒否する。interface は実在する2つの許可条件と、それを利用する保護・SDK 設定に必要な2メソッドに限定する。

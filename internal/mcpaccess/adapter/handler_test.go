@@ -94,11 +94,10 @@ func TestProtectConfiguration(t *testing.T) {
 
 	for _, tc := range []struct {
 		name   string
-		access *mcpaccess.Access
+		access mcpaccess.Access
 		next   http.Handler
 	}{
-		{"nil設定を拒否する", nil, http.NotFoundHandler()},
-		{"ゼロ値を拒否する", &mcpaccess.Access{}, http.NotFoundHandler()},
+		{"Accessのnil・ゼロ値を拒否する", nil, http.NotFoundHandler()},
 		{"nilハンドラーを拒否する", valid, nil},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

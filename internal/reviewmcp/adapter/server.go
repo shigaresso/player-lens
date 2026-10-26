@@ -24,13 +24,17 @@ const maxRequestBodyBytes = 16 * 1024
 // HTTP クライアントと接続プールの終了は呼び出し側が担当する。
 // access は mcpaccess.New で生成し、ローカル用・公開用ともに渡す。
 // nil・ゼロ値は構築エラーとし、許可 Host から認証なしで受け付ける。
-func NewHandler(fetcher steamapplication.PageFetcher, limits mcpdomain.Limits, access *mcpaccess.Access) (http.Handler, error) {
+func NewHandler(fetcher steamapplication.PageFetcher, limits mcpdomain.Limits, access mcpaccess.Access) (http.Handler, error) {
 	if fetcher == nil {
 		return nil, fmt.Errorf("prepare review MCP handler: %w", steamdomain.ErrInvalidArgument)
 	}
 
 	if limits == (mcpdomain.Limits{}) {
 		return nil, fmt.Errorf("prepare review MCP handler: limits are required: %w", steamdomain.ErrInvalidArgument)
+	}
+
+	if access == nil {
+		return nil, fmt.Errorf("prepare review MCP handler: access is required: %w", mcpaccess.ErrInvalidConfig)
 	}
 
 	gate := mcpdomain.NewLimiter(limits, time.Now)

@@ -21,7 +21,7 @@
 | [レビュー分析仕様](specs/review-analysis.md) | クライアント AI 向けガイドの提供・内容・出力と保証範囲 | Issue #35 で版付きの案内を導入した。分析生成・意味検証はバックエンドに導入しない |
 | [分析の利用手順](review-analysis.md) | 依頼テンプレート・深掘り・結果の確認 | [架空データの例](examples/review-analysis.md) を併記した。実 AI の動作検証とは区別する |
 | [MCP 利用制限](specs/mcp-usage-limits.md) | MCP の開始回数・固定窓・同時実行数・設定・拒否 | Issue #27 で1プロセスの制限を導入した。共有予算・認証は未導入。公開配置の基本通信は確認済み |
-| [認証なしの公開 MCP](specs/mcp-public-access.md) | 公開 URL、許可 Host、匿名公開 | Issue #29 で URL と Host 保護を導入した。ユーザー配置の基本 HTTP 通信は成功、実 ChatGPT 接続は未確認 |
+| [認証なしの公開 MCP](specs/mcp-public-access.md) | 公開 URL、許可 Host、匿名公開 | Issue #29 で URL と Host 保護を導入した。ユーザー配置の基本 HTTP 通信は成功、実 ChatGPT 接続は未確認。Issue #82 で両モードの Access と保護を統一し、[検証記録](worklogs/82-unified-mcp-access.md) に結果を残す |
 | [Render 配置基盤](specs/render-deployment.md) | イメージ公開・digest・Render 設定・公開接続検査 | Issue #31 で配置準備を導入した。ユーザー配置の基本通信は成功、digest 経路の実配置は未実施 |
 | [受付とルーティング](handler-routing.md) | Controller の一覧性、handler 直下と詳細の境界、生成・登録・SDK 委譲 | Issue #77 で Controller の直下配置と補助フォルダを区別する構成に揃えた。[検証記録](worklogs/77-route-handler-layout.md) に実行時の契約と確認範囲を記載する。Issue #80 で healthz と MCP の入口を Handle に統一し、[記録](worklogs/80-named-mcp-controller.md) に検証を残す |
 | [ユースケース](use-cases.md) | 操作全体の一覧・責務と adapter・入口の境界 | 収集と収集・保存操作を導入した。CLI と MCP を接続した。Web は未接続 |

@@ -36,7 +36,7 @@ func TestCollectFailure(t *testing.T) {
 
 				return steamdomain.ReviewPage{}, tc.cause
 			})
-			result, err := collect(context.Background(), fetcher, json.RawMessage(`{"app_id":440,"max_reviews":3}`), mcpdomain.NewLimiter(mcpdomain.DefaultLimits(), time.Now))
+			result, err := callCollectReviews(t, context.Background(), fetcher, json.RawMessage(`{"app_id":440,"max_reviews":3}`), mcpdomain.NewLimiter(mcpdomain.DefaultLimits(), time.Now))
 			if err != nil || result == nil || !result.IsError {
 				t.Fatalf("result=%+v err=%v", result, err)
 			}

@@ -36,6 +36,8 @@ handler 直下の本番ファイルは、リクエストの事前処理・UseCas
 
 healthz は cmd/server/adapter/handler/health.go、MCP の context 連携と収集操作への接続は reviewmcp/adapter/handler/collect_reviews.go に置く。専用の入力・応答・schema・ガイドは handler/protocol、healthz のログ整形は handler/logging に置き、直下の Controller から呼ぶ。単に入口を委譲するだけのファイルへ流れを隠さない。
 
+Issue #80 で自作の Controller の実行メソッド名を Handle に統一する。healthHandler.Handle は標準 http.HandlerFunc、collectReviewsHandler.Handle は SDK の ToolHandler に適合するメソッド値として生成関数から返す。HTTP と MCP の引数・戻り値は各接続の契約を維持し、共通 interface や独自の委譲メソッドは追加しない。ServeHTTP は HTTP の契約名であり、Controller 一般の名称とは扱わない。MCP は HTTP ごとの固定の依存と、Handle が所有する呼び出しごとの context を分け、HTTP の受付は SDK に任せる。
+
 MCP の SDK と共有 limiter の構築・Server の設定と登録・ツール定義は外側の adapter、Host/Origin の middleware は mcpaccess/adapter に配置する。生成と登録、UseCase と表現の既存の責務・寿命を維持する。補助パッケージは親の Controller や構築側を参照しない。必要な入出力・schema の API だけを公開し、非公開の受信型や JSON 出力型を一律に公開しない。
 
 登録元・Controller・補助処理と SDK 委譲の対応は [受付とルーティングの一覧](../handler-routing.md) に記録する。配置検査は Controller と直下の一覧性を確認し、生成・middleware の外側配置と専用の補助フォルダを許可する。構文による検査であり、任意の動的な型や SDK 内部の全ディスパッチを証明するものではない。既存のレイヤー依存・本番からのテスト helper 参照の禁止も維持する。

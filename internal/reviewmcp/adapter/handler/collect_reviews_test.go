@@ -7,8 +7,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/shigaresso/player-lens/internal/reviewmcp/adapter/internal/testutil"
 	mcpdomain "github.com/shigaresso/player-lens/internal/reviewmcp/domain"
+	steamapplication "github.com/shigaresso/player-lens/internal/steam/application"
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
 )
 
@@ -35,7 +37,7 @@ func TestCollect(t *testing.T) {
 
 			return steamdomain.ReviewPage{Reviews: []steamdomain.Review{{RecommendationID: 1, Text: "重複の本文"}, {RecommendationID: 3, Text: "最後の本文"}}, NextCursor: "end"}, nil
 		})
-		result, err := collect(context.Background(), fetcher, json.RawMessage(`{"app_id":440,"language":"japanese","max_reviews":3}`), mcpdomain.NewLimiter(mcpdomain.DefaultLimits(), time.Now))
+		result, err := callCollectReviews(t, context.Background(), fetcher, json.RawMessage(`{"app_id":440,"language":"japanese","max_reviews":3}`), mcpdomain.NewLimiter(mcpdomain.DefaultLimits(), time.Now))
 		if err != nil || result.IsError {
 			t.Fatalf("result = %+v, %v", result, err)
 		}
@@ -60,7 +62,7 @@ func TestCollect(t *testing.T) {
 		}
 	})
 	t.Run("空の結果も配列と終了理由を返す", func(t *testing.T) {
-		result, err := collect(context.Background(), testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+		result, err := callCollectReviews(t, context.Background(), testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 			return steamdomain.ReviewPage{}, nil
 		}), json.RawMessage(`{"app_id":440}`), mcpdomain.NewLimiter(mcpdomain.DefaultLimits(), time.Now))
 		if err != nil || result.IsError {
@@ -73,12 +75,20 @@ func TestCollect(t *testing.T) {
 		}
 	})
 	t.Run("入力不正では通信せずツールエラーを返す", func(t *testing.T) {
-		result, err := collect(context.Background(), testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+		result, err := callCollectReviews(t, context.Background(), testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 			t.Fatal("不正入力で取得した")
 			return steamdomain.ReviewPage{}, nil
 		}), json.RawMessage(`{"app_id":0}`), mcpdomain.NewLimiter(mcpdomain.DefaultLimits(), time.Now))
 		if err != nil || !result.IsError || testutil.DecodeOutput(t, result).ErrorCode != "invalid_input" {
 			t.Fatalf("%+v %v", result, err)
 		}
+	})
+}
+
+func callCollectReviews(t *testing.T, ctx context.Context, fetcher steamapplication.PageFetcher, input json.RawMessage, gate *mcpdomain.Limiter) (*mcp.CallToolResult, error) {
+	t.Helper()
+	handler := NewCollectReviewsHandler(fetcher, ctx, gate)
+	return handler(ctx, &mcp.CallToolRequest{
+		Params: &mcp.CallToolParamsRaw{Arguments: input},
 	})
 }

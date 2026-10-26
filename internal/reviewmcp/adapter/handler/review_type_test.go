@@ -26,7 +26,7 @@ func TestCollectionReviewTypePartialFailure(t *testing.T) {
 
 		return steamdomain.ReviewPage{Reviews: []steamdomain.Review{{RecommendationID: 1, Text: "取得済み"}}, NextCursor: "next"}, nil
 	})
-	result, err := collect(t.Context(), fetcher, json.RawMessage(`{"app_id":440,"review_type":"negative","page_size":1,"max_reviews":2,"max_pages":2}`), mcpdomain.NewLimiter(mcpdomain.DefaultLimits(), time.Now))
+	result, err := callCollectReviews(t, t.Context(), fetcher, json.RawMessage(`{"app_id":440,"review_type":"negative","page_size":1,"max_reviews":2,"max_pages":2}`), mcpdomain.NewLimiter(mcpdomain.DefaultLimits(), time.Now))
 	if err != nil {
 		t.Fatal(err)
 	}

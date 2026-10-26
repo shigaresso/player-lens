@@ -48,7 +48,7 @@ func TestCollectionContext(t *testing.T) {
 
 				return steamdomain.ReviewPage{}, nil
 			})
-			result, err := collect(ctx, fetcher, json.RawMessage(`{"app_id":440}`), mcpdomain.NewLimiter(mcpdomain.DefaultLimits(), time.Now))
+			result, err := callCollectReviews(t, ctx, fetcher, json.RawMessage(`{"app_id":440}`), mcpdomain.NewLimiter(mcpdomain.DefaultLimits(), time.Now))
 			if err != nil || result.IsError {
 				t.Fatalf("%+v %v", result, err)
 			}
@@ -78,7 +78,7 @@ func TestCollectionContext(t *testing.T) {
 
 			defer cancel()
 
-			result, err := collect(ctx, testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+			result, err := callCollectReviews(t, ctx, testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				t.Fatal("終了済み context で取得した")
 				return steamdomain.ReviewPage{}, nil
 			}), json.RawMessage(`{"app_id":440}`), mcpdomain.NewLimiter(mcpdomain.DefaultLimits(), time.Now))

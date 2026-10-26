@@ -20,6 +20,8 @@ run がルーターも生成し、serveradapter.RegisterRoutes が生成済み�
 
 Issue #77 で Controller を cmd/server/adapter/handler/health.go、ログ整形をその下の logging に配置し、登録は外側の adapter に維持した。共有するパスは handler.HealthPath の1定義とする。healthHandler は応答と計測、下位パッケージの logging.HealthCheck は1回の生存確認の結果と固定属性・レベル・安全な原因分類を担当する。関数ごとにイベントを増やさず、health_check.completed の契約を [HTTP 仕様](../specs/http-server.md#生存確認の構造化ログissue-72) にまとめる。
 
+Issue #80 で実行メソッドを healthHandler.Handle に揃えた。NewHealthHandler は http.HandlerFunc(handler.Handle) を返し、標準ライブラリの ServeHTTP から接続する。MCP の Controller と実行入口名を揃え、応答・ログと生成・登録の契約は維持する。
+
 通常 return ごとに1回記録し、LogAttrs へ request context を渡す。将来のトレース情報の経路を維持するもので、仮の trace ID や OTel 型を追加しない。application/domain は変更せず、SDK と送信先・終了時のフラッシュは将来の起動設定の責務とする。
 
 成功は INFO、本文 Write の失敗は ERROR とする。任意のエラー文字列を公開せず、分類不能な原因は unknown とする。既存の原因表示の仕様・テストをこの契約へ引き継ぐ。healthz で選択した200と配信結果を区別し、Write 失敗時の再書き込みは行わない。

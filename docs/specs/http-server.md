@@ -13,7 +13,7 @@
 
 ## 起動時の生成と経路登録（Issue #74）
 
-main は logger とプロセスの context を生成し、run は各 handler とルーターを組み立てる。server adapter/handler の NewHealthHandler(logger, now) は生存確認の handler を生成する。生成時にはリクエスト処理・時刻取得・ログ出力を行わない。MCP の handler は従来どおり reviewmcp.NewHandler で生成する。
+main は logger とプロセスの context を生成し、run は各 handler とルーターを組み立てる。server adapter/handler の NewHealthHandler(logger, now) は生存確認の handler を生成する。Issue #80 で実行入口を healthHandler.Handle とし、生成関数は http.HandlerFunc(handler.Handle) を返す。標準ライブラリの ServeHTTP が Handle を呼び、公開する http.Handler 契約を維持する。生成時にはリクエスト処理・時刻取得・ログ出力を行わない。MCP の handler は従来どおり reviewmcp.NewHandler で生成する。
 
 run は http.NewServeMux でルーターを生成し、RegisterRoutes(mux, healthHandler, mcpHandler) で経路を登録してから待ち受けを開始する。RegisterRoutes は既存の mux に生成済み handler を登録するだけで、依存や handler・ルーターを生成せず、handler を実行しない。無関係な既存経路は維持する。旧 server adapter の NewHandler は残さない。
 
@@ -31,7 +31,7 @@ Issue #76 で登録パターンのパスとログの http.route を1定義へ共
        → listener を生成 → Serve で受付と終了を管理
 
 リクエスト時:
-  ルーター → healthHandler.ServeHTTP
+  ルーター → 標準 http.HandlerFunc.ServeHTTP → healthHandler.Handle
            → 開始時刻 → 応答ヘッダー → GET の本文書き込み
            → 所要時間と書き込み結果 → logging.HealthCheck → slog
 ```

@@ -28,7 +28,7 @@ func TestCollectCombinedFailurePriority(t *testing.T) {
 			fetcher := testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				return steamdomain.ReviewPage{}, tc.cause
 			})
-			result, err := collect(t.Context(), fetcher, json.RawMessage(`{"app_id":440}`), mcpdomain.NewLimiter(mcpdomain.DefaultLimits(), time.Now))
+			result, err := callCollectReviews(t, t.Context(), fetcher, json.RawMessage(`{"app_id":440}`), mcpdomain.NewLimiter(mcpdomain.DefaultLimits(), time.Now))
 			if err != nil || result == nil || !result.IsError {
 				t.Fatalf("result=%+v err=%v", result, err)
 			}
@@ -65,7 +65,7 @@ func TestCollectOversizedFailure(t *testing.T) {
 
 		return steamdomain.ReviewPage{}, cause
 	})
-	result, err := collect(t.Context(), fetcher, json.RawMessage(`{"app_id":440,"max_reviews":2}`), mcpdomain.NewLimiter(mcpdomain.DefaultLimits(), time.Now))
+	result, err := callCollectReviews(t, t.Context(), fetcher, json.RawMessage(`{"app_id":440,"max_reviews":2}`), mcpdomain.NewLimiter(mcpdomain.DefaultLimits(), time.Now))
 	if err != nil || result == nil || !result.IsError {
 		t.Fatalf("result=%+v err=%v", result, err)
 	}

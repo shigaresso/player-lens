@@ -62,19 +62,19 @@ func TestCollectionReleasesSlotAfterFailure(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			result, err := collect(ctx, fetcher, input, gate)
+			result, err := callCollectReviews(t, ctx, fetcher, input, gate)
 			if err != nil || !result.IsError || testutil.DecodeOutput(t, result).ErrorCode != tc.code {
 				t.Fatalf("初回=%+v %v", result, err)
 			}
 
 			first = false
-			result, err = collect(context.Background(), fetcher, input, gate)
+			result, err = callCollectReviews(t, context.Background(), fetcher, input, gate)
 			if err != nil || result.IsError {
 				t.Fatalf("枠を返却しなかった: %+v %v", result, err)
 			}
 
 			before := calls
-			result, err = collect(context.Background(), fetcher, input, gate)
+			result, err = callCollectReviews(t, context.Background(), fetcher, input, gate)
 			if err != nil || !result.IsError || testutil.DecodeOutput(t, result).ErrorCode != "rate_limited" || calls != before {
 				t.Fatalf("開始回数を戻した: %+v %v", result, err)
 			}
@@ -91,7 +91,7 @@ func TestCollectionBusyResponse(t *testing.T) {
 
 	defer release()
 
-	result, err := collect(context.Background(), testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+	result, err := callCollectReviews(t, context.Background(), testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 		t.Fatal("同時枠のない呼び出しで取得した")
 		return steamdomain.ReviewPage{}, nil
 	}), json.RawMessage(`{"app_id":440}`), gate)

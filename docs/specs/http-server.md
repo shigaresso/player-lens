@@ -33,10 +33,10 @@ Issue #76 で登録パターンのパスとログの http.route を1定義へ共
 リクエスト時:
   ルーター → healthHandler.ServeHTTP
            → 開始時刻 → 応答ヘッダー → GET の本文書き込み
-           → 所要時間と書き込み結果 → healthCheckLog → slog
+           → 所要時間と書き込み結果 → logging.HealthCheck → slog
 ```
 
-起動時の組み立てはリクエストごとに実行しない。リクエストのメソッドとパスの制限はルーター、応答と計測は healthHandler、ログ項目とレベル・原因分類は healthCheckLog が担当する。healthz の応答処理完了とクライアントへの配信完了を区別する。
+起動時の組み立てはリクエストごとに実行しない。リクエストのメソッドとパスの制限はルーター、応答と計測は healthHandler、ログ項目とレベル・原因分類は logging.HealthCheck が担当する。healthz の応答処理完了とクライアントへの配信完了を区別する。
 
 ## 生存確認の構造化ログ（Issue #72）
 
@@ -105,6 +105,6 @@ routes_test.go の TestRegisterRoutes は渡した handler への登録と委譲
 
 Compose と本番用イメージの相違、固定版の更新、配置の未導入事項は [ADR-0001](../adr/0001-runtime-and-deployment.md) と [開発手順](../development.md) に従う。
 
-## 受付の配置（Issue #77）
+## Controller の配置（Issue #77）
 
-healthHandler とログ、直接のテストは cmd/server/adapter/handler に配置する。ルーティングとサーバーの管理は従来の adapter に残す。ルーティングとの接続と対象外経路のログ非出力は外側の routes_test.go、応答とログの直接の契約は handler 配下で確認する。全受付の対応と配置検査は [受付とルーティングの一覧](../handler-routing.md) を参照する。
+Controller は cmd/server/adapter/handler/health.go に置き、応答と計測・結果記録の流れを同じファイルで読む。ログの属性・レベル・原因分類は下位の handler/logging に置く。Controller は HealthPath と結果を logging.HealthCheck に渡し、ログ側から親を参照しない。生成と登録・サーバーの管理は既存の外側に維持する。関連テストと詳細は [Controller とルーティングの一覧](../handler-routing.md) を参照する。

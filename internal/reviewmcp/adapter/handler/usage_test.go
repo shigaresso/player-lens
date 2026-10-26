@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/shigaresso/player-lens/internal/reviewmcp/adapter/internal/testutil"
 	mcpdomain "github.com/shigaresso/player-lens/internal/reviewmcp/domain"
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
 )
@@ -16,13 +17,13 @@ func TestCollectionUsageBudget(t *testing.T) {
 		limits mcpdomain.Limits
 		code   string
 	}{
-		{"分次の拒否は取得せず条件と空の結果を返す", testLimits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 1, RequestsPerDay: 10, MaxConcurrent: 1}), "rate_limited"},
-		{"日次の拒否は取得せず条件と空の結果を返す", testLimits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 10, RequestsPerDay: 1, MaxConcurrent: 1}), "daily_limit_reached"},
+		{"分次の拒否は取得せず条件と空の結果を返す", testutil.Limits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 1, RequestsPerDay: 10, MaxConcurrent: 1}), "rate_limited"},
+		{"日次の拒否は取得せず条件と空の結果を返す", testutil.Limits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 10, RequestsPerDay: 1, MaxConcurrent: 1}), "daily_limit_reached"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			gate := mcpdomain.NewLimiter(tc.limits, time.Now)
 			calls := 0
-			fetcher := fetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+			fetcher := testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				calls++
 				return steamdomain.ReviewPage{}, nil
 			})
@@ -37,7 +38,7 @@ func TestCollectionUsageBudget(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			out := decodeOutput(t, result)
+			out := testutil.DecodeOutput(t, result)
 			if !result.IsError || out.ErrorCode != tc.code || calls != 1 || out.ReturnedCount != 0 || out.Collection.PagesFetched != 0 || out.Collection.Reviews == nil || len(out.Collection.Reviews) != 0 || out.Collection.StopReason != steamdomain.StopFailed || out.Collection.AppID != 440 || out.Collection.Options.Language != "all" || out.Collection.Options.MaxReviews != 1 || out.Collection.Options.MaxPages != 1 || out.Message == "" {
 				t.Fatalf("拒否=%+v calls=%d", out, calls)
 			}
@@ -52,7 +53,7 @@ func TestCollectionUsageBudget(t *testing.T) {
 		{"開始前のキャンセルは受付回数に含めない", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			gate := mcpdomain.NewLimiter(testLimits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 1, RequestsPerDay: 1, MaxConcurrent: 1}), time.Now)
+			gate := mcpdomain.NewLimiter(testutil.Limits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 1, RequestsPerDay: 1, MaxConcurrent: 1}), time.Now)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
@@ -63,7 +64,7 @@ func TestCollectionUsageBudget(t *testing.T) {
 				cancel()
 			}
 
-			fetcher := fetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+			fetcher := testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				return steamdomain.ReviewPage{}, nil
 			})
 			result, err := collect(ctx, fetcher, input, gate)
@@ -88,9 +89,9 @@ func TestCollectionOptionsFailureDoesNotConsumeBudget(t *testing.T) {
 		{"ページ件数が上限を超えて条件を生成できなければ枠を消費しない", json.RawMessage(`{"app_id":440,"page_size":101}`)},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			gate := mcpdomain.NewLimiter(testLimits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 1, RequestsPerDay: 1, MaxConcurrent: 1}), time.Now)
+			gate := mcpdomain.NewLimiter(testutil.Limits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 1, RequestsPerDay: 1, MaxConcurrent: 1}), time.Now)
 			calls := 0
-			fetcher := fetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+			fetcher := testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				calls++
 				return steamdomain.ReviewPage{}, nil
 			})
@@ -99,7 +100,7 @@ func TestCollectionOptionsFailureDoesNotConsumeBudget(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			out := decodeOutput(t, result)
+			out := testutil.DecodeOutput(t, result)
 			if !result.IsError || out.ErrorCode != "invalid_input" || calls != 0 || out.Collection.AppID != 0 || out.Collection.Options.Language != "" || out.Collection.Options.PageSize != 0 {
 				t.Fatalf("拒否=%+v calls=%d", out, calls)
 			}

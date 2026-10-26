@@ -15,7 +15,7 @@ import (
 
 	serveradapter "github.com/shigaresso/player-lens/cmd/server/adapter"
 	serverhandler "github.com/shigaresso/player-lens/cmd/server/adapter/handler"
-	reviewmcp "github.com/shigaresso/player-lens/internal/reviewmcp/adapter/handler"
+	reviewmcp "github.com/shigaresso/player-lens/internal/reviewmcp/adapter"
 	mcpdomain "github.com/shigaresso/player-lens/internal/reviewmcp/domain"
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
 )

@@ -6,28 +6,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/shigaresso/player-lens/internal/reviewmcp/adapter/internal/testutil"
 	mcpdomain "github.com/shigaresso/player-lens/internal/reviewmcp/domain"
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
 )
 
-// conversionProbeError は公開用の失敗分類が原因を調べる時点を観測する。
-// Error は収集時のラップでも呼ばれるため、errors.Is による分類を使う。
-type conversionProbeError struct{ classify func() }
-
-func (*conversionProbeError) Error() string { return "fetch failed" }
-
-func (e *conversionProbeError) Is(target error) bool {
-	if target == context.Canceled {
-		e.classify()
-	}
-
-	return false
-}
-
 func TestCollectKeepsSlotDuringFailureConversion(t *testing.T) {
-	gate := mcpdomain.NewLimiter(testLimits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 10, RequestsPerDay: 10, MaxConcurrent: 1}), time.Now)
+	gate := mcpdomain.NewLimiter(testutil.Limits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 10, RequestsPerDay: 10, MaxConcurrent: 1}), time.Now)
 	classifications := 0
-	cause := &conversionProbeError{classify: func() {
+	cause := &testutil.ConversionProbeError{Classify: func() {
 		classifications++
 		release, reason := gate.Acquire()
 		if release != nil {
@@ -38,14 +25,14 @@ func TestCollectKeepsSlotDuringFailureConversion(t *testing.T) {
 			t.Errorf("応答変換中に同時枠が空いている: reason=%v", reason)
 		}
 	}}
-	result, err := collect(t.Context(), fetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+	result, err := collect(t.Context(), testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 		return steamdomain.ReviewPage{}, cause
 	}), json.RawMessage(`{"app_id":440}`), gate)
 	if err != nil || result == nil || !result.IsError {
 		t.Fatalf("result=%+v err=%v", result, err)
 	}
 
-	if classifications == 0 || decodeOutput(t, result).ErrorCode != "fetch_failed" {
+	if classifications == 0 || testutil.DecodeOutput(t, result).ErrorCode != "fetch_failed" {
 		t.Fatal("実際の応答変換で取得の失敗を分類しなかった")
 	}
 

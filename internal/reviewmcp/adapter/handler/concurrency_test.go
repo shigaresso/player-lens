@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/shigaresso/player-lens/internal/reviewmcp/adapter/internal/testutil"
 	mcpdomain "github.com/shigaresso/player-lens/internal/reviewmcp/domain"
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
 )
@@ -23,13 +24,13 @@ func TestCollectionReleasesSlotAfterFailure(t *testing.T) {
 		{"応答量超過でも枠を返却し開始回数は戻さない", "response_too_large"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			gate := mcpdomain.NewLimiter(testLimits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 2, RequestsPerDay: 10, MaxConcurrent: 1}), time.Now)
+			gate := mcpdomain.NewLimiter(testutil.Limits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 2, RequestsPerDay: 10, MaxConcurrent: 1}), time.Now)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
 			first := true
 			calls := 0
-			fetcher := fetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+			fetcher := testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				calls++
 				if !first {
 					return steamdomain.ReviewPage{}, nil
@@ -62,7 +63,7 @@ func TestCollectionReleasesSlotAfterFailure(t *testing.T) {
 			}
 
 			result, err := collect(ctx, fetcher, input, gate)
-			if err != nil || !result.IsError || decodeOutput(t, result).ErrorCode != tc.code {
+			if err != nil || !result.IsError || testutil.DecodeOutput(t, result).ErrorCode != tc.code {
 				t.Fatalf("初回=%+v %v", result, err)
 			}
 
@@ -74,7 +75,7 @@ func TestCollectionReleasesSlotAfterFailure(t *testing.T) {
 
 			before := calls
 			result, err = collect(context.Background(), fetcher, input, gate)
-			if err != nil || !result.IsError || decodeOutput(t, result).ErrorCode != "rate_limited" || calls != before {
+			if err != nil || !result.IsError || testutil.DecodeOutput(t, result).ErrorCode != "rate_limited" || calls != before {
 				t.Fatalf("開始回数を戻した: %+v %v", result, err)
 			}
 		})
@@ -82,7 +83,7 @@ func TestCollectionReleasesSlotAfterFailure(t *testing.T) {
 }
 
 func TestCollectionBusyResponse(t *testing.T) {
-	gate := mcpdomain.NewLimiter(testLimits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 10, RequestsPerDay: 10, MaxConcurrent: 1}), time.Now)
+	gate := mcpdomain.NewLimiter(testutil.Limits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 10, RequestsPerDay: 10, MaxConcurrent: 1}), time.Now)
 	release, reason := gate.Acquire()
 	if reason != mcpdomain.NotRejected {
 		t.Fatal(reason)
@@ -90,7 +91,7 @@ func TestCollectionBusyResponse(t *testing.T) {
 
 	defer release()
 
-	result, err := collect(context.Background(), fetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+	result, err := collect(context.Background(), testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 		t.Fatal("同時枠のない呼び出しで取得した")
 		return steamdomain.ReviewPage{}, nil
 	}), json.RawMessage(`{"app_id":440}`), gate)
@@ -98,7 +99,7 @@ func TestCollectionBusyResponse(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	out := decodeOutput(t, result)
+	out := testutil.DecodeOutput(t, result)
 	if !result.IsError || out.ErrorCode != "busy" || out.Collection.AppID != 440 || out.Collection.StopReason != steamdomain.StopFailed || out.Collection.PagesFetched != 0 || out.ReturnedCount != 0 || len(out.Collection.Reviews) != 0 {
 		t.Fatal(out)
 	}

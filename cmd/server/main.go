@@ -13,7 +13,7 @@ import (
 
 	serveradapter "github.com/shigaresso/player-lens/cmd/server/adapter"
 	serverhandler "github.com/shigaresso/player-lens/cmd/server/adapter/handler"
-	reviewmcp "github.com/shigaresso/player-lens/internal/reviewmcp/adapter/handler"
+	reviewmcp "github.com/shigaresso/player-lens/internal/reviewmcp/adapter"
 )
 
 const shutdownTimeout = 10 * time.Second

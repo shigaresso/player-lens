@@ -1,37 +1,46 @@
-# 受付とルーティングの一覧
+# Controller とルーティングの一覧
 
-## 目的と配置規則
+## 一覧から処理の流れを読む
 
-Issue #77 で、ルーティングから割り当てられる自前の処理と受付保護を各領域の adapter/handler に揃える。domain・application・adapter は維持し、handler を受付処理の固定した配置先とする。判断は [ADR-0013](adr/0013-domain-folder-layers.md) に記録する。実装と検証の状態は Issue と作業記録へ分ける。
+Issue #77 の配置基準は、handler 直下の本番ファイルを Controller の一覧にすることである。そのファイルで、リクエストの準備・入力変換の呼び出し・UseCase・応答変換までを追う。補助処理を同列に並べず、専用の詳細はサブフォルダ、生成・登録と middleware は外側へ配置する。[ADR-0013](adr/0013-domain-folder-layers.md) に判断を記録する。
 
-| 登録・接続元 | 割り当て先・処理 | 自前の入口と配置先 |
+| ルーティング・接続元 | Controller または委譲先 | 役割と詳細 |
 | --- | --- | --- |
-| [RegisterRoutes](../cmd/server/adapter/routes.go) の GET /healthz（HEAD を含む） | 生存応答、計測、構造化ログ | [healthHandler.ServeHTTP](../cmd/server/adapter/handler/health.go)。生成は同じファイルの NewHealthHandler |
-| 同じ RegisterRoutes の /tools | MCP の HTTP 受付 | [NewHandler](../internal/reviewmcp/adapter/handler/handler.go) が SDK の StreamableHTTPHandler を組み立てる |
-| MCP の公開設定の有無による next の接続 | Host と cross-origin の受付保護 | [Protect](../internal/mcpaccess/adapter/handler/handler.go)／[ProtectLocal](../internal/mcpaccess/adapter/handler/local.go) が SDK handler の手前を保護する |
-| SDK の HTTP リクエストごとの Server 構築 callback | newServer が設定とツール登録を行う | [newServer](../internal/reviewmcp/adapter/handler/handler.go)。構築と登録を担当する補助関数 |
-| newServer の AddTool と SDK の collect_reviews へのディスパッチ | 入力検査、ユースケースへの接続、結果変換 | [newCollectReviewsHandler](../internal/reviewmcp/adapter/handler/collection_handler.go) から [collect](../internal/reviewmcp/adapter/handler/collection.go) へ接続する |
+| [RegisterRoutes](../cmd/server/adapter/routes.go) の GET/HEAD /healthz | [handler/health.go](../cmd/server/adapter/handler/health.go) | ServeHTTP が開始時刻・応答・結果記録を担当する。ログ整形は下位の [logging](../cmd/server/adapter/handler/logging/health_log.go) |
+| 同じ RegisterRoutes の /tools | [adapter/server.go](../internal/reviewmcp/adapter/server.go) が構築した SDK の HTTP handler | SDK の生成・共有 limiter・Server 構築を担当する。Controller ではない |
+| newServer の collect_reviews 登録と SDK のディスパッチ | [handler/collect_reviews.go](../internal/reviewmcp/adapter/handler/collect_reviews.go) | NewCollectReviewsHandler が context を準備し、同じファイルの collect が入力・UseCase・応答変換をつなぐ |
+| 公開／ローカルの Host/Origin 保護 | [Protect](../internal/mcpaccess/adapter/handler.go)／[ProtectLocal](../internal/mcpaccess/adapter/local.go) | next の手前で検査する middleware。Controller の一覧には含めない |
 
-## 登録・処理・補助処理の境界
+```text
+reviewmcp/adapter/
+  server.go                         SDK・共有状態の生成と登録
+  collection_definition.go          ツールの定義
+  handler/
+    collect_reviews.go              Controller：準備→入力→UseCase→応答
+    protocol/                      入力・応答・失敗・schema・ガイドの詳細
+  internal/testutil/                 テストだけが使う fixture
+```
 
-HTTP の経路一覧は cmd/server/adapter/routes.go に置く。run が health/MCP handler とルーターを生成し、RegisterRoutes が登録する。登録時に handler を実行しない。healthz の登録パスとログは handler.HealthPath を共有し、公開契約のテストは /healthz のリテラルで確認する。
+## Controller と詳細の依存
 
-MCP の HTTP エンベロープ、初期化・discover・tools/list・tools/call・未知の操作のディスパッチは固定版 SDK が実装する。自前の NewHandler はその組み立てと共有する利用枠を所有し、newServer は HTTP ごとに Server と定義を生成する。newCollectReviewsHandler が HTTP/SDK の context を連携して collect へ渡す。これらは別の関数のまま同じ handler パッケージに置き、SDK 自体のコードや新しい HTTP controller は追加しない。
+MCP の Controller は protocol.ParseInput で入力を生成し、不正時は protocol.InvalidInputResult へ変換する。有効なら application.CollectReviews に同期的な結果処理を渡し、その中で protocol.EncodeResult を呼ぶ。変換が終わるまで同時枠を保持し、HTTP/SDK の context 連携 callback を終了時に解放する。これらの流れを collect_reviews.go に残し、外の処理へ委譲するだけの入口にはしない。
 
-reviewmcp の入力、schema、公開用の失敗分類、結果・サイズ変換、埋め込みの分析ガイドは同じ受付に密接な補助処理として handler に置く。非公開定義を保持し、ガイドの版・本文を変更しない。収集手順と利用枠・期限の実行は既存の application、受付ルールと値は domain に維持する。
+protocol は MCP の入力・結果・公開失敗・schema・埋め込みガイドを担当する。ParseInput、応答生成、InputSchema／OutputSchema と応答量超過のエラーを接続点として公開し、受信型・出力型・分類の詳細は非公開に維持する。構築側のツール定義も公開 schema を使い、上限やガイドの版を二重定義しない。protocol は親の handler と adapter を import しない。
 
-mcpaccess の HTTP 保護は handler に置き、Access と Host 照合のルールは domain に維持する。Host 拒否、cross-origin 拒否、次の handler という既存の順序を変えない。
+healthz は HealthPath の1定義を登録とログで共有し、Controller が logging.HealthCheck に固定パス・メソッド・所要時間・書き込み結果を渡す。logging は親を参照せず、JSON 属性・level・安全な原因分類を担当する。受信 query や任意のエラー文字列は出さない。
 
-## 登録がない経路と対象外
+生成と登録は外側から Controller と下位の詳細を利用し、Controller は専用の詳細と application を利用する。逆向きの依存や、循環を避けるためだけの callback 群は追加しない。既存の domain/application、CLI、外部クライアント、JSON 出力の責務を維持する。
 
-未定義・子パス・旧 /mcp・OAuth metadata の404、healthz の未許可メソッドの405は既存ルーターの動作を使う。対応する handler を新たに作らない。MCP のプロトコルエラーも SDK に委譲する。
+## SDK と middleware の境界
 
-設定解析、HTTP サーバーの待ち受け・終了、取得クライアントの構築は cmd/server/adapter に残す。Steam クライアント、CLI、JSON 出力はルーティングの受付ではないため配置を維持し、形式だけの handler フォルダを作らない。テスト用の HTTP サーバー・fixture は本番のルーティング一覧に含めない。
+MCP の HTTP エンベロープ・初期化・discover・tools/list・tools/call・未知の操作のディスパッチは固定版 SDK が実装する。newServer は Server の設定とツール登録、collection_definition.go は説明・schema・annotations を担当し、独自の SDK controller は追加しない。
 
-## 配置と動作の検証
+Host/Origin 保護は mcpaccess/adapter に維持し、Host 拒否→cross-origin 保護→next の順序を変えない。未定義・子パス・旧 /mcp・OAuth metadata の404、healthz の未許可メソッドの405は既存ルーターに任せる。http.Handler を返すことだけで Controller と分類しない。
 
-internal/handler_architecture_test.go は cmd・internal の本番 Go ファイルを収集し、ServeHTTP メソッド、http.Handler／http.HandlerFunc／mcp.ToolHandler を返す関数、http.HandlerFunc の構築と HandleFunc／AddTool に直接渡す関数を検出する。net/http と MCP SDK の import alias を識別し、検出した自前の受付は adapter/handler・package handler に置くことを確認する。
+## 配置・一覧性・動作の検証
 
-これは構文上の配置規則の検査であり、動的な型、独自の型エイリアスや任意のルーターの全呼び出し先の解決は行わない。第三者の標準ライブラリ・SDK のソースは対象へ取り込まない。検出例と登録だけを行う処理の許可を入力例でも確認し、既存の TestLayerDependencies と併用する。新たな受付方式を採用する場合は、この一覧と検査範囲も更新する。
+internal/handler_architecture_test.go は cmd・internal の本番 Go ソースを収集し、ServeHTTP の実装、HTTP の名前付き実行関数、MCP ToolHandler の生成、直接登録する callback を構文から検出する。検出した Controller は adapter/handler の直下に置き、直下の本番ファイルには Controller 実装を要求する。純粋な変換・生成だけのファイルを直下に並べず、サブフォルダの詳細と外側の middleware・SDK 構築を許可する。
 
-公開 HTTP/MCP・エラー・制限・期限・context と資源の契約は既存テストで確認する。移動で入力・期待値を変えず、通常／race 付き結合と同じ本番イメージを検証する。配置と依存の検査の成功だけで実行時の契約を保証したとは扱わない。
+構文検査は任意の独自ルーターや動的な型、SDK 内部の全到達先を証明しない。Controller の一覧と実際の UseCase 呼び出しは差分レビューと既存の HTTP/MCP テストで確認する。既存のレイヤー依存検査は、本番コードからテスト helper を参照しないことも確認する。
+
+関連テストは担当する場所に置き、共有 fixture は adapter/internal/testutil に限定する。VS Code では Controller と関連テストを同じ親の下にまとめ、詳細フォルダを折りたたむと直下の Controller を探せるようにする。入力・期待値と正常／失敗・資源の契約を維持し、通常・race 付き結合と同じ本番イメージで検証する。

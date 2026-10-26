@@ -26,4 +26,4 @@ ADR-0007 のローカル専用の適用範囲に公開モードを追加し、AD
 
 Issue #56 では [ADR-0013](0013-domain-folder-layers.md) に従い、URL と Host 照合を mcpaccess/domain、HTTP の保護を mcpaccess/adapter に配置した。公開側は receiver の Access.Protect から Protect(access, next) へ変更し、nil・ゼロ値・Host・Origin の契約は維持する。
 
-Issue #77 では HTTP の Protect／ProtectLocal を mcpaccess/adapter/handler に配置し、MCP の組み立てと実行入口も reviewmcp/adapter/handler に揃えた。Access と Host 照合は domain に維持し、HTTP の判定順と公開契約を変更しない。
+Issue #77 では HTTP の Protect／ProtectLocal を Controller と区別し、middleware として mcpaccess/adapter に維持する。MCP の生成・登録が外側から保護と Controller を接続する。Access と Host 照合、判定順と公開契約は変更しない。

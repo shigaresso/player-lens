@@ -18,7 +18,7 @@ main が service.name と JSON 出力を設定し、run が serverhandler.NewHea
 
 run がルーターも生成し、serveradapter.RegisterRoutes が生成済みの health/MCP handler を既存ルーターへ登録する。以前の NewHandler で health handler の生成を兼ねる構成は、ルーティングへ logger と時計の依存を持ち込むため置き換えた。生成と登録を New と Register で区別し、旧 API の互換ラッパーは残さない。登録中に handler を実行せず、既存の無関係な経路を維持する。
 
-Issue #77 で healthHandler とログを cmd/server/adapter/handler に配置し、登録は外側の adapter に維持した。共有するパスは handler.HealthPath の1定義とする。healthHandler は応答と計測、同じ handler パッケージの healthCheckLog は1回の生存確認の結果と固定属性・レベル・安全な原因分類を担当する。関数ごとにイベントを増やさず、health_check.completed の契約を [HTTP 仕様](../specs/http-server.md#生存確認の構造化ログissue-72) にまとめる。
+Issue #77 で Controller を cmd/server/adapter/handler/health.go、ログ整形をその下の logging に配置し、登録は外側の adapter に維持した。共有するパスは handler.HealthPath の1定義とする。healthHandler は応答と計測、下位パッケージの logging.HealthCheck は1回の生存確認の結果と固定属性・レベル・安全な原因分類を担当する。関数ごとにイベントを増やさず、health_check.completed の契約を [HTTP 仕様](../specs/http-server.md#生存確認の構造化ログissue-72) にまとめる。
 
 通常 return ごとに1回記録し、LogAttrs へ request context を渡す。将来のトレース情報の経路を維持するもので、仮の trace ID や OTel 型を追加しない。application/domain は変更せず、SDK と送信先・終了時のフラッシュは将来の起動設定の責務とする。
 

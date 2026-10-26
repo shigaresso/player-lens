@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-
+	"github.com/shigaresso/player-lens/internal/reviewmcp/adapter/internal/testutil"
 	mcpdomain "github.com/shigaresso/player-lens/internal/reviewmcp/domain"
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
 )
@@ -57,7 +57,7 @@ func TestCollectReviewsHandlerCleanup(t *testing.T) {
 			sdkContext := &callbackTrackingContext{Context: context.Background(), done: make(chan struct{})}
 			calls := 0
 			var passed context.Context
-			handler := newCollectReviewsHandler(fetchFunc(func(ctx context.Context, _ steamdomain.AppID, _ steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+			handler := NewCollectReviewsHandler(testutil.FetchFunc(func(ctx context.Context, _ steamdomain.AppID, _ steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				calls++
 				passed = ctx
 				if httpContext.activeCallbacks == 0 || sdkContext.activeCallbacks == 0 {
@@ -73,7 +73,7 @@ func TestCollectReviewsHandlerCleanup(t *testing.T) {
 				t.Fatalf("result = %+v, err = %v", result, err)
 			}
 
-			if result.IsError != (tc.wantCode != "") || decodeOutput(t, result).ErrorCode != tc.wantCode || calls != tc.wantCalls {
+			if result.IsError != (tc.wantCode != "") || testutil.DecodeOutput(t, result).ErrorCode != tc.wantCode || calls != tc.wantCalls {
 				t.Fatalf("result = %+v, calls = %d", result, calls)
 			}
 
@@ -105,7 +105,7 @@ func TestCollectReviewsHandlerCancellation(t *testing.T) {
 			finished := make(chan struct{})
 			var result *mcp.CallToolResult
 			var handlerErr error
-			handler := newCollectReviewsHandler(fetchFunc(func(ctx context.Context, _ steamdomain.AppID, _ steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+			handler := NewCollectReviewsHandler(testutil.FetchFunc(func(ctx context.Context, _ steamdomain.AppID, _ steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				started <- ctx
 				select {
 				case <-ctx.Done():
@@ -156,7 +156,7 @@ func TestCollectReviewsHandlerCancellation(t *testing.T) {
 				t.Fatalf("result = %+v, err = %v", result, handlerErr)
 			}
 
-			if decodeOutput(t, result).ErrorCode != "cancelled" || !errors.Is(result.GetError(), context.Canceled) {
+			if testutil.DecodeOutput(t, result).ErrorCode != "cancelled" || !errors.Is(result.GetError(), context.Canceled) {
 				t.Fatalf("キャンセルの結果と原因を保持していない: %+v", result)
 			}
 

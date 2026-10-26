@@ -4,6 +4,8 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/shigaresso/player-lens/cmd/server/adapter/handler/logging"
 )
 
 // HealthPath は生存確認の登録とログが共有する公開パスを表す。
@@ -32,5 +34,5 @@ func (h healthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		_, writeErr = w.Write([]byte("ok\n"))
 	}
 
-	healthCheckLog{method: r.Method, duration: h.now().Sub(started), writeErr: writeErr}.write(r.Context(), h.logger)
+	logging.HealthCheck{Route: HealthPath, Method: r.Method, Duration: h.now().Sub(started), WriteErr: writeErr}.Write(r.Context(), h.logger)
 }

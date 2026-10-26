@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/shigaresso/player-lens/internal/reviewmcp/adapter/internal/testutil"
 	mcpdomain "github.com/shigaresso/player-lens/internal/reviewmcp/domain"
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
 )
@@ -27,7 +28,7 @@ func TestCollectFailure(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			calls := 0
-			fetcher := fetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+			fetcher := testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				calls++
 				if tc.partial && calls == 1 {
 					return steamdomain.ReviewPage{Reviews: []steamdomain.Review{{RecommendationID: 14, Text: "取得済み"}}, NextCursor: "next"}, nil
@@ -44,7 +45,7 @@ func TestCollectFailure(t *testing.T) {
 				t.Fatal("サーバー側で失敗原因を保持しなかった")
 			}
 
-			out := decodeOutput(t, result)
+			out := testutil.DecodeOutput(t, result)
 			if out.ErrorCode != tc.code || out.Collection.StopReason != steamdomain.StopFailed || out.Message == "" {
 				t.Fatal(out)
 			}

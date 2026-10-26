@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/shigaresso/player-lens/internal/reviewmcp/adapter/internal/testutil"
 	mcpdomain "github.com/shigaresso/player-lens/internal/reviewmcp/domain"
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
 )
@@ -29,7 +30,7 @@ func TestCollectionContext(t *testing.T) {
 
 			var passed context.Context
 			start := time.Now()
-			fetcher := fetchFunc(func(received context.Context, _ steamdomain.AppID, _ steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+			fetcher := testutil.FetchFunc(func(received context.Context, _ steamdomain.AppID, _ steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				passed = received
 				deadline, ok := received.Deadline()
 				if !ok || received.Value(key{}) != "request" {
@@ -77,11 +78,11 @@ func TestCollectionContext(t *testing.T) {
 
 			defer cancel()
 
-			result, err := collect(ctx, fetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+			result, err := collect(ctx, testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				t.Fatal("終了済み context で取得した")
 				return steamdomain.ReviewPage{}, nil
 			}), json.RawMessage(`{"app_id":440}`), mcpdomain.NewLimiter(mcpdomain.DefaultLimits(), time.Now))
-			if err != nil || !result.IsError || decodeOutput(t, result).ErrorCode != tc.code {
+			if err != nil || !result.IsError || testutil.DecodeOutput(t, result).ErrorCode != tc.code {
 				t.Fatalf("%+v %v", result, err)
 			}
 		})

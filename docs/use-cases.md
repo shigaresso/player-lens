@@ -32,7 +32,7 @@ CLI の `reviewcli.Run` は引数の解析と `CollectAndSaveReviews` への接�
 
 MCP の `reviewmcp.NewHandler` は HTTP/SDK と共有する制限状態を組み立てる。adapter は入力・HTTP 制限と Collection の応答変換、mcpapplication.CollectReviews は利用枠と実行期限を担当する。application から steamapplication.CollectReviews を呼び、adapter は JSON の純粋変換だけを再利用する。保存操作は呼ばない。分析は接続元の ChatGPT が担当し、バックエンドの LLM 呼び出しは未導入とする。[MCP 仕様](specs/review-mcp.md) と [ADR-0007](adr/0007-review-mcp.md) に責務を記載する。
 
-Issue #50 で、`newServer` から `collectReviewsDefinition`（公開する説明・schema・annotations）と `newCollectReviewsHandler`（HTTP／SDK のキャンセル連携と終了時の解放、`collect` の呼び出し）を分離した。`newServer` は Server の生成・設定・登録を担当する。同じ MCP adapter 内の責務を整理したもので、収集ユースケースや新しい通信境界は増やさない。
+Issue #50 で、`newServer` から `collectReviewsDefinition`（公開する説明・schema・annotations）と `newCollectReviewsHandler`（当時の HTTP／SDK のキャンセル連携と終了時の解放、`collect` の呼び出し。Issue #80 で名前付き Handle へ統合）を分離した。`newServer` は Server の生成・設定・登録を担当する。同じ MCP adapter 内の責務を整理したもので、収集ユースケースや新しい通信境界は増やさない。
 
 Issue #52 で、JSON 読み取りを MCP 受信型の `toolInput.UnmarshalJSON`、MCP 用の既定値・上限と NewCollectionOptions による収集条件の生成を `normalizeToolInput` に分離した。許可する項目名は受信型の JSON タグから取得する。`parseInput` は標準 `json.Unmarshal` と条件構築を順に呼び、既存の結果と失敗時のゼロ値・原因を維持する。いずれも MCP の入力変換であり、通信や利用枠の操作を含まない。MCP の小さい上限を収集ユースケースや CLI へ移さない。
 
@@ -42,7 +42,7 @@ Issue #54 で、利用制限の設定は未検証の `LimitsConfig` から `NewL
 
 Issue #62 で、application が adapter から渡された同期的な結果処理関数を呼び、その完了後に同時枠を返す構成に修復した。JSON・SDK 応答生成は adapter に残し、application は SDK 型を含めない。結果処理の失敗でも枠を返し、収集の原因は Result.Err で処理関数へ渡す。開始前キャンセル・受付拒否も一度処理するが、確保していない枠は返さない。[ADR-0016](adr/0016-mcp-response-slot-lifetime.md) に記録する。
 
-Issue #40 で MCP の公開用失敗情報と結果生成を収集の実行手順から分離した。`failure.go` が原因の分類と案内、`result.go` が JSON・分析ガイド・応答量・原因保持を担当する。入力検査は adapter の `collect`、context・利用枠と収集の順序は mcpapplication.CollectReviews に置き、収集ユースケースや新しい通信境界は増やさない。
+Issue #40 で MCP の公開用失敗情報と結果生成を収集の実行手順から分離した。`failure.go` が原因の分類と案内、`result.go` が JSON・分析ガイド・応答量・原因保持を担当する。入力検査は adapter の `collectReviewsHandler.Handle`、context・利用枠と収集の順序は mcpapplication.CollectReviews に置き、収集ユースケースや新しい通信境界は増やさない。
 
 Issue #35 の `analysis_guide` は MCP の案内と結果変換の責務であり、新たな分析ユースケースではない。共通本文をバイナリへ埋め込み、収集結果とともに提供する。steam・CLI・保存先へ分析方針を混ぜず、分析は接続元の AI、採否は人間に残す。[レビュー分析仕様](specs/review-analysis.md) に従う。
 
@@ -66,6 +66,6 @@ AppID・RecommendationID・TimestampCreated・TimestampUpdated は steam/domain 
 
 ## Controller の配置（Issue #77）
 
-handler 直下の本番ファイルは、リクエストの準備・入力・UseCase・応答という操作全体の流れを読む Controller の一覧とする。MCP は handler/collect_reviews.go に context の連携と collect をまとめ、入力・応答・schema・ガイドの詳細は handler/protocol に置く。SDK の構築・共有状態・登録は外側の adapter に、Host/Origin の middleware は mcpaccess/adapter に維持する。
+handler 直下の本番ファイルは、リクエストの準備・入力・UseCase・応答という操作全体の流れを読む Controller の一覧とする。MCP は Issue #80 で handler/collect_reviews.go の collectReviewsHandler.Handle に context の連携・入力・UseCase・応答・後始末をまとめた。NewCollectReviewsHandler は HTTP ごとの固定の依存を持つ handler のメソッド値を SDK へ渡し、実行ごとの context を共有状態へ格納しない。入力・応答・schema・ガイドの詳細は handler/protocol に置く。SDK の構築・共有状態・登録は外側の adapter に、Host/Origin の middleware は mcpaccess/adapter に維持する。
 
 healthz は handler/health.go と下位の logging に分ける。業務操作・利用枠・期限と応答変換完了までの枠保持は変更しない。新しいユースケースは追加せず、[Controller とルーティングの一覧](handler-routing.md) から登録と各処理を追えるようにする。

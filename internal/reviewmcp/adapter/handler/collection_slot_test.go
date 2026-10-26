@@ -25,7 +25,7 @@ func TestCollectKeepsSlotDuringFailureConversion(t *testing.T) {
 			t.Errorf("応答変換中に同時枠が空いている: reason=%v", reason)
 		}
 	}}
-	result, err := collect(t.Context(), testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+	result, err := callCollectReviews(t, t.Context(), testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 		return steamdomain.ReviewPage{}, cause
 	}), json.RawMessage(`{"app_id":440}`), gate)
 	if err != nil || result == nil || !result.IsError {

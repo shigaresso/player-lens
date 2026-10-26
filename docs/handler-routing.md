@@ -8,7 +8,7 @@ Issue #77 の配置基準は、handler 直下の本番ファイルを Controller
 | --- | --- | --- |
 | [RegisterRoutes](../cmd/server/adapter/routes.go) の GET/HEAD /healthz | [handler/health.go](../cmd/server/adapter/handler/health.go) | ServeHTTP が開始時刻・応答・結果記録を担当する。ログ整形は下位の [logging](../cmd/server/adapter/handler/logging/health_log.go) |
 | 同じ RegisterRoutes の /tools | [adapter/server.go](../internal/reviewmcp/adapter/server.go) が構築した SDK の HTTP handler | SDK の生成・共有 limiter・Server 構築を担当する。Controller ではない |
-| newServer の collect_reviews 登録と SDK のディスパッチ | [handler/collect_reviews.go](../internal/reviewmcp/adapter/handler/collect_reviews.go) | NewCollectReviewsHandler が context を準備し、同じファイルの collect が入力・UseCase・応答変換をつなぐ |
+| newServer の collect_reviews 登録と SDK のディスパッチ | [handler/collect_reviews.go](../internal/reviewmcp/adapter/handler/collect_reviews.go) | NewCollectReviewsHandler が固定の依存を組み立て、collectReviewsHandler.Handle が context の準備・入力・UseCase・応答変換・後始末をつなぐ |
 | 公開／ローカルの Host/Origin 保護 | [Protect](../internal/mcpaccess/adapter/handler.go)／[ProtectLocal](../internal/mcpaccess/adapter/local.go) | next の手前で検査する middleware。Controller の一覧には含めない |
 
 ```text
@@ -23,7 +23,7 @@ reviewmcp/adapter/
 
 ## Controller と詳細の依存
 
-MCP の Controller は protocol.ParseInput で入力を生成し、不正時は protocol.InvalidInputResult へ変換する。有効なら application.CollectReviews に同期的な結果処理を渡し、その中で protocol.EncodeResult を呼ぶ。変換が終わるまで同時枠を保持し、HTTP/SDK の context 連携 callback を終了時に解放する。これらの流れを collect_reviews.go に残し、外の処理へ委譲するだけの入口にはしない。
+MCP の Controller は Issue #80 で collectReviewsHandler.Handle という名前付きメソッドにまとめた。NewCollectReviewsHandler は HTTP ごとの固定の依存を持つ値を組み立て、その Handle のメソッド値を SDK に渡す。Handle が protocol.ParseInput で入力を生成し、不正時は protocol.InvalidInputResult へ変換する。有効なら application.CollectReviews に同期的な結果処理を渡し、その中で protocol.EncodeResult を呼ぶ。変換が終わるまで同時枠を保持し、HTTP/SDK の context 連携 callback を終了時に解放する。これらの流れを collect_reviews.go に残し、外の処理へ委譲するだけの入口にはしない。
 
 protocol は MCP の入力・結果・公開失敗・schema・埋め込みガイドを担当する。ParseInput、応答生成、InputSchema／OutputSchema と応答量超過のエラーを接続点として公開し、受信型・出力型・分類の詳細は非公開に維持する。構築側のツール定義も公開 schema を使い、上限やガイドの版を二重定義しない。protocol は親の handler と adapter を import しない。
 

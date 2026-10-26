@@ -28,12 +28,12 @@ func TestCollectionUsageBudget(t *testing.T) {
 				return steamdomain.ReviewPage{}, nil
 			})
 			input := json.RawMessage(`{"app_id":440,"language":"all","max_reviews":1,"max_pages":1}`)
-			result, err := collect(context.Background(), fetcher, input, gate)
+			result, err := callCollectReviews(t, context.Background(), fetcher, input, gate)
 			if err != nil || result.IsError {
 				t.Fatalf("初回=%+v %v", result, err)
 			}
 
-			result, err = collect(context.Background(), fetcher, input, gate)
+			result, err = callCollectReviews(t, context.Background(), fetcher, input, gate)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -67,12 +67,12 @@ func TestCollectionUsageBudget(t *testing.T) {
 			fetcher := testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				return steamdomain.ReviewPage{}, nil
 			})
-			result, err := collect(ctx, fetcher, input, gate)
+			result, err := callCollectReviews(t, ctx, fetcher, input, gate)
 			if err != nil || !result.IsError {
 				t.Fatalf("拒否=%+v %v", result, err)
 			}
 
-			result, err = collect(context.Background(), fetcher, json.RawMessage(`{"app_id":440}`), gate)
+			result, err = callCollectReviews(t, context.Background(), fetcher, json.RawMessage(`{"app_id":440}`), gate)
 			if err != nil || result.IsError {
 				t.Fatalf("回数が消費された: %+v %v", result, err)
 			}
@@ -95,7 +95,7 @@ func TestCollectionOptionsFailureDoesNotConsumeBudget(t *testing.T) {
 				calls++
 				return steamdomain.ReviewPage{}, nil
 			})
-			result, err := collect(t.Context(), fetcher, tc.input, gate)
+			result, err := callCollectReviews(t, t.Context(), fetcher, tc.input, gate)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -105,7 +105,7 @@ func TestCollectionOptionsFailureDoesNotConsumeBudget(t *testing.T) {
 				t.Fatalf("拒否=%+v calls=%d", out, calls)
 			}
 
-			result, err = collect(t.Context(), fetcher, json.RawMessage(`{"app_id":440}`), gate)
+			result, err = callCollectReviews(t, t.Context(), fetcher, json.RawMessage(`{"app_id":440}`), gate)
 			if err != nil || result.IsError || calls != 1 {
 				t.Fatalf("後続の有効な入力=%+v err=%v calls=%d", result, err, calls)
 			}

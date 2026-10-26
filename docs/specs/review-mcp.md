@@ -33,7 +33,7 @@ reviewmcp の内部は domain（上限と受付）、application（期限・枠�
 
 `protocol.ParseInput` は標準の `json.Unmarshal` で読み取ってから条件を構築する。JSON 構文と末尾の不正は標準 Unmarshal が拒否し、メソッド内部も入力全体を検査する。2回目の Decode や DisallowUnknownFields の設定は置かない。メソッドを持たない同じフィールドの一時値へ読み、成功時だけ受信先へ反映する。失敗時は受信先を変更せず、省略項目は以前の値を引き継がずゼロ値にする。標準 Unmarshal が先に構文エラーを返す場合も、`protocol.ParseInput` は既存と同じゼロ値と `steamdomain.ErrInvalidArgument` を保持するエラーへ変換する。読み取り段階では既定値・MCP 上限・言語や評価種別の条件を適用しない。
 
-`input_options.go` の `normalizeToolInput` は `toolInput` を値で受け、App ID と MCP の件数・ページ上限を検査し、MCP 用の既定値を適用する。評価種別の文字列を `steamdomain.ParseReviewType` で変換し、`steamdomain.CollectionOptionsConfig` から `steamdomain.NewCollectionOptions` で言語・ページ件数などを検査・正規化した値を生成する。呼び出し側の入力は変更せず、失敗時はゼロ値と `steamdomain.ErrInvalidArgument` を返す。生成失敗のゼロ値を有効な既定条件として実行せず、`collect` がエラーを処理して空の Collection から失敗応答を作る。生成済みの値を application と収集状態へ渡し、条件の検査を繰り返さない（[ADR-0015](../adr/0015-collection-options-boundary.md)）。両処理は通信・時刻・利用制限に依存しない。`collect` による `invalid_input` 応答と、不正入力時に取得・利用枠を消費しない順序を維持する。
+`input_options.go` の `normalizeToolInput` は `toolInput` を値で受け、App ID と MCP の件数・ページ上限を検査し、MCP 用の既定値を適用する。評価種別の文字列を `steamdomain.ParseReviewType` で変換し、`steamdomain.CollectionOptionsConfig` から `steamdomain.NewCollectionOptions` で言語・ページ件数などを検査・正規化した値を生成する。呼び出し側の入力は変更せず、失敗時はゼロ値と `steamdomain.ErrInvalidArgument` を返す。生成失敗のゼロ値を有効な既定条件として実行せず、`collectReviewsHandler.Handle` がエラーを処理して空の Collection から失敗応答を作る。生成済みの値を application と収集状態へ渡し、条件の検査を繰り返さない（[ADR-0015](../adr/0015-collection-options-boundary.md)）。両処理は通信・時刻・利用制限に依存しない。`collectReviewsHandler.Handle` による `invalid_input` 応答と、不正入力時に取得・利用枠を消費しない順序を維持する。
 
 ## 結果・失敗・資源
 
@@ -51,11 +51,11 @@ HTTP 本文は16 KiBまでとし、SDK が超過を413で拒否する。シリ�
 
 `newServer` は Server の生成・対応プロトコルの設定・ツール登録を担当する。`collection_definition.go` の `collectReviewsDefinition` がツール名・説明・入出力 schema・annotations を構築する。各生成の可変データは独立させ、ほかの Server の定義に変更を共有しない。定義の生成では通信・収集を行わない。
 
-`handler/collect_reviews.go` の `handler.NewCollectReviewsHandler` は、HTTP リクエストの context・取得依存・共有 limiter を受け取り、SDK から呼ばれる実行 handler を作る。呼び出し時に HTTP の context を親とする context を作り、SDK のキャンセルも連携させて `collect` へ渡す。終了時に連携 callback を停止して所有 context をキャンセルする。呼び出し側の context はキャンセルしない。Server と定義は HTTP ごとに作り、limiter は `NewHandler` で一度だけ作って共有する寿命を維持する。
+`handler/collect_reviews.go` の `handler.NewCollectReviewsHandler` は、HTTP リクエストの context・取得依存・共有 limiter を受け取り、SDK から呼ばれる実行 handler を作る。Issue #80 で、非公開の collectReviewsHandler の Handle メソッド値を返す構成にした。Handle が呼び出し時に HTTP の context を親とする context を作り、SDK のキャンセルも連携させて入力・UseCase・応答変換を順に行う。終了時に連携 callback を停止して所有 context をキャンセルする。呼び出し側の context はキャンセルしない。handler 型のフィールドは HTTP ごとの固定の依存とし、実行中に書き換えない。呼び出しごとの context は Handle のローカル変数として保持し、共有可変状態に格納しない。HTTP の ServeHTTP と MCP の Handle は入口の契約が異なり、HTTP の受付とプロトコル処理は引き続き SDK に任せる。Server と定義は HTTP ごとに作り、limiter は `NewHandler` で一度だけ作って共有する寿命を維持する。
 
 ### 結果変換の境界（Issue #40）
 
-`collect` は入力検査と、application への収集・結果処理の接続を担当する。application は利用枠・取得用の期限・収集を管理し、adapter から渡した同期的な結果処理関数を一度だけ呼ぶ。この関数が公開用の失敗分類と SDK 応答変換を行い、変換完了まで枠を保持する。結果処理関数は非 nil で同期的に完了するものを渡し、変換エラーは application からそのまま返す。`handler/protocol/failure.go` の `toolFailureInfo` は公開するコードと説明文を持つ情報型で、元のエラーは別途保持する。`collectionFailure` は収集エラーをこの公開情報へ変換し、`usageFailure` は limiter の拒否理由を公開コードと説明文へ変換する。複合原因ではキャンセル・期限・取得失敗の順を維持する。
+`collectReviewsHandler.Handle` は入力検査と、application への収集・結果処理の接続を担当する。application は利用枠・取得用の期限・収集を管理し、adapter から渡した同期的な結果処理関数を一度だけ呼ぶ。この関数が公開用の失敗分類と SDK 応答変換を行い、変換完了まで枠を保持する。結果処理関数は非 nil で同期的に完了するものを渡し、変換エラーは application からそのまま返す。`handler/protocol/failure.go` の `toolFailureInfo` は公開するコードと説明文を持つ情報型で、元のエラーは別途保持する。`collectionFailure` は収集エラーをこの公開情報へ変換し、`usageFailure` は limiter の拒否理由を公開コードと説明文へ変換する。複合原因ではキャンセル・期限・取得失敗の順を維持する。
 
 `handler/protocol/result.go` の `encodeResult` と `marshalToolResult` は公開情報を toolFailureInfo のまま受け取り、コードと説明文を別引数へ分解しない。`marshalToolResult` は Collection・公開情報・ガイドを同じ JSON の構造化結果・テキストへ変換する。`encodeResult` は省略件数を引数に受け取らず、SDK の通常応答と省略応答のサイズを判定する。`encodeOversizedResult` は省略件数を数えて本文を除いた応答を作り、`encodeResult` を再び呼ばない。`encodeCollectionResult` が取得の原因をサーバー側へ保持し、応答量超過の原因も失わせない。変換は通信・時計・保存に依存しない。利用枠は応答変換まで保持し、application の CollectReviews の defer が成功・変換失敗とも返却する。application は SDK 型を扱わない。Issue #56 で早期返却になった動作を Issue #62 で修復する（[ADR-0016](../adr/0016-mcp-response-slot-lifetime.md)）。
 

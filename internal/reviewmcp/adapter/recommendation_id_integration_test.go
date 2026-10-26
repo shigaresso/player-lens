@@ -40,7 +40,7 @@ func TestMCPNumericRecommendationIDs(t *testing.T) {
 				}
 
 				return steamdomain.ReviewPage{Reviews: []steamdomain.Review{{RecommendationID: 0}, {RecommendationID: 18446744073709551615}}, NextCursor: "next"}, nil
-			}), mcpdomain.DefaultLimits(), nil)
+			}), mcpdomain.DefaultLimits(), localHTTPConfig(t))
 			if err != nil {
 				t.Fatal(err)
 			}

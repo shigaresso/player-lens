@@ -27,3 +27,13 @@ ADR-0007 のローカル専用の適用範囲に公開モードを追加し、AD
 Issue #56 では [ADR-0013](0013-domain-folder-layers.md) に従い、URL と Host 照合を mcpaccess/domain、HTTP の保護を mcpaccess/adapter に配置した。公開側は receiver の Access.Protect から Protect(access, next) へ変更し、nil・ゼロ値・Host・Origin の契約は維持する。
 
 Issue #77 では HTTP の Protect／ProtectLocal を Controller と区別し、middleware として mcpaccess/adapter に維持する。MCP の生成・登録が外側から保護と Controller を接続する。Access と Host 照合、判定順と公開契約は変更しない。
+
+## 許可条件と HTTP 設定・保護手順の分離（Issue #82）
+
+ユーザーが了承した最終案に基づき、Access は Host の許可判定だけを担う共通契約とする。NewLocal と NewPublic から、設定値を持たない localAccess と authority だけを持つ publicAccess の値を生成する。公開用の URL 検査と、各型の既存の Host 判定を維持する。
+
+公開／ローカルを選ぶ分岐は reviewmcp/adapter の NewHTTPConfig に1か所だけ置く。この生成関数が許可条件・固定の拒否文言・SDK のオプションを HTTPConfig の非公開フィールドへまとめ、整合した組み合わせを作る。全項目を両モードで使い、利用側は設定済みの値をそのまま使う。環境変数の読み取りは cmd の ReadMCPHTTPConfig とし、検査をクライアント構築と待ち受けより前に行う。
+
+Protect は条件と拒否文言を受け取る1つの HTTP 保護手順とする。Host→Origin→next の順序、403文言、後続の応答、SDK の保護設定を維持する。未生成の HTTPConfig や nil の保護依存は構築エラーとする。旧 domain.New・IsPublic・HostRejectionMessage・ProtectLocal は残さない。
+
+先行実装では Access を mode フラグ付き構造体、その後は表示文言・公開状態も提供する interface としていた。前者は状態の関係が読みにくく、後者はドメインの許可判定に HTTP の表示と構築の関心を集めていた。今回は可変部分を組み立てる場所を HTTP adapter とし、ドメインの実体を分けたまま共通手順に渡す方式を採用した。段階ごとの検証は Issue と作業記録へ残す。

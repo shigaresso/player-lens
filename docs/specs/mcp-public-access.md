@@ -1,6 +1,6 @@
 # 認証なしの公開 MCP と許可 Host
 
-公開 URL と Host の照合は mcpaccess/domain、HTTP の保護は mcpaccess/adapter に置く。adapter.Protect は Access と次の handler を受け取る。 配置は [ADR-0013](../adr/0013-domain-folder-layers.md) に従う。
+公開 URL・ローカル／公開の許可条件と Host の照合は mcpaccess/domain、HTTP の保護は mcpaccess/adapter に置く。adapter.Protect は Access と次の handler を受け取る。 配置は [ADR-0013](../adr/0013-domain-folder-layers.md) に従う。
 
 ## 目的と状態
 
@@ -17,11 +17,15 @@ Issue #29 で、公開 MCP を OAuth なしで提供する。Go はレビュー�
 - Authorization ヘッダーを必要とせず、初期処理・ツール一覧・呼び出しを匿名で受け付ける。OAuth の metadata・challenge は公開せず、`/.well-known/oauth-protected-resource/tools` は404とする。
 - `/tools` 以外のルートと `/healthz` は従来の契約を維持する。Host 検査は本人確認ではない。
 
-### 保護の組み立ての境界
+### 保護の組み立ての境界（Issue #82）
 
-ローカル専用モードは `mcpaccess/adapter.ProtectLocal(next)`、公開モードは `mcpaccess/adapter.Protect(access, next)` が HTTP の保護を担当する。`reviewmcp.NewHandler` は設定に応じてどちらかを選び、SDK の組み立てと共有する利用枠の所有を担当する。公開モードだけ SDK の localhost 保護を無効にする設定は維持する。
+domain の Access は AllowsHost だけを持つ共通契約とする。NewLocal は設定値を持たない localAccess、NewPublic は HTTPS の正確な /tools を検査して authority だけを保持する publicAccess を返す。両方とも非公開の値型とし、mode フラグと空フィールドの組み合わせで表さない。NewPublic に空 URL を渡した場合は不正設定とし、ローカル用へ暗黙変換しない。
 
-`ProtectLocal` の next は、呼び出し側が有効な非 nil の handler を渡す。従来の localhost/loopback の判定を使い、Host の検査、Go の cross-origin 保護、next の順に処理する。Host の不許可では403と「ローカルの Host のみ利用できます」の説明文を返す。Host または cross-origin で拒否した場合は next を呼ばず、許可時は next の応答を返す。構築時に通信・時計・新しい状態を必要とせず、公開側の authority 正規化へ判定を統一しない。
+reviewmcp/adapter の NewHTTPConfig(publicURL) が公開／ローカルを選ぶ。未指定なら NewLocal、指定時は NewPublic を呼び、許可条件・固定の拒否文言・StreamableHTTPOptions を HTTPConfig の非公開フィールドへまとめる。共通の SDK 設定は1か所で定義し、公開時だけ DisableLocalhostProtection を有効にする。設定値は生成後に外部から変更できない。構築時には通信・時計・新しい資源を必要としない。
+
+cmd の ReadMCPHTTPConfig が環境変数を読み NewHTTPConfig に渡す。URL の検査はクライアント構築・待ち受けより前に行う。NewHandler は生成済みの HTTPConfig を受け取り、設定済みの値をそのまま使う。HTTPConfig のゼロ値は未生成として ErrInvalidConfig と nil handler を返す。IsPublic・HostRejectionMessage と domain.New は廃止し、利用側でモードを選び直さない。
+
+両モードとも mcpaccess/adapter.Protect(access, deniedMessage, next) が Host→cross-origin→next の共通手順を実行する。Access の nil・next の nil は ErrInvalidConfig と nil handler を返す。Host が不許可なら403と、生成時に渡された固定の拒否文言を返す。ローカル用は「ローカルの Host のみ利用できます」、公開用は「許可されていない Host です」を維持する。Host／Origin で拒否した場合は next を呼ばず、許可時は next を1回だけ呼び、その応答を維持する。ローカルと公開の Host 判定・正規化は従来の本体を引き継ぐ。
 
 ## 資源・共有範囲
 
@@ -33,7 +37,7 @@ Web と共通の収集受付、初期同時数3の採否、DB による利用コ
 
 設定の境界・Host 正規化・転送ヘッダーと Origin の拒否はユニットテストで確認する。実 SDK の4版・複数セッションの匿名接続・一覧・呼び出し・共有枠を integration/race で確認する。同じ本番用イメージでローカルと公開設定の初期処理・一覧・不正入力、Host/Origin・metadata の404・不正設定・終了を確認する。実 Steam・実 LLM・外部認証サービスは自動テストから呼ばない。
 
-`ProtectLocal` の直接テストは MCP SDK や実ソケットを使わず、許可時の next の1回実行と応答維持、拒否時の非実行、Host の拒否理由と検査の優先順を確認する。`NewHandler` 経由の既存テストも維持し、保護の組み込みと SDK の本文上限・公開モードの契約を別途確認する。
+生成済みのローカル用 Access と `Protect` の直接テストは MCP SDK や実ソケットを使わず、許可時の next の1回実行と応答維持、拒否時の非実行、Host の拒否理由と検査の優先順を確認する。`NewHandler` 経由の既存テストも維持し、保護の組み込みと SDK の本文上限・公開モードの契約を別途確認する。
 
 [ADR-0009](../adr/0009-public-mcp-access.md) を参照する。
 

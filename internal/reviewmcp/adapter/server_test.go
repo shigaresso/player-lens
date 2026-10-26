@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	mcpaccess "github.com/shigaresso/player-lens/internal/mcpaccess/domain"
 	"github.com/shigaresso/player-lens/internal/reviewmcp/adapter/internal/testutil"
 	mcpdomain "github.com/shigaresso/player-lens/internal/reviewmcp/domain"
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
@@ -17,7 +18,7 @@ func TestHandlerLimits(t *testing.T) {
 	handler, err := NewHandler(testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 		t.Fatal("拒否する HTTP リクエストで取得した")
 		return steamdomain.ReviewPage{}, nil
-	}), mcpdomain.DefaultLimits(), nil)
+	}), mcpdomain.DefaultLimits(), localHTTPConfig(t))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +56,7 @@ func TestHandlerLimits(t *testing.T) {
 }
 
 func TestNewHandlerRejectsNilFetcher(t *testing.T) {
-	handler, err := NewHandler(nil, mcpdomain.DefaultLimits(), nil)
+	handler, err := NewHandler(nil, mcpdomain.DefaultLimits(), localHTTPConfig(t))
 	if handler != nil || !errors.Is(err, steamdomain.ErrInvalidArgument) {
 		t.Fatalf("handler=%v err=%v", handler, err)
 	}
@@ -65,7 +66,7 @@ func TestLocalHost(t *testing.T) {
 	handler, err := NewHandler(testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 		t.Fatal("HTTP Host 検査で取得した")
 		return steamdomain.ReviewPage{}, nil
-	}), mcpdomain.DefaultLimits(), nil)
+	}), mcpdomain.DefaultLimits(), localHTTPConfig(t))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -93,4 +94,17 @@ func TestLocalHost(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNewHandlerRejectsZeroHTTPConfig(t *testing.T) {
+	t.Run("HTTPConfigのゼロ値をローカル用として扱わない", func(t *testing.T) {
+		var config HTTPConfig
+		handler, err := NewHandler(testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+			t.Fatal("設定不正の構築時に取得した")
+			return steamdomain.ReviewPage{}, nil
+		}), mcpdomain.DefaultLimits(), config)
+		if handler != nil || !errors.Is(err, mcpaccess.ErrInvalidConfig) {
+			t.Fatalf("handler=%v err=%v", handler, err)
+		}
+	})
 }

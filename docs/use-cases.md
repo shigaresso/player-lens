@@ -46,7 +46,7 @@ Issue #40 で MCP の公開用失敗情報と結果生成を収集の実行手�
 
 Issue #35 の `analysis_guide` は MCP の案内と結果変換の責務であり、新たな分析ユースケースではない。共通本文をバイナリへ埋め込み、収集結果とともに提供する。steam・CLI・保存先へ分析方針を混ぜず、分析は接続元の AI、採否は人間に残す。[レビュー分析仕様](specs/review-analysis.md) に従う。
 
-`mcpaccess` の内部は domain と adapter に分ける。公開 URL と許可 Host のルールは mcpaccess/domain の `Access`、HTTP の保護は mcpaccess/adapter の `Protect`、ローカル専用時の保護は Issue #48 の `ProtectLocal` に分離する。main が公開設定を組み立てて `reviewmcp.NewHandler` へ渡し、`NewHandler` がモードに応じた保護を選ぶ。未指定はローカル専用、指定時は匿名公開とし、認証・JWT・OAuth metadata は提供しない。収集ユースケース・CLI へ公開設定を混ぜない。[公開 MCP 仕様](specs/mcp-public-access.md) と [ADR-0009](adr/0009-public-mcp-access.md) に従う。
+`mcpaccess` の内部は domain と adapter に分ける。公開 URL の検査と両モードの Host 判定は mcpaccess/domain の `Access`、HTTP の保護は mcpaccess/adapter の `Protect` に分離する。Issue #82 で `NewLocal`／`NewPublic` から生成する Access は Host 判定だけとした。reviewmcp/adapter の `NewHTTPConfig` が許可条件・拒否文言・SDK 設定を組み立て、main は生成済みの HTTPConfig を `reviewmcp.NewHandler` に渡す。NewHandler は常に条件と文言を Protect に渡し、利用側でモードを選び直さない。未指定はローカル専用、指定時は匿名公開とし、認証・JWT・OAuth metadata は提供しない。収集ユースケース・CLI へ公開設定を混ぜない。[公開 MCP 仕様](specs/mcp-public-access.md) と [ADR-0009](adr/0009-public-mcp-access.md) に従う。
 
 ## 評価種別（Issue #33）
 
@@ -61,7 +61,7 @@ AppID・RecommendationID・TimestampCreated・TimestampUpdated は steam/domain 
 - steam/domain は型・API 列挙値・純粋な正規化と収集状態、steam/application は操作と PageFetcher・CollectionSaver、steam/adapter は HTTP と要求・応答の変換を置く。ReviewType の基底型と定数の定義元は維持した。
 - reviewmcp/domain は Limits・Limiter と受付・返却、application は収集の実行と期限、adapter は HTTP/SDK と入力・結果・ガイドを置く。入力不正は取得と受付の前に拒否し、拒否時の JSON と取得失敗の原因保持を維持する。
 - reviewcli/adapter と jsonoutput/adapter は入口と出力の既存の責務を維持する。空の domain/application は追加しない。
-- mcpaccess/domain の Access は IsInitialized・AllowsHost で設定と照合を提供し、adapter の Protect が設定と next を受け取って HTTP を保護する。内部の authority 表現は公開しない。
+- mcpaccess/domain の Access は非公開のローカル用・公開用の値型が満たす AllowsHost だけの共通契約とし、adapter の Protect が設定と next を受け取って HTTP を保護する。内部の authority 表現は公開しない。
 - cmd/server と cmd/collect-reviews は main の起動順序・具体的な依存の所有と終了を維持し、既存の I/O と表示をそれぞれの adapter へ置く。
 
 ## Controller の配置（Issue #77）

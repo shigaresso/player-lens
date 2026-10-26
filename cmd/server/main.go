@@ -41,7 +41,7 @@ func run(ctx context.Context, port string, logger *slog.Logger) error {
 		return fmt.Errorf("MCP 利用制限の設定に失敗した: %w", err)
 	}
 
-	access, err := serveradapter.ReadMCPAccess(os.Getenv)
+	mcpConfig, err := serveradapter.ReadMCPHTTPConfig(os.Getenv)
 	if err != nil {
 		return fmt.Errorf("MCP 公開設定に失敗した: %w", err)
 	}
@@ -52,7 +52,7 @@ func run(ctx context.Context, port string, logger *slog.Logger) error {
 	}
 	defer closeIdleConnections()
 
-	mcpHandler, err := reviewmcp.NewHandler(fetcher, limits, access)
+	mcpHandler, err := reviewmcp.NewHandler(fetcher, limits, mcpConfig)
 	if err != nil {
 		return fmt.Errorf("MCP サーバーの準備に失敗した: %w", err)
 	}

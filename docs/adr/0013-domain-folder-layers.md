@@ -26,7 +26,7 @@ steam/application は steam/domain と標準ライブラリに依存し、具体
 
 reviewmcp/application は reviewmcp/domain と steam の application/domain を使い、SDK の型を含めない。実行結果は収集結果・拒否理由・元の失敗を保持する。入力の不正は adapter が先に拒否し、利用枠を消費しない。application が取得開始時に枠を確保し、defer で返却する。開始回数は戻さず、開始前キャンセルは枠を消費しない。adapter は既存の結果とエラーへ変換し、公開 schema を維持する。
 
-CLI と JSON 出力の責務は adapter であり、その内部へ業務操作を複製しない。mcpaccess/domain の Access は初期化済みの判定と Host の照合を提供する。adapter.Protect は設定と next を受け取り、nil・ゼロ値・Host・Origin の既存の拒否を維持する。内部の authority 文字列表現は公開しない。
+CLI と JSON 出力の責務は adapter であり、その内部へ業務操作を複製しない。Issue #82 で mcpaccess/domain の Access はローカル用・公開用の値型が満たす Host 判定だけの契約とする。HTTP の文言・SDK 設定との組み立ては reviewmcp/adapter の HTTPConfig に分ける。adapter.Protect は設定と next を受け取り、nil・ゼロ値・Host・Origin の既存の拒否を維持する。内部の authority 文字列表現は公開しない。
 
 cmd は main と起動の組み立てを root に維持する。既存の I/O 処理を内部の adapter へ移し、listener・接続・signal・goroutine・context の終了担当を変えない。
 

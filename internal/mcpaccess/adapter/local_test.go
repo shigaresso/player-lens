@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	accessadapter "github.com/shigaresso/player-lens/internal/mcpaccess/adapter"
+	mcpaccess "github.com/shigaresso/player-lens/internal/mcpaccess/domain"
 )
 
 func TestProtectLocal(t *testing.T) {
@@ -34,8 +35,10 @@ func TestProtectLocal(t *testing.T) {
 		{name: "HostとOriginの両方が不許可ならHostの説明を返す", host: "external.example", origin: "https://other.example", status: 403, hostRejected: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			access := mcpaccess.NewLocal()
+
 			calls := 0
-			handler := accessadapter.ProtectLocal(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			handler, err := accessadapter.Protect(access, "ローカルの Host のみ利用できます", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				calls++
 				w.Header().Set("X-Next", "reached")
 				w.WriteHeader(http.StatusAccepted)
@@ -43,6 +46,10 @@ func TestProtectLocal(t *testing.T) {
 					t.Errorf("後続ハンドラーの応答を書き込めなかった: %v", err)
 				}
 			}))
+			if err != nil {
+				t.Fatal(err)
+			}
+
 			request := httptest.NewRequest(http.MethodPost, "http://localhost:8080/tools", nil)
 			request.Host = tc.host
 			if tc.origin != "" {

@@ -42,6 +42,8 @@ Issue #54 で、利用制限の設定は未検証の `LimitsConfig` から `NewL
 
 Issue #62 で、application が adapter から渡された同期的な結果処理関数を呼び、その完了後に同時枠を返す構成に修復した。JSON・SDK 応答生成は adapter に残し、application は SDK 型を含めない。結果処理の失敗でも枠を返し、収集の原因は Result.Err で処理関数へ渡す。開始前キャンセル・受付拒否も一度処理するが、確保していない枠は返さない。[ADR-0016](adr/0016-mcp-response-slot-lifetime.md) に記録する。
 
+Issue #84 で、MCP 用 CollectReviews の開始前キャンセル／期限超過は、共通の NewFailedCollection で空の失敗結果を作り respond を一度呼んで早期 return する構成にした。下位の収集・期限の生成・利用枠の確保へ進まない。CollectionState の取得・context・循環失敗と受付拒否も共通生成を使い、入力条件・部分結果を維持する。同期的な結果処理まで枠を保持し返却する責務は application に残す。
+
 Issue #40 で MCP の公開用失敗情報と結果生成を収集の実行手順から分離した。`failure.go` が原因の分類と案内、`result.go` が JSON・分析ガイド・応答量・原因保持を担当する。入力検査は adapter の `collectReviewsHandler.Handle`、context・利用枠と収集の順序は mcpapplication.CollectReviews に置き、収集ユースケースや新しい通信境界は増やさない。
 
 Issue #35 の `analysis_guide` は MCP の案内と結果変換の責務であり、新たな分析ユースケースではない。共通本文をバイナリへ埋め込み、収集結果とともに提供する。steam・CLI・保存先へ分析方針を混ぜず、分析は接続元の AI、採否は人間に残す。[レビュー分析仕様](specs/review-analysis.md) に従う。

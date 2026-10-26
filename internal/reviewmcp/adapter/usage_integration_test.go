@@ -34,7 +34,7 @@ func TestMCPSharedUsageWindows(t *testing.T) {
 				handler, err := NewHandler(testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 					calls.Add(1)
 					return steamdomain.ReviewPage{}, nil
-				}), tc.limits, nil)
+				}), tc.limits, testutil.LocalAccess(t))
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -99,7 +99,7 @@ func TestMCPSharedConcurrentSlots(t *testing.T) {
 				}
 
 				return steamdomain.ReviewPage{}, nil
-			}), testutil.Limits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 2, RequestsPerDay: 2, MaxConcurrent: 1}), nil)
+			}), testutil.Limits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 2, RequestsPerDay: 2, MaxConcurrent: 1}), testutil.LocalAccess(t))
 			if err != nil {
 				t.Fatal(err)
 			}

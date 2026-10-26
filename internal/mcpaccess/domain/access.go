@@ -9,19 +9,22 @@ import (
 	"strings"
 )
 
-// ErrInvalidConfig は公開 MCP の URL または保護の組み立てが不正であることを表す。
+// ErrInvalidConfig は MCP の公開 URL または保護の組み立てが不正であることを表す。
 var ErrInvalidConfig = errors.New("invalid MCP access configuration")
 
-// Access は認証なしの公開 MCP で許可する authority を保持する。
+// Access は認証なしの MCP で許可する Host の条件を保持する。
 // New で構築し、設定変更時は作り直す。利用者の認証は行わない。
-type Access struct{ authority string }
+type Access struct {
+	authority string
+	localOnly bool
+}
 
 // New は HTTPS の /tools の公開 URL を検査する。
-// 空ならローカル専用を表す nil を返す。不正設定の診断へ入力値を含めない。
+// 空なら初期化済みのローカル用 Access を返す。不正設定の診断へ入力値を含めない。
 // 外部通信やバックグラウンド処理は開始しない。
 func New(publicURL string) (*Access, error) {
 	if publicURL == "" {
-		return nil, nil
+		return &Access{localOnly: true}, nil
 	}
 
 	u, authority, err := parseHTTPSURL(publicURL)
@@ -92,13 +95,22 @@ func canonicalAuthority(host string) (string, error) {
 }
 
 // IsInitialized は New で生成した有効な設定かを返す。nil とゼロ値は false とする。
-func (a *Access) IsInitialized() bool { return a != nil && a.authority != "" }
+func (a *Access) IsInitialized() bool { return a != nil && (a.localOnly || a.authority != "") }
 
-// AllowsHost は設定した公開 Host またはローカル Host と一致するかを返す。
-// 未初期化や不正な Host は false とする。DNS 照会と通信は行わない。
+// IsPublic は公開 URL を指定して生成した設定かを返す。
+// ローカル用の設定、nil、ゼロ値は false とする。
+func (a *Access) IsPublic() bool { return a != nil && a.authority != "" }
+
+// AllowsHost は生成時の許可条件に Host が一致するかを返す。
+// ローカル用は従来のローカル判定、公開用は authority の正規化と照合を使う。
+// 未初期化は false とする。DNS 照会と通信は行わない。
 func (a *Access) AllowsHost(host string) bool {
 	if !a.IsInitialized() {
 		return false
+	}
+
+	if a.localOnly {
+		return localHost(host)
 	}
 
 	authority, err := canonicalAuthority(host)

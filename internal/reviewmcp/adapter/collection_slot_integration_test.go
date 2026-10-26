@@ -41,7 +41,7 @@ func TestMCPSlotDuringResponseConversion(t *testing.T) {
 				}
 
 				return steamdomain.ReviewPage{}, nil
-			}), testutil.Limits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 10, RequestsPerDay: 10, MaxConcurrent: 1}), nil)
+			}), testutil.Limits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 10, RequestsPerDay: 10, MaxConcurrent: 1}), testutil.LocalAccess(t))
 			if err != nil {
 				t.Fatal(err)
 			}

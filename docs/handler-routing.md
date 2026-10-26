@@ -9,7 +9,7 @@ Issue #77 の配置基準は、handler 直下の本番ファイルを Controller
 | [RegisterRoutes](../cmd/server/adapter/routes.go) の GET/HEAD /healthz | [handler/health.go](../cmd/server/adapter/handler/health.go) | healthHandler.Handle が開始時刻・応答・結果記録を担当し、標準 http.HandlerFunc が HTTP へ接続する。ログ整形は下位の [logging](../cmd/server/adapter/handler/logging/health_log.go) |
 | 同じ RegisterRoutes の /tools | [adapter/server.go](../internal/reviewmcp/adapter/server.go) が構築した SDK の HTTP handler | SDK の生成・共有 limiter・Server 構築を担当する。Controller ではない |
 | newServer の collect_reviews 登録と SDK のディスパッチ | [handler/collect_reviews.go](../internal/reviewmcp/adapter/handler/collect_reviews.go) | NewCollectReviewsHandler が固定の依存を組み立て、collectReviewsHandler.Handle が context の準備・入力・UseCase・応答変換・後始末をつなぐ |
-| 公開／ローカルの Host/Origin 保護 | [Protect](../internal/mcpaccess/adapter/handler.go)／[ProtectLocal](../internal/mcpaccess/adapter/local.go) | next の手前で検査する middleware。Controller の一覧には含めない |
+| 公開／ローカルの Host/Origin 保護 | [Protect](../internal/mcpaccess/adapter/handler.go) | next の手前で検査する middleware。Controller の一覧には含めない |
 
 ```text
 reviewmcp/adapter/
@@ -35,7 +35,7 @@ healthz の NewHealthHandler は http.HandlerFunc(handler.Handle) を返す。HT
 
 MCP の HTTP エンベロープ・初期化・discover・tools/list・tools/call・未知の操作のディスパッチは固定版 SDK が実装する。newServer は Server の設定とツール登録、collection_definition.go は説明・schema・annotations を担当し、独自の SDK controller は追加しない。
 
-Host/Origin 保護は mcpaccess/adapter に維持し、Host 拒否→cross-origin 保護→next の順序を変えない。未定義・子パス・旧 /mcp・OAuth metadata の404、healthz の未許可メソッドの405は既存ルーターに任せる。http.Handler を返すことだけで Controller と分類しない。Handle はこのアプリの Controller の実行メソッド名であり、Go 全体や SDK が要求する名称ではない。HTTP と MCP の引数・戻り値を統一する共通 interface は追加しない。
+Issue #82 でローカル用・公開用の Access を生成し、Host の許可条件を mcpaccess/domain にまとめた。HTTP の保護は単一の Protect に渡し、ProtectLocal と構築側の保護関数選択は廃止した。Host/Origin 保護は mcpaccess/adapter に維持し、Host 拒否→cross-origin 保護→next の順序を変えない。未定義・子パス・旧 /mcp・OAuth metadata の404、healthz の未許可メソッドの405は既存ルーターに任せる。http.Handler を返すことだけで Controller と分類しない。Handle はこのアプリの Controller の実行メソッド名であり、Go 全体や SDK が要求する名称ではない。HTTP と MCP の引数・戻り値を統一する共通 interface は追加しない。
 
 ## 配置・一覧性・動作の検証
 

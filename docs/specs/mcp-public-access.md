@@ -1,6 +1,6 @@
 # 認証なしの公開 MCP と許可 Host
 
-公開 URL と Host の照合は mcpaccess/domain、HTTP の保護は mcpaccess/adapter に置く。adapter.Protect は Access と次の handler を受け取る。 配置は [ADR-0013](../adr/0013-domain-folder-layers.md) に従う。
+公開 URL・ローカル／公開の許可条件と Host の照合は mcpaccess/domain、HTTP の保護は mcpaccess/adapter に置く。adapter.Protect は Access と次の handler を受け取る。 配置は [ADR-0013](../adr/0013-domain-folder-layers.md) に従う。
 
 ## 目的と状態
 
@@ -17,11 +17,13 @@ Issue #29 で、公開 MCP を OAuth なしで提供する。Go はレビュー�
 - Authorization ヘッダーを必要とせず、初期処理・ツール一覧・呼び出しを匿名で受け付ける。OAuth の metadata・challenge は公開せず、`/.well-known/oauth-protected-resource/tools` は404とする。
 - `/tools` 以外のルートと `/healthz` は従来の契約を維持する。Host 検査は本人確認ではない。
 
-### 保護の組み立ての境界
+### 保護の組み立ての境界（Issue #82）
 
-ローカル専用モードは `mcpaccess/adapter.ProtectLocal(next)`、公開モードは `mcpaccess/adapter.Protect(access, next)` が HTTP の保護を担当する。`reviewmcp.NewHandler` は設定に応じてどちらかを選び、SDK の組み立てと共有する利用枠の所有を担当する。公開モードだけ SDK の localhost 保護を無効にする設定は維持する。
+`mcpaccess.New` は URL 未指定でも初期化済みのローカル用 Access を生成し、指定時は公開用 Access を生成する。未指定を nil で表す従来の Go API 契約を変更する。IsInitialized は生成済みか、IsPublic は公開用かを返す。nil とゼロ値は未初期化として扱い、ローカルの既定値として解釈しない。
 
-`ProtectLocal` の next は、呼び出し側が有効な非 nil の handler を渡す。従来の localhost/loopback の判定を使い、Host の検査、Go の cross-origin 保護、next の順に処理する。Host の不許可では403と「ローカルの Host のみ利用できます」の説明文を返す。Host または cross-origin で拒否した場合は next を呼ばず、許可時は next の応答を返す。構築時に通信・時計・新しい状態を必要とせず、公開側の authority 正規化へ判定を統一しない。
+両モードとも `mcpaccess/adapter.Protect(access, next)` が HTTP の保護を担当する。Access.AllowsHost は、ローカル用では従来の localHost、公開用では従来の authority 正規化と照合を使い、判定範囲を変えない。ProtectLocal は廃止する。`reviewmcp.NewHandler` は常に Protect を呼び、SDK の DisableLocalhostProtection は Access.IsPublic から決める。
+
+Protect は有効な Access と非 nil の next を受け取り、未初期化の設定や nil の next は ErrInvalidConfig と nil handler を返す。Host の検査、Go の cross-origin 保護、next の順に処理する。Host の不許可では403と、ローカル用は「ローカルの Host のみ利用できます」、公開用は「許可されていない Host です」の説明文を返す。文言は組み立て時に選ぶ。Host または cross-origin で拒否した場合は next を呼ばず、許可時は next を1回だけ呼び、その応答を維持する。構築時に通信・時計・新しい資源を必要としない。
 
 ## 資源・共有範囲
 
@@ -33,7 +35,7 @@ Web と共通の収集受付、初期同時数3の採否、DB による利用コ
 
 設定の境界・Host 正規化・転送ヘッダーと Origin の拒否はユニットテストで確認する。実 SDK の4版・複数セッションの匿名接続・一覧・呼び出し・共有枠を integration/race で確認する。同じ本番用イメージでローカルと公開設定の初期処理・一覧・不正入力、Host/Origin・metadata の404・不正設定・終了を確認する。実 Steam・実 LLM・外部認証サービスは自動テストから呼ばない。
 
-`ProtectLocal` の直接テストは MCP SDK や実ソケットを使わず、許可時の next の1回実行と応答維持、拒否時の非実行、Host の拒否理由と検査の優先順を確認する。`NewHandler` 経由の既存テストも維持し、保護の組み込みと SDK の本文上限・公開モードの契約を別途確認する。
+生成済みのローカル用 Access と `Protect` の直接テストは MCP SDK や実ソケットを使わず、許可時の next の1回実行と応答維持、拒否時の非実行、Host の拒否理由と検査の優先順を確認する。`NewHandler` 経由の既存テストも維持し、保護の組み込みと SDK の本文上限・公開モードの契約を別途確認する。
 
 [ADR-0009](../adr/0009-public-mcp-access.md) を参照する。
 

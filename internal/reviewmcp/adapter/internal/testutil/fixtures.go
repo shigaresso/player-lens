@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	mcpaccess "github.com/shigaresso/player-lens/internal/mcpaccess/domain"
 	mcpdomain "github.com/shigaresso/player-lens/internal/reviewmcp/domain"
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
 )
@@ -120,4 +121,15 @@ func (e *ConversionProbeError) Is(target error) bool {
 	}
 
 	return false
+}
+
+// LocalAccess はテスト用の生成済みローカルアクセス設定を返す。
+func LocalAccess(t *testing.T) *mcpaccess.Access {
+	t.Helper()
+	access, err := mcpaccess.New("")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return access
 }

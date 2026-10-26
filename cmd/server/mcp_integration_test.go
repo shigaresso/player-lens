@@ -15,6 +15,7 @@ import (
 
 	serveradapter "github.com/shigaresso/player-lens/cmd/server/adapter"
 	serverhandler "github.com/shigaresso/player-lens/cmd/server/adapter/handler"
+	mcpaccess "github.com/shigaresso/player-lens/internal/mcpaccess/domain"
 	reviewmcp "github.com/shigaresso/player-lens/internal/reviewmcp/adapter"
 	mcpdomain "github.com/shigaresso/player-lens/internal/reviewmcp/domain"
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
@@ -39,7 +40,12 @@ func TestMCPShutdownWaitsForActiveCollection(t *testing.T) {
 	fetcher := requestFetcher{started: make(chan struct{}), release: make(chan struct{})}
 	release := sync.OnceFunc(func() { close(fetcher.release) })
 	t.Cleanup(release)
-	mcpHandler, err := reviewmcp.NewHandler(fetcher, mcpdomain.DefaultLimits(), nil)
+	access, err := mcpaccess.New("")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mcpHandler, err := reviewmcp.NewHandler(fetcher, mcpdomain.DefaultLimits(), access)
 	if err != nil {
 		t.Fatal(err)
 	}

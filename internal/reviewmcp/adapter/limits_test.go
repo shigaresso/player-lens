@@ -10,7 +10,7 @@ import (
 )
 
 func TestNewHandlerRejectsInvalidLimits(t *testing.T) {
-	handler, err := NewHandler(testutil.FetchFunc(nil), mcpdomain.Limits{}, nil)
+	handler, err := NewHandler(testutil.FetchFunc(nil), mcpdomain.Limits{}, testutil.LocalAccess(t))
 	if handler != nil || !errors.Is(err, steamdomain.ErrInvalidArgument) {
 		t.Fatalf("handler=%v err=%v", handler, err)
 	}

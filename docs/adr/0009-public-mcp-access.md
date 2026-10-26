@@ -27,3 +27,11 @@ ADR-0007 のローカル専用の適用範囲に公開モードを追加し、AD
 Issue #56 では [ADR-0013](0013-domain-folder-layers.md) に従い、URL と Host 照合を mcpaccess/domain、HTTP の保護を mcpaccess/adapter に配置した。公開側は receiver の Access.Protect から Protect(access, next) へ変更し、nil・ゼロ値・Host・Origin の契約は維持する。
 
 Issue #77 では HTTP の Protect／ProtectLocal を Controller と区別し、middleware として mcpaccess/adapter に維持する。MCP の生成・登録が外側から保護と Controller を接続する。Access と Host 照合、判定順と公開契約は変更しない。
+
+## 許可条件と保護手順の統一（Issue #82）
+
+ユーザーの了承に基づき、ローカルにも Access を生成する方式を採用する。Issue #48 のモード別の保護関数と、URL 未指定を nil とする Go API 契約を置き換える。生成済み Access の IsInitialized・IsPublic・AllowsHost で条件を伝え、Protect の1実装で HTTP の保護手順を実行する。ProtectLocal と NewHandler の保護関数選択は削除する。
+
+判定関数だけを共通の内部関数へ渡し、公開用とローカル用の入口を残す案とも比較した。今回は両モードの設定を生成済みの同じ型で渡せることと、呼び出し側が保護手順を選ぶ必要をなくすことを優先した。nil／ゼロ値の拒否と呼び出し元の変更を含むため、HTTP の保護本体の抽出だけの変更とは扱わない。
+
+ローカルの Host 判定と公開 authority の正規化はそれぞれ維持し、拒否の優先順・403の文言・SDK の保護設定と公開 HTTP 動作を変えない。nil／ゼロ値は未初期化であり、有効なローカル設定は New で生成する。SDK・UseCase・healthz の責務や、認証・利用枠の契約は変更しない。

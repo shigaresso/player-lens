@@ -25,7 +25,7 @@ func TestReadMCPAccess(t *testing.T) {
 				return tc.value
 			})
 			if tc.valid {
-				if err != nil || (access == nil) != tc.local {
+				if err != nil || access == nil || !access.IsInitialized() || access.IsPublic() == tc.local {
 					t.Fatalf("access=%v err=%v", access, err)
 				}
 

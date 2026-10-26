@@ -68,4 +68,4 @@ AppID・RecommendationID・TimestampCreated・TimestampUpdated は steam/domain 
 
 handler 直下の本番ファイルは、リクエストの準備・入力・UseCase・応答という操作全体の流れを読む Controller の一覧とする。MCP は Issue #80 で handler/collect_reviews.go の collectReviewsHandler.Handle に context の連携・入力・UseCase・応答・後始末をまとめた。NewCollectReviewsHandler は HTTP ごとの固定の依存を持つ handler のメソッド値を SDK へ渡し、実行ごとの context を共有状態へ格納しない。入力・応答・schema・ガイドの詳細は handler/protocol に置く。SDK の構築・共有状態・登録は外側の adapter に、Host/Origin の middleware は mcpaccess/adapter に維持する。
 
-healthz は handler/health.go と下位の logging に分ける。業務操作・利用枠・期限と応答変換完了までの枠保持は変更しない。新しいユースケースは追加せず、[Controller とルーティングの一覧](handler-routing.md) から登録と各処理を追えるようにする。
+healthz は handler/health.go と下位の logging に分ける。Issue #80 で healthHandler.Handle と collectReviewsHandler.Handle に実行入口名を揃えた。healthz の生成関数は標準 http.HandlerFunc、MCP の生成関数は SDK に適合するメソッド値を返す。業務操作・利用枠・期限と応答変換完了までの枠保持は変更しない。新しいユースケースは追加せず、[Controller とルーティングの一覧](handler-routing.md) から登録と各処理を追えるようにする。

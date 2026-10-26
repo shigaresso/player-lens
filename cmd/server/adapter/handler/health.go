@@ -21,12 +21,13 @@ type healthHandler struct {
 // 生成時には時刻取得やログ出力を行わず、経路登録は呼び出し側が担当する。
 // 呼び出し側は GET/HEAD の HealthPath に登録してメソッドとパスを制限する。
 func NewHealthHandler(logger *slog.Logger, now func() time.Time) http.Handler {
-	return healthHandler{logger: logger, now: now}
+	handler := healthHandler{logger: logger, now: now}
+	return http.HandlerFunc(handler.Handle)
 }
 
-// ServeHTTP は生存確認の応答と所要時間を記録する。ログの失敗で応答を変更しない。
+// Handle は生存確認の応答と所要時間を記録する。ログの失敗で応答を変更しない。
 // panic は回復せず、request context をそのままログへ渡す。
-func (h healthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h healthHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	started := h.now()
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	var writeErr error

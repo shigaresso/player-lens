@@ -15,11 +15,7 @@ func Protect(a mcpaccess.Access, next http.Handler) (http.Handler, error) {
 		return nil, fmt.Errorf("MCP の保護には有効な設定とハンドラーが必要: %w", mcpaccess.ErrInvalidConfig)
 	}
 
-	deniedMessage := "ローカルの Host のみ利用できます"
-	if a.IsPublic() {
-		deniedMessage = "許可されていない Host です"
-	}
-
+	deniedMessage := a.HostRejectionMessage()
 	protected := http.NewCrossOriginProtection().Handler(next)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !a.AllowsHost(r.Host) {

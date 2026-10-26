@@ -19,11 +19,11 @@ Issue #29 で、公開 MCP を OAuth なしで提供する。Go はレビュー�
 
 ### 保護の組み立ての境界（Issue #82）
 
-`Access` は AllowsHost と IsPublic の共通契約とし、New は URL 未指定なら設定値を持たない localAccess、指定時は検査済み authority だけを持つ publicAccess を返す。両方とも非公開の値型とし、mode フラグと空フィールドの組み合わせで表さない。正常な生成結果に nil ポインターは含まない。未指定を nil で表す従来の Go API 契約を変更する。Access のゼロ値は nil とし、Protect と NewHandler が未生成として拒否する。IsInitialized は持たず、呼び出し元は New から生成した Access を渡す。
+`Access` は AllowsHost・IsPublic・HostRejectionMessage の共通契約とし、New は URL 未指定なら設定値を持たない localAccess、指定時は検査済み authority だけを持つ publicAccess を返す。両方とも非公開の値型とし、mode フラグと空フィールドの組み合わせで表さない。正常な生成結果に nil ポインターは含まない。未指定を nil で表す従来の Go API 契約を変更する。Access のゼロ値は nil とし、Protect と NewHandler が未生成として拒否する。IsInitialized は持たず、呼び出し元は New から生成した Access を渡す。
 
 両モードとも `mcpaccess/adapter.Protect(access, next)` が HTTP の保護を担当する。Access.AllowsHost は、ローカル用では従来の localHost、公開用では従来の authority 正規化と照合を使い、判定範囲を変えない。ProtectLocal は廃止する。`reviewmcp.NewHandler` は常に Protect を呼び、SDK の DisableLocalhostProtection は Access.IsPublic から決める。
 
-Protect は有効な Access と非 nil の next を受け取り、未初期化の設定や nil の next は ErrInvalidConfig と nil handler を返す。Host の検査、Go の cross-origin 保護、next の順に処理する。Host の不許可では403と、ローカル用は「ローカルの Host のみ利用できます」、公開用は「許可されていない Host です」の説明文を返す。文言は組み立て時に選ぶ。Host または cross-origin で拒否した場合は next を呼ばず、許可時は next を1回だけ呼び、その応答を維持する。構築時に通信・時計・新しい資源を必要としない。
+Protect は有効な Access と非 nil の next を受け取り、未初期化の設定や nil の next は ErrInvalidConfig と nil handler を返す。Host の検査、Go の cross-origin 保護、next の順に処理する。Host の不許可では403と、ローカル用は「ローカルの Host のみ利用できます」、公開用は「許可されていない Host です」の説明文を返す。拒否理由は選択済みの型が返す固定の HostRejectionMessage から構築時に取得する。Protect は公開／ローカルを再判定せず、HTTP のステータス・ヘッダー・本文形式を担当する。Host または cross-origin で拒否した場合は next を呼ばず、許可時は next を1回だけ呼び、その応答を維持する。構築時に通信・時計・新しい資源を必要としない。
 
 ## 資源・共有範囲
 

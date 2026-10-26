@@ -43,3 +43,23 @@ func TestAccessPolicy(t *testing.T) {
 		})
 	}
 }
+
+func TestAccessHostRejectionMessage(t *testing.T) {
+	for _, tc := range []struct {
+		name, publicURL, message string
+	}{
+		{"ローカル用の固定の拒否理由を返す", "", "ローカルの Host のみ利用できます"},
+		{"公開用の固定の拒否理由を返す", "https://reviews.example/tools", "許可されていない Host です"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			access, err := mcpaccess.New(tc.publicURL)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if got := access.HostRejectionMessage(); got != tc.message {
+				t.Fatalf("拒否理由=%q; want=%q", got, tc.message)
+			}
+		})
+	}
+}

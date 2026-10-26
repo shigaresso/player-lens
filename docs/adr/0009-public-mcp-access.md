@@ -36,4 +36,6 @@ Issue #77 では HTTP の Protect／ProtectLocal を Controller と区別し、m
 
 ローカルの Host 判定と公開 authority の正規化はそれぞれ維持し、拒否の優先順・403の文言・SDK の保護設定と公開 HTTP 動作を変えない。nil／ゼロ値は未初期化であり、有効なローカル設定は New で生成する。SDK・UseCase・healthz の責務や、認証・利用枠の契約は変更しない。
 
-ユーザーの指摘を受け、Access を localOnly と authority の組み合わせで表す構造体から共通契約へ変更する。ローカル用はフィールドを持たない localAccess、公開用は authority だけを持つ publicAccess とし、非公開の値型を New から返す。両者の種類は型で決まるためモードフラグを持たない。IsInitialized は廃止し、Access の未生成のゼロ値は nil として公開境界で拒否する。interface は実在する2つの許可条件と、それを利用する保護・SDK 設定に必要な2メソッドに限定する。
+ユーザーの指摘を受け、Access を localOnly と authority の組み合わせで表す構造体から共通契約へ変更する。ローカル用はフィールドを持たない localAccess、公開用は authority だけを持つ publicAccess とし、非公開の値型を New から返す。両者の種類は型で決まるためモードフラグを持たない。IsInitialized は廃止し、Access の未生成のゼロ値は nil として公開境界で拒否する。interface は実在する2つの許可条件と、それを利用する保護・SDK 設定に必要な契約に限定する。
+
+モードを選び直す分岐を利用側に残さないため、固定の Host 拒否理由も各具体型の HostRejectionMessage が提供する。Protect が IsPublic で文言を選ぶ分岐は廃止する。domain は許可条件と拒否理由を返し、HTTP ステータス・ヘッダー・本文形式は adapter に維持する。SDK の設定は型が返す IsPublic をそのまま使う。Host が許可されるかの判定や入力エラーの処理は共通手順の条件分岐として残す。

@@ -15,6 +15,9 @@ type publicAccess struct {
 // IsPublic は公開 URL を持つ設定であることを返す。
 func (publicAccess) IsPublic() bool { return true }
 
+// HostRejectionMessage は公開用の固定の Host 拒否理由を返す。
+func (publicAccess) HostRejectionMessage() string { return "許可されていない Host です" }
+
 // AllowsHost は公開 authority またはローカル Host と一致するかを返す。
 // authority を正規化して照合し、DNS 照会や通信は行わない。
 func (a publicAccess) AllowsHost(host string) bool {

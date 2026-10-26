@@ -8,12 +8,15 @@ import (
 // ErrInvalidConfig は MCP の公開 URL または保護の組み立てが不正であることを表す。
 var ErrInvalidConfig = errors.New("invalid MCP access configuration")
 
-// Access は MCP の許可 Host の判定と公開設定の有無を提供する契約である。
+// Access は MCP の許可 Host の判定・固定の拒否理由・公開設定の有無を提供する契約である。
 // New で生成した値を渡す。ゼロ値の nil は未生成であり、ローカル用とは扱わない。
 // 利用者の認証や外部通信は行わない。
 type Access interface {
 	// AllowsHost は Host が生成時の許可条件に一致するかを返す。
 	AllowsHost(host string) bool
+	// HostRejectionMessage は Host 不許可時に提示できる固定の拒否理由を返す。
+	// 入力された Host や公開 URL の値を含めない。
+	HostRejectionMessage() string
 	// IsPublic は公開 URL を指定した設定かを返す。
 	IsPublic() bool
 }

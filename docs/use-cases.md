@@ -42,7 +42,7 @@ Issue #54 で、利用制限の設定は未検証の `LimitsConfig` から `NewL
 
 Issue #62 で、application が adapter から渡された同期的な結果処理関数を呼び、その完了後に同時枠を返す構成に修復した。JSON・SDK 応答生成は adapter に残し、application は SDK 型を含めない。結果処理の失敗でも枠を返し、収集の原因は Result.Err で処理関数へ渡す。開始前キャンセル・受付拒否も一度処理するが、確保していない枠は返さない。[ADR-0016](adr/0016-mcp-response-slot-lifetime.md) に記録する。
 
-Issue #86 で、CollectionState.AddPage の重複排除を非公開メソッド addUniqueReviews に分離した。既読 ID とレビュー配列の更新を同じ場所に保ち、AddPage からはページ反映と終了判断の手順を読む。操作・通信・公開 API と終了優先順は変更していない。
+Issue #86 で、CollectionState.AddPage の重複排除を非公開メソッド appendUnseenReviews に分離した。既読 ID とレビュー配列の更新を同じ場所に保ち、AddPage からはページ反映と終了判断の手順を読む。操作・通信・公開 API と終了優先順は変更していない。
 
 Issue #84 で、MCP 用 CollectReviews の開始前キャンセル／期限超過は、共通の NewFailedCollection で空の失敗結果を作り respond を一度呼んで早期 return する構成にした。下位の収集・期限の生成・利用枠の確保へ進まない。CollectionState の取得・context・循環失敗と受付拒否も共通生成を使い、入力条件・部分結果を維持する。同期的な結果処理まで枠を保持し返却する責務は application に残す。
 

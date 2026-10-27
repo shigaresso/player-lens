@@ -20,7 +20,7 @@ NewCollectionState は正の App ID と CollectionOptions を検査・正規化�
 
 NextPage は残件数までに制限した取得条件と続行可否を返す。AddPage は有効な取得結果を順番に受け取り、成功数と重複排除・終了・次の条件をまとめて更新する。空ページ、件数上限、カーソル循環、ページ上限の順序を維持する。循環したページも結果に含め、ErrCursorCycle を domain に置く。参照元は新しい定義へ更新し、互換エイリアスを残さない。
 
-Issue #86 では AddPage の既読 ID の確認・登録とレビュー配列への追加を、同じ型の非公開メソッド addUniqueReviews に分離する。AddPage はページ反映と終了判断の順序を担当し、重複排除の詳細は意味のある名前で参照する。状態の所有・公開 API・終了優先順は変えず、新しいパッケージや interface は追加しない。
+Issue #86 では AddPage の既読 ID の確認・登録とレビュー配列への追加を、同じ型の非公開メソッド appendUnseenReviews に分離する。AddPage はページ反映と終了判断の順序を担当し、重複排除の詳細は意味のある名前で参照する。状態の所有・公開 API・終了優先順は変えず、新しいパッケージや interface は追加しない。
 
 Fail は外側の取得・context 失敗を収集結果へ反映し、成功済みのページと条件を保持する。原因のエラーや通信の文脈は application が保持する。終了済みなら NextPage はゼロ値と false、AddPage は変更せず nil、Fail は何も変更しない。
 

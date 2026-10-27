@@ -68,12 +68,7 @@ func (s *CollectionState) AddPage(page ReviewPage) error {
 		return nil
 	}
 
-	for _, review := range page.Reviews {
-		if !s.seenIDs[review.RecommendationID] {
-			s.seenIDs[review.RecommendationID] = true
-			s.result.Reviews = append(s.result.Reviews, review)
-		}
-	}
+	s.addUniqueReviews(page.Reviews)
 
 	if len(s.result.Reviews) >= s.result.Options.MaxReviews {
 		s.result.StopReason = StopReviewLimit
@@ -99,5 +94,15 @@ func (s *CollectionState) AddPage(page ReviewPage) error {
 func (s *CollectionState) Fail() {
 	if s.result.StopReason == "" {
 		s.result = NewFailedCollection(s.result)
+	}
+}
+
+// addUniqueReviews は未取得の ID のレビューだけを追加し、最初の値と取得順を保つ。
+func (s *CollectionState) addUniqueReviews(reviews []Review) {
+	for _, review := range reviews {
+		if !s.seenIDs[review.RecommendationID] {
+			s.seenIDs[review.RecommendationID] = true
+			s.result.Reviews = append(s.result.Reviews, review)
+		}
 	}
 }

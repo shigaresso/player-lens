@@ -49,7 +49,7 @@
 
 steam/domain の CollectionState は結果・既読 ID・既読カーソルと次の取得条件を非公開で持つ。NewCollectionState が正の App ID を検査し、有効な CollectionOptions の設定コピーを保持する。状態のゼロ値は使用しない。条件の検査・正規化は NewCollectionOptions で完了しており、状態では繰り返さない。CollectReviews は取得依存を確認してから状態を生成し、App ID の検査を重複させない。不正入力の戻り値と ErrInvalidArgument の原因識別は維持する。
 
-NextPage は次の条件と続行可否、AddPage は成功ページの反映と循環のエラー、Fail は取得や context 失敗の結果への反映を担当する。終了後は NextPage がゼロ値と false を返し、AddPage と Fail は結果を変更しない。終了後の AddPage は nil を返す。
+NextPage は次の条件と続行可否、AddPage は成功ページの反映と循環のエラー、Fail は取得や context 失敗の結果への反映を担当する。Issue #86 で、AddPage の重複排除は同じ CollectionState の非公開メソッド addUniqueReviews に分離した。既読 ID の確認・登録と配列への追加をまとめ、終了判定の位置と優先順を維持する。終了後は NextPage がゼロ値と false を返し、AddPage と Fail は結果を変更しない。終了後の AddPage は nil を返す。
 
 Result はレビュー配列も含めてコピーし、返した値の変更を内部へ伝えない。空配列は nil にしない。状態は通信・context・時計・再試行を扱わず、取得・期限・キャンセルと失敗の文脈は application が担当する。循環の識別には steam/domain.ErrCursorCycle を使う。判断は [ADR-0014](../adr/0014-steam-collection-state.md) に記録する。
 

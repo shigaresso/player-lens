@@ -42,7 +42,7 @@
 | [ADR-0011：クライアント向け分析ガイド](adr/0011-client-review-analysis-guide.md) | MCP 結果へのガイド添付と分析の担当・制約 | 採用。版付きの本文を埋め込み、クライアントの最終回答は強制しない |
 | [ADR-0012：Steam の名前付き数値型](adr/0012-steam-domain-types.md) | Steam の ID・時刻・API 列挙値、JSON 境界との変換 | 採用。実装・検証は Issue #43 と作業記録に記載する |
 | [ADR-0013：各領域内のレイヤー分類](adr/0013-domain-folder-layers.md) | 既存領域を維持した domain・application・adapter と受付の handler 配置・依存 | 採用。各領域内の分類と依存検査を導入した。[検証記録](worklogs/56-domain-folder-layers.md) に実施結果を残す |
-| [ADR-0014：Steam の収集状態](adr/0014-steam-collection-state.md) | 収集状態・重複・カーソル・終了と取得手順の境界 | 採用。収集状態と取得手順を分離した。[検証記録](worklogs/58-steam-collection-state.md) に実施結果を残す |
+| [ADR-0014：Steam の収集状態](adr/0014-steam-collection-state.md) | 収集状態・重複・カーソル・終了と取得手順の境界 | 採用。収集状態と取得手順を分離した。[検証記録](worklogs/58-steam-collection-state.md) に実施結果を残す。Issue #86 の重複排除の分離は [記録](worklogs/86-extract-review-deduplication.md) を参照する |
 | [ADR-0015：収集条件の生成と利用](adr/0015-collection-options-boundary.md) | 未検証の設定・有効な条件・ゼロ値・結果のコピーの境界 | 採用。収集条件の生成と利用を分離した。[検証記録](worklogs/60-collection-options-boundary.md) に実施結果を残す |
 | [ADR-0016：MCP の応答完了と同時枠](adr/0016-mcp-response-slot-lifetime.md) | 結果処理の同期実行と同時枠の保持・返却、レイヤー間の連携 | 採用。応答変換完了まで枠を保持する構成に修復した。[検証記録](worklogs/62-mcp-response-slot-lifetime.md) に実施結果を残す |
 | [ADR-0017：生存確認の構造化ログ](adr/0017-health-structured-logging.md) | healthz の生成と経路登録、完了イベント、slog と context、出力と保存の責務 | 採用。ログ導入は Issue #72、生成と登録の分離は Issue #74 の作業記録に記載する |

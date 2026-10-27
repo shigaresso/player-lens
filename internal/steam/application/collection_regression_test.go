@@ -6,6 +6,7 @@ import (
 	"io"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
 
 	steamapplication "github.com/shigaresso/player-lens/internal/steam/application"
@@ -14,13 +15,15 @@ import (
 
 func TestCollectReviewsInvalidInput(t *testing.T) {
 	for _, tt := range []struct {
-		name       string
-		appID      steamdomain.AppID
-		options    steamdomain.CollectionOptionsConfig
-		nilFetcher bool
+		name        string
+		appID       steamdomain.AppID
+		options     steamdomain.CollectionOptionsConfig
+		nilFetcher  bool
+		wantContext string
 	}{
-		{"AppIDゼロを拒否する", 0, steamdomain.CollectionOptionsConfig{}, false},
-		{"取得依存なしを拒否する", 440, steamdomain.CollectionOptionsConfig{}, true},
+		{"AppIDゼロを拒否する", 0, steamdomain.CollectionOptionsConfig{}, false, "prepare Steam review collection: positive AppID is required:"},
+		{"取得依存なしでは依存の欠落だけを説明する", 440, steamdomain.CollectionOptionsConfig{}, true, "page fetcher is required:"},
+		{"両方が不正でも取得依存の欠落を先に説明する", 0, steamdomain.CollectionOptionsConfig{}, true, "page fetcher is required:"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			var fetcher steamapplication.PageFetcher = pageFetcherFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
@@ -34,6 +37,10 @@ func TestCollectReviewsInvalidInput(t *testing.T) {
 			got, err := steamapplication.CollectReviews(context.Background(), fetcher, tt.appID, collectionOptions(t, tt.options))
 			if !errors.Is(err, steamdomain.ErrInvalidArgument) || !reflect.DeepEqual(got, steamdomain.Collection{}) {
 				t.Fatalf("result=%#v error=%v", got, err)
+			}
+
+			if !strings.HasPrefix(err.Error(), tt.wantContext) {
+				t.Fatalf("拒否の説明=%v wantContext=%q", err, tt.wantContext)
 			}
 		})
 	}

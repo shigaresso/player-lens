@@ -23,7 +23,7 @@ type PageFetcher interface {
 // 取得・循環・context の失敗では部分結果と StopFailed、原因を保持したエラーを返す。
 func CollectReviews(ctx context.Context, fetcher PageFetcher, appID steamdomain.AppID, options steamdomain.CollectionOptions) (steamdomain.Collection, error) {
 	if fetcher == nil {
-		return steamdomain.Collection{}, fmt.Errorf("page fetcher and positive AppID are required: %w", steamdomain.ErrInvalidArgument)
+		return steamdomain.Collection{}, fmt.Errorf("page fetcher is required: %w", steamdomain.ErrInvalidArgument)
 	}
 
 	state, err := steamdomain.NewCollectionState(appID, options)

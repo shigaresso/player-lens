@@ -48,7 +48,7 @@ func decodeReviewPage(appID steamdomain.AppID, options steamdomain.PageOptions, 
 	for i, input := range result.Response.Reviews {
 		review, err := convertReview(input)
 		if err != nil {
-			return steamdomain.ReviewPage{}, err
+			return steamdomain.ReviewPage{}, fmt.Errorf("convert Steam review %d: %w", i+1, err)
 		}
 
 		reviews[i] = review

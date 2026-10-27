@@ -55,15 +55,18 @@ func TestParseRecommendationID(t *testing.T) {
 
 func TestDecodeReviewPageRecommendationIDErrorCause(t *testing.T) {
 	for _, tc := range []struct {
-		name, value string
-		wantErr     error
+		name, value  string
+		priorReviews string
+		wantReview   int
+		wantErr      error
 	}{
-		{"空のIDの構文エラーを保持する", "", strconv.ErrSyntax},
-		{"不正なIDの構文エラーを保持する", "bad", strconv.ErrSyntax},
-		{"uint64の範囲超過の原因を保持する", "18446744073709551616", strconv.ErrRange},
+		{"1件目の空のIDでは位置と構文エラーを保持する", "", "", 1, strconv.ErrSyntax},
+		{"2件目の空のIDでは位置と構文エラーを保持する", "", `{"recommendationid":"1"},`, 2, strconv.ErrSyntax},
+		{"2件目の不正なIDでは位置と構文エラーを保持する", "bad", `{"recommendationid":"1"},`, 2, strconv.ErrSyntax},
+		{"2件目のuint64の範囲超過では位置と原因を保持する", "18446744073709551616", `{"recommendationid":"1"},`, 2, strconv.ErrRange},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			body := fmt.Sprintf(`{"response":{"reviews":[{"recommendationid":"1"},{"recommendationid":%q}],"cursor":"next"}}`, tc.value)
+			body := fmt.Sprintf(`{"response":{"reviews":[%s{"recommendationid":%q}],"cursor":"next"}}`, tc.priorReviews, tc.value)
 			got, err := decodeReviewPage(440, steamdomain.PageOptions{PageSize: 2}, []byte(body))
 			if !errors.Is(err, ErrInvalidResponse) || !errors.Is(err, tc.wantErr) || !reflect.DeepEqual(got, steamdomain.ReviewPage{}) {
 				t.Fatalf("page=%#v error=%v", got, err)
@@ -72,6 +75,10 @@ func TestDecodeReviewPageRecommendationIDErrorCause(t *testing.T) {
 			var cause *strconv.NumError
 			if !errors.As(err, &cause) || cause.Num != tc.value {
 				t.Fatalf("数値変換の原因を失った: %v", err)
+			}
+
+			if wantContext := fmt.Sprintf("convert Steam review %d:", tc.wantReview); !strings.HasPrefix(err.Error(), wantContext) {
+				t.Fatalf("失敗位置=%v wantContext=%q", err, wantContext)
 			}
 		})
 	}

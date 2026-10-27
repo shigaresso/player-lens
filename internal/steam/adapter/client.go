@@ -69,15 +69,9 @@ func (c *Client) FetchReviewsPage(ctx context.Context, appID steamdomain.AppID, 
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	input := newReviewPageRequest(appID, options)
-	query, err := encodeReviewPageQuery(input)
+	request, err := newReviewPageHTTPRequest(ctx, c.endpoint, appID, options)
 	if err != nil {
 		return steamdomain.ReviewPage{}, err
-	}
-
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, c.endpoint+"?"+query.Encode(), nil)
-	if err != nil {
-		return steamdomain.ReviewPage{}, fmt.Errorf("create Steam review request: %w", err)
 	}
 
 	response, err := c.httpClient.Do(request)

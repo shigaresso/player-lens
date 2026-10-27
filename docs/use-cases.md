@@ -16,6 +16,8 @@
 
 `steamadapter.Client.FetchReviewsPage` は1回の HTTP 通信と入力・応答の検査、応答 Body の解放を担当する adapter とする。収集操作とは区別し、ページングや収集全体の件数・時間・部分失敗を重複させない。
 
+Issue #88 で、HTTP リクエストの組み立てを同じ adapter の非公開関数 `newReviewPageHTTPRequest` にまとめた。API 入力・JSON・クエリ・context 付き GET を構築し、通信や期限の生成は行わない。FetchReviewsPage は入力検査、取得用 context の生成と解放、要求構築の呼び出し、送信と応答処理の呼び出しを担当する。既存の変換・入力・通信・資源解放の契約を維持し、新しいユースケースは増やさない。
+
 Issue #38 で adapter 内のリクエスト変換を分離した。Issue #43 では文字列の評価種別から数値への変換を入力境界へ移した。`newReviewPageRequest`、`encodeReviewPageQuery` は、正規化済みの条件を Steam API の入力とクエリへ変換する通信なしの処理であり、新しいユースケースではない。 Issue #64 で評価種別の検査を FetchReviewsPage が呼ぶ NormalizePageOptions に集約し、newReviewPageRequest は正の App ID と検査後の条件の変換だけを担当する構成にした。private の重複検査と error 戻り値を除き、公開入口で不正入力を通信前に拒否する契約を維持した。
 
 Issue #39 で応答解釈も分離した。`decodeReviewPage` は本文と取得条件からページを作り、Issue #43 の `parseRecommendationID` は ID の文字列を0を含む uint64 に変換する。Issue #66 で、Body の読み取り・サイズ制限・解釈の呼び出し・Close を同じ adapter の `readReviewPageResponse` にまとめた。FetchReviewsPage は送信と context を担当し、応答処理が Close を終えた後で context を解放する。JSON の解釈は decodeReviewPage に維持し、新しいユースケースやレイヤーは増やさない。

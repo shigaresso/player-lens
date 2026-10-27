@@ -26,6 +26,12 @@ HTTP クライアントと接続先は外から渡す。空の接続先は公式
 
 API 側の数値定数は [公式の列挙名](https://partner.steamgames.com/doc/webapi/IUserReviewsService#Enums) と同じ `k_EUserReviewsReviewType_All`・`k_EUserReviewsReviewType_Positive`・`k_EUserReviewsReviewType_Negative`、`k_EUserReviewsAppReviewsFilter_Recent`、`k_EUserReviewsPurchaseType_All` を使う。これらは非公開とし、API へ送る値を明示的な数値で定義する。
 
+### HTTP リクエストの組み立て（Issue #88）
+
+同じ `review_page_request.go` の非公開関数 `newReviewPageHTTPRequest` が、API 入力への変換、JSON・クエリの生成、context 付き GET リクエストの構築をまとめる。呼び出し側が検査した接続先、正の App ID、正規化済みの条件と取得用 context を受け取り、再検査・通信・期限の生成は行わない。`format=json` と `input_json`、URL エンコード、固定条件、エラーの文脈と原因を維持する。
+
+`FetchReviewsPage` は入力検査、10秒の取得用 context と cancel、リクエスト構築の呼び出し、送信、応答処理の呼び出しを担当する。リクエスト構築に失敗した場合もページの完全なゼロ値と原因を返し、取得用 context を解放する。Body の読み取りと Close は `readReviewPageResponse` に維持し、Close を完了してから取得用 context を解放する。
+
 ## 結果と失敗
 
 成功時は AppID、既定値適用後の条件、レビュー配列、次のカーソルを返す。recommendationid は0を含む uint64 に基づく `RecommendationID` として保持し、本文、言語、推薦、作成・更新の UNIX 秒を返す。未知のフィールドは無視する。空配列は成功で、空ページのカーソルは省略可能とする。

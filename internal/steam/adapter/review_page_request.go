@@ -1,8 +1,10 @@
 package adapter
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
@@ -24,6 +26,23 @@ type reviewPageRequest struct {
 	ReviewType     steamdomain.EUserReviewsReviewType       `json:"review_type"`
 	PurchaseType   steamdomain.EUserReviewsPurchaseType     `json:"purchase_type"`
 	FilterOfftopic bool                                     `json:"filter_offtopic_activity"`
+}
+
+// newReviewPageHTTPRequest は API の入力とクエリを組み立て、context 付きの GET リクエストを作る。
+// 呼び出し側は接続先と App ID の検査・取得条件の正規化を完了させ、context の寿命と送信を管理する。
+func newReviewPageHTTPRequest(ctx context.Context, endpoint string, appID steamdomain.AppID, options steamdomain.PageOptions) (*http.Request, error) {
+	input := newReviewPageRequest(appID, options)
+	query, err := encodeReviewPageQuery(input)
+	if err != nil {
+		return nil, err
+	}
+
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint+"?"+query.Encode(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("create Steam review request: %w", err)
+	}
+
+	return request, nil
 }
 
 // newReviewPageRequest は正の App ID と正規化済みの取得条件を API の入力データへ変換する。

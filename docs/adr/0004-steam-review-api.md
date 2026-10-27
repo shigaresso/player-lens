@@ -28,6 +28,12 @@ FetchReviewsPage は入力検査・要求構築・送信と取得用 context の
 
 Body の読み取りと Close を別の担当に分ける案では、解釈と Close の複合失敗や資源の寿命が分断されるため、一連の応答処理としてまとめる。Close は解釈後・取得用 context の解放前に完了させる。Close 失敗は元の原因と併せて保持し、完全なゼロ値のページを返す。読み取り中の同じ goroutine の panic でも Close と context の解放を行い、panic は握りつぶさない。公開 API・通信上限・再試行と接続プールの所有は維持する。
 
+## HTTP リクエストの組み立て（Issue #88）
+
+FetchReviewsPage に具体的な API 入力・JSON・クエリ・GET の構築を残す案と比較し、同じ adapter の review_page_request.go に非公開の newReviewPageHTTPRequest を置く。入力検査・期限・送受信の手順から、送信する HTTP リクエストの組み立てを分けて読めることを優先する。既存の newReviewPageRequest と encodeReviewPageQuery はその内部から使う。
+
+接続先・App ID の検査と条件の正規化は呼び出し側で完了し、取得用 context の生成・解放と送信は FetchReviewsPage が担当する。分離先で通信・再検査・期限・再試行を追加しない。公開 API・依存・新しいレイヤーは増やさず、GET・エンコード・失敗時のゼロ値と原因・応答 Body の所有を維持する。関数呼び出しは増えるため、送信内容の詳細は同じファイルの既存の変換と一緒に配置する。
+
 ## 利点と制約
 
 現行仕様に合わせて取得条件と結果を明示できる。キーなしの応答は最大10分キャッシュされ、共有の制限で429になり得る。全作品・全言語の成功や常に最新の応答を保証しない。実 API の1件の読取で `response` wrapper と文字列 ID を確認したが、通常テスト・CI は制御したローカル通信で契約を検証する。

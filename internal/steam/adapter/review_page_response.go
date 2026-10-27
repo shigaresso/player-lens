@@ -37,7 +37,7 @@ func decodeReviewPage(appID steamdomain.AppID, options steamdomain.PageOptions, 
 	}
 
 	if len(result.Response.Reviews) > options.PageSize {
-		return steamdomain.ReviewPage{}, fmt.Errorf("Steam review count %d exceeds requested page size %d: %w", len(result.Response.Reviews), options.PageSize, ErrInvalidResponse)
+		return steamdomain.ReviewPage{}, fmt.Errorf("steam review count %d exceeds requested page size %d: %w", len(result.Response.Reviews), options.PageSize, ErrInvalidResponse)
 	}
 
 	if len(result.Response.Reviews) > 0 && result.Response.Cursor == "" {

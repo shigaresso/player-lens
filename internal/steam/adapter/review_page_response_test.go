@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
 
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
@@ -113,23 +114,32 @@ func TestDecodeReviewPageSuccess(t *testing.T) {
 }
 
 func TestDecodeReviewPageInvalidResponse(t *testing.T) {
-	options := steamdomain.PageOptions{ReviewType: steamdomain.ReviewTypeAll, Language: "english", Cursor: steamdomain.FirstPageCursor, PageSize: 2}
-	for _, tc := range []struct{ name, body string }{
-		{"wrapper欠落ではゼロ値と不正応答エラーを返す", `{}`},
-		{"ID欠落をゼロと区別して拒否する", `{"response":{"reviews":[{}],"cursor":"next"}}`},
-		{"nullのIDをゼロと区別して拒否する", `{"response":{"reviews":[{"recommendationid":null}],"cursor":"next"}}`},
-		{"nullの本文ではゼロ値と不正応答エラーを返す", `null`},
-		{"nullのwrapperではゼロ値と不正応答エラーを返す", `{"response":null}`},
-		{"要求件数超過ではゼロ値と不正応答エラーを返す", `{"response":{"reviews":[{"recommendationid":"1"},{"recommendationid":"2"},{"recommendationid":"3"}],"cursor":"next"}}`},
-		{"非空ページのカーソル欠落ではゼロ値と不正応答エラーを返す", `{"response":{"reviews":[{"recommendationid":"1"}]}}`},
-		{"非空ページの空カーソルではゼロ値と不正応答エラーを返す", `{"response":{"reviews":[{"recommendationid":"1"}],"cursor":""}}`},
-		{"不正IDではゼロ値と不正応答エラーを返す", `{"response":{"reviews":[{"recommendationid":""}],"cursor":"next"}}`},
-		{"後続レビューのIDが不正なら先行レビューも返さない", `{"response":{"reviews":[{"recommendationid":"1"},{"recommendationid":"bad"}],"cursor":"next"}}`},
+	for _, tc := range []struct {
+		name, body  string
+		pageSize    int
+		wantContext string
+	}{
+		{"wrapper欠落では欠落の説明とゼロ値と不正応答エラーを返す", `{}`, 2, "missing Steam review response"},
+		{"ID欠落をゼロと区別して拒否する", `{"response":{"reviews":[{}],"cursor":"next"}}`, 2, ""},
+		{"nullのIDをゼロと区別して拒否する", `{"response":{"reviews":[{"recommendationid":null}],"cursor":"next"}}`, 2, ""},
+		{"nullの本文では欠落の説明とゼロ値と不正応答エラーを返す", `null`, 2, "missing Steam review response"},
+		{"nullのwrapperでは欠落の説明とゼロ値と不正応答エラーを返す", `{"response":null}`, 2, "missing Steam review response"},
+		{"要求2件に対する3件の受信では件数を含む説明とゼロ値と不正応答エラーを返す", `{"response":{"reviews":[{"recommendationid":"1"},{"recommendationid":"2"},{"recommendationid":"3"}],"cursor":"next"}}`, 2, "Steam review count 3 exceeds requested page size 2"},
+		{"要求20件に対する21件の受信では件数を含む説明とゼロ値と不正応答エラーを返す", `{"response":{"reviews":[` + strings.Repeat(`{"recommendationid":"1"},`, 20) + `{"recommendationid":"1"}],"cursor":"next"}}`, 20, "Steam review count 21 exceeds requested page size 20"},
+		{"非空ページのカーソル欠落ではゼロ値と不正応答エラーを返す", `{"response":{"reviews":[{"recommendationid":"1"}]}}`, 2, ""},
+		{"非空ページの空カーソルではゼロ値と不正応答エラーを返す", `{"response":{"reviews":[{"recommendationid":"1"}],"cursor":""}}`, 2, ""},
+		{"不正IDではゼロ値と不正応答エラーを返す", `{"response":{"reviews":[{"recommendationid":""}],"cursor":"next"}}`, 2, ""},
+		{"後続レビューのIDが不正なら先行レビューも返さない", `{"response":{"reviews":[{"recommendationid":"1"},{"recommendationid":"bad"}],"cursor":"next"}}`, 2, ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			options := steamdomain.PageOptions{ReviewType: steamdomain.ReviewTypeAll, Language: "english", Cursor: steamdomain.FirstPageCursor, PageSize: tc.pageSize}
 			got, err := decodeReviewPage(440, options, []byte(tc.body))
 			if !errors.Is(err, ErrInvalidResponse) || !reflect.DeepEqual(got, steamdomain.ReviewPage{}) {
 				t.Fatalf("page=%#v error=%v", got, err)
+			}
+
+			if tc.wantContext != "" && !strings.HasPrefix(err.Error(), tc.wantContext+":") {
+				t.Fatalf("失敗の説明=%v wantContext=%q", err, tc.wantContext)
 			}
 		})
 	}

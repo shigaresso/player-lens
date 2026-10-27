@@ -32,8 +32,12 @@ func decodeReviewPage(appID steamdomain.AppID, options steamdomain.PageOptions, 
 		return steamdomain.ReviewPage{}, fmt.Errorf("decode Steam review response: %w", errors.Join(ErrInvalidResponse, err))
 	}
 
-	if result.Response == nil || len(result.Response.Reviews) > options.PageSize {
-		return steamdomain.ReviewPage{}, fmt.Errorf("missing response or too many reviews: %w", ErrInvalidResponse)
+	if result.Response == nil {
+		return steamdomain.ReviewPage{}, fmt.Errorf("missing Steam review response: %w", ErrInvalidResponse)
+	}
+
+	if len(result.Response.Reviews) > options.PageSize {
+		return steamdomain.ReviewPage{}, fmt.Errorf("Steam review count %d exceeds requested page size %d: %w", len(result.Response.Reviews), options.PageSize, ErrInvalidResponse)
 	}
 
 	if len(result.Response.Reviews) > 0 && result.Response.Cursor == "" {

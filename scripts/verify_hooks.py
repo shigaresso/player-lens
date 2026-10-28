@@ -17,7 +17,7 @@ class HookTests(unittest.TestCase):
         self.repo = Path(self.temp.name)
         for directory in ("scripts", ".github", ".lefthook", "docs"):
             shutil.copytree(ROOT / directory, self.repo / directory, ignore=shutil.ignore_patterns("__pycache__"))
-        for filename in ("lefthook.yml", "AGENTS.md", ".gitignore"):
+        for filename in ("lefthook.yml", "AGENTS.md", ".gitignore", ".gitleaks.toml"):
             shutil.copy2(ROOT / filename, self.repo / filename)
         (self.repo / ".tools").symlink_to(ROOT / ".tools", target_is_directory=True)
         # フックの接続と失敗伝播を検証する。Docker 自体は別の実資源検査で扱う。
@@ -118,6 +118,39 @@ fi
         result = self.command([str(self.repo / ".git/hooks/pre-push"), "origin", "unused"],
                               input=updates, expected=1)
         self.assertIn("アプリケーション検査の失敗", result.stdout + result.stderr)
+
+    def test_pre_commit_rejects_staged_secret_after_worktree_is_cleaned(self):
+        token = "gh" + "p_" + "Ab3Cd4Ef5Gh6Ij7Kl8Mn9Op0Qr1St2Uv3Wx4"
+        path = self.repo / "secret.txt"
+        path.write_text(token)
+        self.command(["git", "add", path.name])
+        path.write_text("safe")
+        result = self.commit("(#97) test: 検査を確認した\n\n- 検査した\n", expected=1)
+        self.assertIn("github-pat", result.stdout + result.stderr)
+        self.assertNotIn(token, result.stdout + result.stderr)
+        self.assertEqual(token, self.command(["git", "show", ":secret.txt"]).stdout)
+        self.assertEqual("safe", path.read_text())
+
+    def test_commit_msg_rejects_secret(self):
+        token = "gh" + "p_" + "Ab3Cd4Ef5Gh6Ij7Kl8Mn9Op0Qr1St2Uv3Wx4"
+        result = self.commit("(#97) test: 検査を確認した\n\n- " + token, expected=1)
+        self.assertIn("github-pat", result.stdout + result.stderr)
+        self.assertNotIn(token, result.stdout + result.stderr)
+
+    def test_pre_push_stops_before_application_on_secret_check_failure(self):
+        self.command(["git", "update-ref", "refs/remotes/origin/main", self.bad])
+        self.commit("(#97) test: 検査を確認した\n\n- 検査した\n", expected=0)
+        head = self.command(["git", "rev-parse", "HEAD"]).stdout.strip()
+        # 送信履歴の検査自体は verify_secrets.py の実ツール検証が担当する。
+        checker = self.repo / "scripts/check_secrets.py"
+        checker.write_text(checker.read_text().replace(
+            "sys.exit(main())",
+            'print("秘密情報検査の失敗", file=sys.stderr); sys.exit(1)'))
+        updates = f"refs/heads/topic {head} refs/heads/topic {'0' * 40}\n"
+        result = self.command([str(self.repo / ".git/hooks/pre-push"), "origin", "unused"],
+                              input=updates, expected=1)
+        self.assertIn("秘密情報検査の失敗", result.stdout + result.stderr)
+        self.assertFalse((self.repo / "app-check.txt").exists())
 
 
 if __name__ == "__main__":

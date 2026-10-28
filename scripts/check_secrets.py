@@ -90,7 +90,11 @@ def main(argv=None, *, repo=ROOT):
         if args.mode == "staged":
             scan(repo, "git", staged=True)
         elif args.mode == "pre-push":
-            commits = validate.validate_pre_push(sys.stdin.read(), args.remote, cwd=repo)
+            try:
+                commits = validate.validate_pre_push(sys.stdin.read(), args.remote, cwd=repo)
+            except ValueError as error:
+                # 既存バリデーターは内容の実値を含まない規約違反だけを返す。
+                raise SecretCheckError(str(error)) from None
             check_commits(repo, commits)
         elif args.mode == "history":
             commits = validate.run(["git", "rev-list", "--all", "HEAD"], cwd=repo).splitlines()

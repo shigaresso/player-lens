@@ -22,7 +22,11 @@ LimitsConfig・Limits・NewLimits・DefaultLimits と Limiter は reviewmcp/doma
 
 `LimitsConfig` は公開フィールドを持つ未検証の設定値、`Limits` は非公開フィールドに設定値のコピーを保持する生成済みの値とする。`NewLimits` が各上限の正数検査を担当し、不正時はゼロ値と `steamdomain.ErrInvalidArgument` を保持するエラーを返す。分次・日次は独立した上限であり、日次が分次より小さくても受け付ける。Go API の正数条件は維持し、環境変数の31 bit 制約を生成 API へ一律に追加しない。
 
-`readMCPLimits` は環境変数の文字列を解析して `LimitsConfig` を作り、`NewLimits` で生成する。`DefaultLimits` は分6回・24時間100回・同時2件の有効な値を返す。`Limits.Config()` が返すコピーや生成元の設定を変更しても、生成済みの値に影響しない。生成だけでは通信・時計の参照・利用枠の消費は行わない。
+`ReadMCPLimits` は環境変数の文字列を解析して `LimitsConfig` を作り、`NewLimits` で生成する。`DefaultLimits` は分6回・24時間100回・同時2件の有効な値を返す。`Limits.Config()` が返すコピーや生成元の設定を変更しても、生成済みの値に影響しない。生成だけでは通信・時計の参照・利用枠の消費は行わない。
+
+Issue #101 では、同じ cmd/server/adapter/limits.go の中で読み取りと解析を分ける。公開する ReadMCPLimits は、分次・24時間・同時数の環境変数をこの順で各1回読み、非公開の mcpLimitsInput に文字列を保持する。全項目を取得してから parseMCPLimits で既定値の適用・31 bit の数値変換を行い、成功した LimitsConfig を NewLimits へ渡す。解析関数は文字列の値だけを受け取り、環境変数や取得関数・通信などの I/O に依存しない。入力型・解析関数は別ファイルや新しいパッケージへ分けず、公開 API を増やさない。
+
+数値の0は変換には成功し、NewLimits の正数条件で拒否する。複数の不正値がある場合も、分次・24時間・同時数の順に数値変換を行い、すべての変換に成功してから正数条件を検査する既存の順序を維持する。変換失敗では環境変数名・既存の説明と strconv の原因を保持し、解析関数はゼロ値の LimitsConfig を返す。ReadMCPLimits の失敗は引き続きゼロ値の Limits と原因を返す。読み取りと解析の分離により、途中の変換失敗時も先に3項目を読み終えるが、公開する設定値・起動失敗の契約は変更しない。
 
 `NewHandler` は生成済みの値を受け取り、各上限を再検査しない。Go で作成できる `Limits{}` は未初期化のゼロ値であり、`NewHandler` が `steamdomain.ErrInvalidArgument` として拒否する。型だけでゼロ値の生成まで排除したとは扱わない。生成後の設定値と、handler が所有する利用回数・窓・同時実行数の状態は区別し、状態の寿命と共有範囲は維持する。
 

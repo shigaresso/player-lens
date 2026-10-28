@@ -47,7 +47,7 @@
 
 正常経路では読み取り・解釈・Close、応答を受け取った後の各終了経路では Body の Close・取得用 context の解放という順序を維持した。応答の所有と終了を同じ関数に保ち、FetchReviewsPage で追加の Close を呼んでいない。エラーの型・文脈と複数原因は維持し、純粋な JSON の解釈・入力検査・要求変換は変更していない。人によるレビューは未実施。
 
-GitHub 認証と Docker は権限付きで実行した。前回の一時 Docker 設定を再利用し、`DOCKER_CONFIG=/private/tmp/player-lens-58-docker-config DOCKER_HOST=unix:///Users/soregashi/.docker/run/docker.sock` を Docker とコミットフックへ渡した。既存の Docker 認証設定とフックを変更・省略していない。
+GitHub 認証と Docker は権限付きで実行した。前回の一時 Docker 設定を再利用し、`DOCKER_CONFIG=/private/tmp/player-lens-58-docker-config DOCKER_HOST=unix://${HOME}/.docker/run/docker.sock` を Docker とコミットフックへ渡した。既存の Docker 認証設定とフックを変更・省略していない。
 
 push 前のためコード CI と、PR 作成 CLI の送信済み head/base による検査は未実施で、CI の完了待機もしない。実 Steam/LLM/ChatGPT・配置も実施していない。coverage 閾値・分岐・mutation（Stryker を含む）は未導入であり、今回の検査成功をそれらの品質目標達成とは扱わない。
 

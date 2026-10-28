@@ -45,7 +45,7 @@
 
 変換は同じ adapter の純粋な関数であり、新しい公開 API・型・interface・依存・通信・時計・保存を持たない。Body の所有と context の寿命は変更せず、元の数値変換原因を errors.Is／errors.As で識別する契約を維持した。人によるレビューは未実施。
 
-GitHub 認証と Docker は権限付きで実行した。前回の一時 Docker 設定を再利用し、`DOCKER_CONFIG=/private/tmp/player-lens-58-docker-config DOCKER_HOST=unix:///Users/soregashi/.docker/run/docker.sock` を Docker とコミットフックへ渡した。既存の Docker 認証設定とフックを変更・省略していない。
+GitHub 認証と Docker は権限付きで実行した。前回の一時 Docker 設定を再利用し、`DOCKER_CONFIG=/private/tmp/player-lens-58-docker-config DOCKER_HOST=unix://${HOME}/.docker/run/docker.sock` を Docker とコミットフックへ渡した。既存の Docker 認証設定とフックを変更・省略していない。
 
 push 前のためコード CI と、PR 作成 CLI の送信済み head/base による検査は未実施で、CI の完了待機もしない。実 Steam/LLM/ChatGPT・配置も実施していない。coverage 閾値・分岐・mutation（Stryker を含む）は未導入であり、今回の検査成功をそれらの品質目標達成とは扱わない。
 

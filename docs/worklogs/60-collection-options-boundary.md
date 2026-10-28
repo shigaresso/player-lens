@@ -60,7 +60,7 @@ Docker Compose の verify で変更前の `go test -count=1 ./...` が成功し�
 
 既存の JSON・MCP schema・出力変換の実装は変更していない。テスト内の文字列・数値リテラルを origin/main と比較し、差がある既存ファイルは生成テストの拡張・上記8状況の引き継ぎ・追加の非消費テストに限ることを確認した。これをテスト実行の代用とは扱わない。人によるレビューは未実施。
 
-GitHub の認証と Docker はユーザーの指示に従い権限付きで実行した。前回作業の一時 Docker 設定（空の auths と既存 CLI plugin への参照）を再利用し、`DOCKER_CONFIG=/private/tmp/player-lens-58-docker-config DOCKER_HOST=unix:///Users/soregashi/.docker/run/docker.sock` を Docker とフックの実行に付けた。既存の Docker 認証設定は変更せず、検査・フックを省略していない。
+GitHub の認証と Docker はユーザーの指示に従い権限付きで実行した。前回作業の一時 Docker 設定（空の auths と既存 CLI plugin への参照）を再利用し、`DOCKER_CONFIG=/private/tmp/player-lens-58-docker-config DOCKER_HOST=unix://${HOME}/.docker/run/docker.sock` を Docker とフックの実行に付けた。既存の Docker 認証設定は変更せず、検査・フックを省略していない。
 
 ### 未実施と保証範囲
 

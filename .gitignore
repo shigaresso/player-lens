@@ -27,6 +27,8 @@ go.work.sum
 
 # env file
 .env
+.env.*
+!.env.example
 
 # macOS が各ディレクトリへ生成するメタデータ
 .DS_Store

@@ -23,6 +23,12 @@ python3 scripts/verify_hooks.py
 
 `check.sh` は規約・開発用ツールの全 Python テスト（0件なら失敗）、未ステージ・ステージ済みの空白、Lefthook 設定、actionlint、シェル構文を確認する。actionlint の ShellCheck 連携は無効にし、シェル構文は `bash -n` で確認する。静的解析による意味の保証とは区別する。
 
+## 環境ファイルの除外
+
+`.gitignore` は各階層の `.env` と `.env.*` を除外し、設定例の `.env.example` は管理対象に残す。例には実際の秘密情報を記載しない。既に追跡しているファイルや過去のコミットには、ignore の追加は適用されない。
+
+`.dockerignore` はビルドに必要なモジュール定義と `cmd/`・`internal/` だけを許可し、その配下も含めて `.env` と `.env.*` を除外する。設定例もビルドには含めない。この設定はビルドコンテキストに適用され、Compose の環境変数読み込みや開発用 bind mount の共有範囲は制限しない。
+
 ## VS Code のファイルネスティング
 
 リポジトリのルートを VS Code で開くと、`.vscode/settings.json` のワークスペース設定で実装と関連テストをまとめる。通常テストと integration テストは同名の Go 実装の下に、`client.go` と MCP の `collection.go`・`handler.go` の複数の契約テストは同じ親の下に表示する。`go.sum` は存在する場合に `go.mod` の下へまとめる。初期状態は折り畳みとする。

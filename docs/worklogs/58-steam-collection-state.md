@@ -46,7 +46,7 @@
 
 途中で利用上限により権限レビューを実行できず、終了後のテストは未実行のまま中断した。ユーザーの再開指示後に同じ権限付き実行を再開した。Docker が停止していたため起動し、次に公開 registry の認証ヘルパーが応答せずビルドが停止した。
 
-この作業で停止中の Docker クライアントを終了し、一時設定 `/private/tmp/player-lens-58-docker-config`（空の auths と既存 CLI plugin への参照）で公開イメージへ匿名接続した。既存の Docker 設定と認証情報は変更していない。以後の Docker とコミットフックは `DOCKER_CONFIG=/private/tmp/player-lens-58-docker-config DOCKER_HOST=unix:///Users/soregashi/.docker/run/docker.sock` を付けて同じ固定版のビルド・検査を実行した。検査やフックは省略していない。
+この作業で停止中の Docker クライアントを終了し、一時設定 `/private/tmp/player-lens-58-docker-config`（空の auths と既存 CLI plugin への参照）で公開イメージへ匿名接続した。既存の Docker 設定と認証情報は変更していない。以後の Docker とコミットフックは `DOCKER_CONFIG=/private/tmp/player-lens-58-docker-config DOCKER_HOST=unix://${HOME}/.docker/run/docker.sock` を付けて同じ固定版のビルド・検査を実行した。検査やフックは省略していない。
 
 ### AI のセルフレビュー
 

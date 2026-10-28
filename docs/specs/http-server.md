@@ -77,6 +77,14 @@ LogAttrs に request の context をそのまま渡す。キャンセル済み�
 
 終了待機の上限は Serve の shutdownTimeout 引数で渡し、run は同名の定数で10秒を指定する。通常リクエストの読み取り・書き込み期限とは独立した設定であり、今回の改名と定数化では値や終了手順を変更しない（Issue #76）。
 
+### 検証済みポート番号（Issue #99）
+
+cmd/server/adapter の port_number.go は、NewValidatedPortNumber(string) で PORT の検査と既定値の適用を行い、非公開の uint16 フィールドを持つ ValidatedPortNumber を返す。生成後の変更 API は設けない。ゼロ値は有効な既定の8080を表し、空入力・明示した8080・先頭のゼロを含む8080も同じゼロ値に揃える。不正入力はゼロ値と従来の PORT の説明を持つエラーを返す。ゼロ値も有効なので、呼び出し側は必ず戻りエラーを処理する。
+
+String は正規化された10進数のポート番号だけを返す。内部のゼロ値から8080を返す処理は表現の変換であり、入力の解析・範囲検査を繰り返さない。生成と文字列化は環境変数や通信などの I/O を行わない。型は値の有効性を表し、実際に待ち受け可能であることや、すべての値が生成関数を通った履歴を保証するものではない。
+
+run はこの型の生成に成功した後、net.JoinHostPort の空 Host と String の結果から待ち受けアドレスを組み立てる。全インターフェースの指定は run、実際の待ち受けは net.Listen が担当する。旧 ListenAddress と config.go は置き換え、互換ラッパーは残さない。設定値と待ち受け・終了の公開動作は変更しない。比較とゼロ値の判断は [ADR-0018](../adr/0018-validated-server-port.md) に記録する。
+
 ### Steam クライアントの構築と所有
 
 サーバー起動の `run` は、server adapter の公開関数 `NewSteamFetcher` から取得クライアントと idle 接続の終了関数を受け取る。構築関数が既定の Transport を複製し、HTTP タイムアウト10秒と公式の Steam 接続先を使って組み立てる。構築中は通信しない。
@@ -98,6 +106,8 @@ LogAttrs に request の context をそのまま渡す。キャンセル済み�
 routes_test.go の TestRegisterRoutes は渡した handler への登録と委譲、TestHealthRoutes は実 health handler とルーターを接続した公開応答を確認する。handler/health_test.go の TestHealthWriteFailure は本文書き込み失敗の応答とログを確認する。Issue #76 で接続テストの名前と配置をその責務に揃えた。
 
 設定と HTTP 応答はネットワークを使わないユニットテストで確認する。構造化ログは制御した時計とメモリ上の出力先で正常・書き込み失敗・ログ出力失敗・context の引き継ぎと対象経路を確認する。実 HTTP の GET/HEAD と JSON の接続、実バイナリの起動失敗と stderr・終了コードは integration タグで確認する。実際の待ち受け・応答・処理中の終了・期限超過・bind 失敗は `integration` タグの結合テストで確認し、race detector を実行する。本番用イメージの PORT・不正設定・HTTP 応答・SIGTERM は独立したスモーク検査で確認する。
+
+port_number_test.go の TestNewValidatedPortNumber は空入力・正常値・上下限・先頭のゼロと、0・範囲外・符号・空白・非 ASCII 数字などの拒否と生成エラーを確認する。TestValidatedPortNumberDefaults は型のゼロ値と、空入力・明示した8080・08080が同じ既定値となることを確認する。旧 TestListenAddress の入力契約は生成 API のテストへ引き継ぐ。run と本番用イメージの既存検査で、型から構築したアドレスの待ち受けと不正設定の終了を確認する。
 
 `NewSteamFetcher` の終了関数は、実 Steam へ接続しないローカル TLS サーバーとの結合テストで確認する。取得に同じ接続を再利用できることと、返された終了関数がその接続を閉じることを観測する。テストで差し替える既定 Transport は終了時に復元し、並列実行による干渉を避ける。
 

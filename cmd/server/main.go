@@ -31,7 +31,7 @@ func main() {
 }
 
 func run(ctx context.Context, port string, logger *slog.Logger) error {
-	address, err := serveradapter.ListenAddress(port)
+	portNumber, err := serveradapter.NewValidatedPortNumber(port)
 	if err != nil {
 		return err
 	}
@@ -61,6 +61,7 @@ func run(ctx context.Context, port string, logger *slog.Logger) error {
 	router := http.NewServeMux()
 	serveradapter.RegisterRoutes(router, healthHandler, mcpHandler)
 
+	address := net.JoinHostPort("", portNumber.String())
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
 		return fmt.Errorf("HTTP の待ち受けに失敗した: %w", err)

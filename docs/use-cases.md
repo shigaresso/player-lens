@@ -30,6 +30,8 @@ Issue #58 で、重複・カーソル・成功ページ数・終了判断を ste
 
 入口側が HTTP クライアントと `Client` を組み立て、同じ `CollectReviews` へ渡す。操作内に具体的な HTTP クライアントや DB を固定せず、同じ Go アプリケーション内の呼び出しに HTTP・MCP 通信を挟まない。
 
+Issue #92 で、jsonoutput/adapter の非公開関数 newCollectionDocument に出力用データの構築をまとめ、MarshalCollection はその構築と JSON 化を順に呼ぶ構成にした。取得条件とレビューは項目名で対応を明示する。両処理は通信・保存を行わず、既存の出力と失敗・入力の非変更を維持する。MCP と Saver の呼び出し元や公開 API、新しいユースケースは増やさない。
+
 CLI の `reviewcli.Run` は引数の解析と `CollectAndSaveReviews` への接続を担当し、収集や保存の手順を重複させない。main が JSON Saver を渡す。保存先を変更するときは同じ CollectionSaver 契約を実装して組み立て箇所で選び、操作と入力解析を共通で使う。[CLI 仕様](specs/review-cli.md) と [ADR-0006](adr/0006-collection-output-boundary.md) に責務を記載する。
 
 MCP の `reviewmcp.NewHandler` は HTTP/SDK と共有する制限状態を組み立てる。adapter は入力・HTTP 制限と Collection の応答変換、mcpapplication.CollectReviews は利用枠と実行期限を担当する。application から steamapplication.CollectReviews を呼び、adapter は JSON の純粋変換だけを再利用する。保存操作は呼ばない。分析は接続元の ChatGPT が担当し、バックエンドの LLM 呼び出しは未導入とする。[MCP 仕様](specs/review-mcp.md) と [ADR-0007](adr/0007-review-mcp.md) に責務を記載する。

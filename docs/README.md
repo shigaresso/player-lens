@@ -16,7 +16,7 @@
 | [最小 HTTP サーバー仕様](specs/http-server.md) | healthz、PORT、開発用の公開ポート選択、サーバーの期限・終了処理 | Issue #11 で実装した。ローカル検証結果は作業記録へ記載する |
 | [Steam レビューの1ページ取得](specs/steam-review-page.md) | Steam HTTP adapter、取得条件、応答と通信の上限 | Issue #17 で実装した。収集操作の契約は別仕様、保存は未導入、収集操作を MCP へ接続した。Issue #88 で HTTP リクエストの組み立てを分離し、[検証記録](worklogs/88-steam-http-request.md) を残した。Issue #90 のエラー説明の整理は [検証記録](worklogs/90-steam-error-context.md) を参照する |
 | [Steam レビューの上限付き収集](specs/collect-reviews.md) | 複数ページ収集、条件・重複・上限・途中失敗 | Issue #21 で実装した。MCP 接続を導入した。Issue #84 で失敗結果の共通生成と開始前キャンセルの早期終了を整理し、[検証記録](worklogs/84-collection-cancellation.md) を残した。永続保存・再開・Web 接続は未導入 |
-| [収集 CLI と保存先](specs/review-cli.md) | CLI の入力・終了・JSON・保存先の契約 | Issue #23 でローカル CLI と JSON 保存実装を導入した。永続保存は未導入 |
+| [収集 CLI と保存先](specs/review-cli.md) | CLI の入力・終了・JSON・保存先の契約 | Issue #23 でローカル CLI と JSON 保存実装を導入した。Issue #92 で MCP と Saver が使う共通 JSON 出力データの構築を分離し、[検証記録](worklogs/92-collection-document.md) を残した。永続保存は未導入 |
 | [レビュー収集 MCP](specs/review-mcp.md) | ローカルの MCP 接続、入力・応答・期限・部分失敗 | Issue #25 でローカル MCP を導入した。SDK と ChatGPT の確認を区別して記録する |
 | [レビュー分析仕様](specs/review-analysis.md) | クライアント AI 向けガイドの提供・内容・出力と保証範囲 | Issue #35 で版付きの案内を導入した。分析生成・意味検証はバックエンドに導入しない |
 | [分析の利用手順](review-analysis.md) | 依頼テンプレート・深掘り・結果の確認 | [架空データの例](examples/review-analysis.md) を併記した。実 AI の動作検証とは区別する |

@@ -17,8 +17,16 @@ func TestMarshalCollection(t *testing.T) {
 		reviews []steamdomain.Review
 		reason  steamdomain.StopReason
 	}{
-		{"本文と条件を失わず出力する", []steamdomain.Review{{RecommendationID: 18446744073709551615, Text: "日本語\n\"引用\" <指示>をデータとして保持する", Language: "japanese", Recommended: true, TimestampCreated: 1, TimestampUpdated: 2}}, steamdomain.StopReviewLimit},
+		{
+			"複数レビューの取得順と全項目と条件を失わず出力する",
+			[]steamdomain.Review{
+				{RecommendationID: 18446744073709551615, Text: "日本語\n\"引用\" <指示>をデータとして保持する", Language: "japanese", Recommended: true, TimestampCreated: 1, TimestampUpdated: 2},
+				{RecommendationID: 0, Text: "second review", Language: "english", Recommended: false, TimestampCreated: 3, TimestampUpdated: 4},
+			},
+			steamdomain.StopReviewLimit,
+		},
 		{"nilのレビューも空配列となる", nil, steamdomain.StopExhausted},
+		{"空のレビュー配列も空配列となる", []steamdomain.Review{}, steamdomain.StopExhausted},
 		{"部分結果の失敗を出力する", []steamdomain.Review{{RecommendationID: 1, Text: "途中結果"}}, steamdomain.StopFailed},
 	} {
 		t.Run(test.name, func(t *testing.T) {

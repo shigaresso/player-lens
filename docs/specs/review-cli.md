@@ -36,6 +36,8 @@ CLI の入力処理は reviewcli/adapter、JSON と writer は jsonoutput/adapte
 
 `jsonoutput.MarshalCollection` はメモリ内の Collection を変換する純粋な処理とし、通信・保存しない。出力形式を領域の型や Steam の応答形式と分離する。
 
+Issue #92 で、同じ jsonoutput/adapter の collection_document.go に非公開の出力型と newCollectionDocument をまとめた。newCollectionDocument は評価種別・ID の変換、空レビューの配列化と出力データの構築を担当し、レビューと取得条件は項目名を明示して対応付ける。MarshalCollection は構築と JSON 化を順に呼ぶ。既存の JSON 項目・値・順序、入力の非変更、失敗時の nil とエラー文脈・原因を維持し、正規化・通信・保存は追加しない。MCP と Saver は同じ公開関数を使い続ける。
+
 | JSON 項目 | 内容 |
 | --- | --- |
 | schema_version | 1。JSON の形式を識別する |

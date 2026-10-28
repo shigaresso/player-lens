@@ -25,6 +25,12 @@ JSON の純粋変換と writer の adapter は `jsonoutput` に置く。CLI の�
 
 収集に失敗しても初期化済みの結果を一度保存する。保存で収集の失敗を取り消さず、両方の失敗を保持する。再試行は行わない。親がキャンセル済みでも部分結果の保存を試すため、保存は `context.WithoutCancel` で値を保持し、新しい5秒の期限を付けて解放する。収集側の短い期限・キャンセルは変更しない。
 
+## JSON 出力データの構築（Issue #92）
+
+MarshalCollection に変換・データ構築・JSON 化を残す案と比較し、同じ adapter の collection_document.go に非公開の出力型と newCollectionDocument を置く。評価種別とレビュー ID の変換、空配列と出力項目の対応をまとめ、MarshalCollection では構築と JSON 化の手順を読む。取得条件とレビューの初期化は項目名を明示し、フィールドの宣言順を照合せずに対応を確認できるようにする。
+
+公開する DTO や汎用変換層、1項目ごとの helper は増やさない。構築に失敗した場合の文脈と原因、公開入口の nil の JSON、既存の schema_version=1 とすべての値・項目順・入力の非変更を維持する。MCP の応答と Saver は引き続き同じ MarshalCollection を呼ぶ。関数呼び出しは増えるが、JSON のエンコード詳細と出力形式への対応を分けて追える境界を採用する。
+
 ## 利点と制約
 
 収集処理と CLI の入力処理が保存形式を知らず、JSON とメモリへの保存を同じ操作で検証できる。PostgreSQL の adapter・永続的な版管理は未導入とする。JSON の schema_version は出力形式の識別であり、レビュー本文の版とは異なる。

@@ -88,3 +88,69 @@ func TestReadMCPLimitsFailureCause(t *testing.T) {
 		})
 	}
 }
+
+func TestParseMCPLimits(t *testing.T) {
+	tests := []struct {
+		name  string
+		input mcpLimitsInput
+		want  mcpdomain.LimitsConfig
+		cause error
+	}{
+		{
+			name: "空の文字列には既定値を適用する",
+			want: mcpdomain.LimitsConfig{RequestsPerMinute: 6, RequestsPerDay: 100, MaxConcurrent: 2},
+		},
+		{
+			name:  "取得済みの各文字列を対応する整数へ変換する",
+			input: mcpLimitsInput{requestsPerMinute: "3", requestsPerDay: "20", maxConcurrent: "1"},
+			want:  mcpdomain.LimitsConfig{RequestsPerMinute: 3, RequestsPerDay: 20, MaxConcurrent: 1},
+		},
+		{
+			name:  "先頭のゼロを除いて他の既定値を維持する",
+			input: mcpLimitsInput{requestsPerDay: "00020"},
+			want:  mcpdomain.LimitsConfig{RequestsPerMinute: 6, RequestsPerDay: 20, MaxConcurrent: 2},
+		},
+		{
+			name:  "数値のゼロは変換して正数条件を生成側に委ねる",
+			input: mcpLimitsInput{maxConcurrent: "0"},
+			want:  mcpdomain.LimitsConfig{RequestsPerMinute: 6, RequestsPerDay: 100, MaxConcurrent: 0},
+		},
+		{
+			name:  "構文不正ではゼロ値の設定と原因を返す",
+			input: mcpLimitsInput{requestsPerMinute: "bad"},
+			cause: strconv.ErrSyntax,
+		},
+		{
+			name:  "後続項目の範囲超過でも部分的な設定を返さない",
+			input: mcpLimitsInput{requestsPerMinute: "3", requestsPerDay: "20", maxConcurrent: "2147483648"},
+			cause: strconv.ErrRange,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseMCPLimits(tt.input)
+			if got != tt.want || !errors.Is(err, tt.cause) {
+				t.Fatalf("config=%v err=%v; want=%v cause=%v", got, err, tt.want, tt.cause)
+			}
+		})
+	}
+}
+
+func TestReadMCPLimitsReadsBeforeParsing(t *testing.T) {
+	var keys []string
+	limits, err := ReadMCPLimits(func(key string) string {
+		keys = append(keys, key)
+		if key == "MCP_REQUESTS_PER_MINUTE" {
+			return "bad"
+		}
+
+		return ""
+	})
+	if !errors.Is(err, strconv.ErrSyntax) || limits != (mcpdomain.Limits{}) {
+		t.Fatalf("解析失敗でゼロ値と原因を返す: limits=%v err=%v", limits, err)
+	}
+
+	if got := strings.Join(keys, ","); got != "MCP_REQUESTS_PER_MINUTE,MCP_REQUESTS_PER_DAY,MCP_MAX_CONCURRENT" {
+		t.Fatalf("解析前に必要な3項目を順に1回ずつ読む: keys=%v", keys)
+	}
+}

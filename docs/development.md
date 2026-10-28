@@ -61,6 +61,12 @@ python3 scripts/verify_secrets.py
 
 Issue #77 で handler 直下の collect_reviews.go と health.go に関連する契約テストをまとめ、SDK 構築の server.go に通常／結合テストをまとめた。補助処理のサブフォルダを折りたたむと Controller を探せる表示にした。同名の Steam 収集操作のテストも既存の配置で表示できるパターンを維持した。
 
+Issue #103 で、cmd/server/adapter の mcp_handler_test.go を routes_test.go へ統合し、ルーティングの検査を routes.go に対応させた。internal/reviewmcp/adapter の未初期化 Limits を拒否する生成契約は server_test.go へ移した。cmd/server/adapter/limits_test.go は環境設定の読み取り・解析を担当する limits.go に対応し、MCP adapter の生成契約とは区別する。
+
+共有する server.go のパターンから limits_test.go を外し、同名の limits.go との対応の競合をなくした。handler.go のパターンから削除済みの mcp_handler_test.go も外した。同名の通常テスト・integration テストを実装の下へまとめる汎用パターンは維持する。steam_fetcher_integration_test.go は実接続の検証なので独立したファイルと integration build tag を保つ。表示上の親子関係は実行対象を変えない。配置と検証の詳細は [作業記録](worklogs/103-server-test-layout.md) を参照する。
+
+同じ Issue の追加対応で、cmd/server の run と終了待機定数を run_server.go へ分離し、通常テストを run_server_test.go に揃えた。main.go はプロセスの入口を置く。同名の実装と通常テストを対応させる汎用パターンを使うため、run_server.go 専用のネスティング指定は追加しない。
+
 Python は同じディレクトリの `test_<実装名>.py` を `<実装名>.py` の下へまとめる。たとえば `github.py` の下に `test_github.py` を表示する。`validate.py` は `test_validate.py` と `test_main_range.py` をまとめる。対応する Python の親ファイルがないテストは単独表示とする。
 
 この設定はエクスプローラーの表示を整理する。Go のパッケージ単位のテスト、Python のテスト収集と、実装・テストのファイル構成は維持する。関連テストを追加・改名した場合は、必要に応じて `explorer.fileNesting.patterns` を更新する。公式の設定項目は [ファイルネスティング](https://code.visualstudio.com/updates/v1_67#_explorer-file-nesting) を参照する。

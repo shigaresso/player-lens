@@ -15,6 +15,8 @@
 
 main は logger とプロセスの context を生成し、run は各 handler とルーターを組み立てる。server adapter/handler の NewHealthHandler(logger, now) は生存確認の handler を生成する。Issue #80 で実行入口を healthHandler.Handle とし、生成関数は http.HandlerFunc(handler.Handle) を返す。標準ライブラリの ServeHTTP が Handle を呼び、公開する http.Handler 契約を維持する。生成時にはリクエスト処理・時刻取得・ログ出力を行わない。MCP の handler は従来どおり reviewmcp.NewHandler で生成する。
 
+Issue #103 の追加対応で、cmd/server/main.go はプロセスの入口を維持し、run と shutdownTimeout の定数は同じ package main の run_server.go に置く。既存の run_test.go は run_server_test.go へ改名する。関数と定数・テストの本文、起動と終了・資源解放の順序は変えず、実装と通常テストの対応をファイル名から読めるようにする。
+
 run は http.NewServeMux でルーターを生成し、RegisterRoutes(mux, healthHandler, mcpHandler) で経路を登録してから待ち受けを開始する。RegisterRoutes は既存の mux に生成済み handler を登録するだけで、依存や handler・ルーターを生成せず、handler を実行しない。無関係な既存経路は維持する。旧 server adapter の NewHandler は残さない。
 
 RegisterRoutes は GET /healthz（HEAD を含む）と、MCP が非 nil の場合の /tools を登録する。mux と healthHandler は有効な非 nil の値を渡し、登録は受付開始前に行う。競合するパターンは事前に登録しない。重複登録などは標準 ServeMux の panic に従い、独自の検査や復旧は追加しない。各 handler は並行利用可能なものを渡す。
@@ -104,6 +106,8 @@ run はこの型の生成に成功した後、net.JoinHostPort の空 Host と S
 生成と登録の境界はユニットテストで確認する。health handler の生成時に時計・ログを実行しないことと、登録時に handler を呼ばないこと、渡した health/MCP handler への委譲、既存経路の保持を確認する。旧ルーター経由の応答テストは生成済み handler と明示的な登録へ移行し、ログの契約は生成済み health handler でも確認する。
 
 routes_test.go の TestRegisterRoutes は渡した handler への登録と委譲、TestHealthRoutes は実 health handler とルーターを接続した公開応答を確認する。handler/health_test.go の TestHealthWriteFailure は本文書き込み失敗の応答とログを確認する。Issue #76 で接続テストの名前と配置をその責務に揃えた。
+
+Issue #103 で旧 mcp_handler_test.go の TestMCPRoute を routes_test.go へ統合した。POST/GET /tools の委譲とパス、子パス・末尾スラッシュ・旧 /mcp・GET/POST の OAuth metadata の404と handler 非実行は TestRegisterRoutes、実 health handler の200と本文は TestHealthRoutes で引き継ぐ。healthz が MCP へ委譲されないことも登録先の確認で維持する。通常のユニットテストとして実行し、ルーターの本番コード・HTTP の契約と結合テストの実行条件は変更しない。
 
 設定と HTTP 応答はネットワークを使わないユニットテストで確認する。構造化ログは制御した時計とメモリ上の出力先で正常・書き込み失敗・ログ出力失敗・context の引き継ぎと対象経路を確認する。実 HTTP の GET/HEAD と JSON の接続、実バイナリの起動失敗と stderr・終了コードは integration タグで確認する。実際の待ち受け・応答・処理中の終了・期限超過・bind 失敗は `integration` タグの結合テストで確認し、race detector を実行する。本番用イメージの PORT・不正設定・HTTP 応答・SIGTERM は独立したスモーク検査で確認する。
 

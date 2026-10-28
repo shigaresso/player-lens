@@ -29,6 +29,10 @@ func TestRegisterRoutes(t *testing.T) {
 		{"MCPのメソッド判定をhandlerへ委譲する", http.MethodGet, "/tools", false, http.StatusAccepted, "mcp"},
 		{"MCP未指定ならtoolsを登録しない", http.MethodPost, "/tools", true, http.StatusNotFound, ""},
 		{"MCPの子パスは登録しない", http.MethodPost, "/tools/child", false, http.StatusNotFound, ""},
+		{"MCPの末尾スラッシュは登録しない", http.MethodPost, "/tools/", false, http.StatusNotFound, ""},
+		{"旧MCPパスは登録しない", http.MethodPost, "/mcp", false, http.StatusNotFound, ""},
+		{"OAuthのmetadataへGETできない", http.MethodGet, "/.well-known/oauth-protected-resource/tools", false, http.StatusNotFound, ""},
+		{"OAuthのmetadataへPOSTできない", http.MethodPost, "/.well-known/oauth-protected-resource/tools", false, http.StatusNotFound, ""},
 		{"既存の無関係な経路を保持する", http.MethodGet, "/existing", false, http.StatusCreated, "existing"},
 		{"未定義パスはhandlerを呼ばず404を返す", http.MethodGet, "/", false, http.StatusNotFound, ""},
 	} {
@@ -38,7 +42,11 @@ func TestRegisterRoutes(t *testing.T) {
 				calls = append(calls, "health")
 				w.WriteHeader(http.StatusNoContent)
 			})
-			var mcp http.Handler = http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			var mcp http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/tools" {
+					t.Fatalf("MCPへ渡したパスが異なる: %q", r.URL.Path)
+				}
+
 				calls = append(calls, "mcp")
 				w.WriteHeader(http.StatusAccepted)
 			})

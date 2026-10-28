@@ -62,6 +62,13 @@ func TestNewHandlerRejectsNilFetcher(t *testing.T) {
 	}
 }
 
+func TestNewHandlerRejectsInvalidLimits(t *testing.T) {
+	handler, err := NewHandler(testutil.FetchFunc(nil), mcpdomain.Limits{}, localHTTPConfig(t))
+	if handler != nil || !errors.Is(err, steamdomain.ErrInvalidArgument) {
+		t.Fatalf("handler=%v err=%v", handler, err)
+	}
+}
+
 func TestLocalHost(t *testing.T) {
 	handler, err := NewHandler(testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 		t.Fatal("HTTP Host 検査で取得した")

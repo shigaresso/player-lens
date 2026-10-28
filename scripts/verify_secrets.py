@@ -79,6 +79,52 @@ class SecretToolTests(unittest.TestCase):
         self.assertNotIn(self.token, output.getvalue())
         self.assertIn("github-pat", output.getvalue())
 
+    def test_staged_initial_and_partial_inputs_are_preserved(self):
+        cases = [
+            ("ステージ済みだけに秘密情報があれば拒否する", self.token, "safe", 1),
+            ("未ステージだけに秘密情報があっても送信対象に含めない", "safe", self.token, 0),
+        ]
+        for name, staged, unstaged, expected in cases:
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
+                self.repo = Path(directory)
+                self.git("init", "-q", "--initial-branch=main")
+                path = self.repo / "source with spaces.txt"
+                path.write_text(staged)
+                self.git("add", path.name)
+                path.write_text(unstaged)
+                output = io.StringIO()
+                with contextlib.redirect_stderr(output), contextlib.redirect_stdout(output):
+                    result = check_secrets.main(["staged"], repo=self.repo)
+                self.assertEqual(expected, result)
+                self.assertEqual(staged, self.git("show", f":{path.name}"))
+                self.assertEqual(unstaged, path.read_text())
+                self.assertNotIn(self.token, output.getvalue())
+
+    def test_merge_resolution_is_checked_even_when_parents_are_clean(self):
+        self.commit("base\n")
+        self.git("checkout", "-qb", "side")
+        self.commit("side\n")
+        self.git("checkout", "-q", "main")
+        self.commit("main\n")
+        result = subprocess.run(["git", "merge", "side"], cwd=self.repo,
+                                text=True, capture_output=True, timeout=30)
+        self.assertEqual(1, result.returncode)
+        merged = self.commit(self.token + "\n")
+        with self.assertRaises(ValueError) as raised:
+            check_secrets.check_commits(self.repo, [merged])
+        self.assertNotIn(self.token, str(raised.exception))
+
+    def test_clean_history_and_empty_or_deleted_push_are_accepted(self):
+        self.commit("safe\n")
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            self.assertEqual(0, check_secrets.main(["history"], repo=self.repo))
+            for name, updates in [
+                    ("空の更新", ""),
+                    ("作業ブランチの削除", f"(delete) {'0' * 40} refs/heads/topic {'a' * 40}\n")]:
+                with self.subTest(name=name), patch("sys.stdin", io.StringIO(updates)):
+                    self.assertEqual(0, check_secrets.main(["pre-push", "origin"], repo=self.repo))
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -62,3 +62,40 @@ class ReportTests(unittest.TestCase):
 
                 with self.assertRaises(ValueError):
                     check_secrets.scan(Path.cwd(), "git", run=run)
+
+
+class ToolFailureTests(unittest.TestCase):
+    def test_unavailable_or_wrong_version_and_runtime_failure_are_rejected(self):
+        cases = [
+            ("版違い", "0.0.0", 0),
+            ("版取得失敗", "8.30.1", 2),
+            ("実行失敗", "8.30.1", 0),
+        ]
+        for name, version, status in cases:
+            with self.subTest(name=name):
+                def run(args, **kwargs):
+                    if args[-1] == "version":
+                        return subprocess.CompletedProcess(args, status, version, "DO_NOT_PRINT")
+                    return subprocess.CompletedProcess(args, 2, "DO_NOT_PRINT", "DO_NOT_PRINT")
+
+                with self.assertRaises(ValueError) as raised:
+                    check_secrets.scan(Path.cwd(), "git", run=run)
+                self.assertNotIn("DO_NOT_PRINT", str(raised.exception))
+
+    def test_environment_cannot_replace_rules_or_disable_redaction(self):
+        calls = []
+
+        def run(args, **kwargs):
+            calls.append((args, kwargs))
+            if args[-1] == "version":
+                return subprocess.CompletedProcess(args, 0, "8.30.1", "")
+            Path(args[args.index("--report-path") + 1]).write_text("[]")
+            return subprocess.CompletedProcess(args, 0, "", "")
+
+        with patch.dict("os.environ", {"GITLEAKS_CONFIG": "untrusted", "GITLEAKS_CONFIG_TOML": "untrusted"}):
+            check_secrets.scan(Path.cwd(), "git", staged=True, run=run)
+        args, kwargs = calls[-1]
+        self.assertIn("--redact=100", args)
+        self.assertIn("--staged", args)
+        self.assertIn(str(check_secrets.ROOT / ".gitleaks.toml"), args)
+        self.assertFalse(any(k.startswith("GITLEAKS_") for k in kwargs["env"]))

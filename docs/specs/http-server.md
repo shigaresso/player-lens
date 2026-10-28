@@ -105,6 +105,8 @@ run はこの型の生成に成功した後、net.JoinHostPort の空 Host と S
 
 routes_test.go の TestRegisterRoutes は渡した handler への登録と委譲、TestHealthRoutes は実 health handler とルーターを接続した公開応答を確認する。handler/health_test.go の TestHealthWriteFailure は本文書き込み失敗の応答とログを確認する。Issue #76 で接続テストの名前と配置をその責務に揃えた。
 
+Issue #103 で旧 mcp_handler_test.go の TestMCPRoute を routes_test.go へ統合した。POST/GET /tools の委譲とパス、子パス・末尾スラッシュ・旧 /mcp・GET/POST の OAuth metadata の404と handler 非実行は TestRegisterRoutes、実 health handler の200と本文は TestHealthRoutes で引き継ぐ。healthz が MCP へ委譲されないことも登録先の確認で維持する。通常のユニットテストとして実行し、ルーターの本番コード・HTTP の契約と結合テストの実行条件は変更しない。
+
 設定と HTTP 応答はネットワークを使わないユニットテストで確認する。構造化ログは制御した時計とメモリ上の出力先で正常・書き込み失敗・ログ出力失敗・context の引き継ぎと対象経路を確認する。実 HTTP の GET/HEAD と JSON の接続、実バイナリの起動失敗と stderr・終了コードは integration タグで確認する。実際の待ち受け・応答・処理中の終了・期限超過・bind 失敗は `integration` タグの結合テストで確認し、race detector を実行する。本番用イメージの PORT・不正設定・HTTP 応答・SIGTERM は独立したスモーク検査で確認する。
 
 port_number_test.go の TestNewValidatedPortNumber は空入力・正常値・上下限・先頭のゼロと、0・範囲外・符号・空白・非 ASCII 数字などの拒否と生成エラーを確認する。TestValidatedPortNumberDefaults は型のゼロ値と、空入力・明示した8080・08080が同じ既定値となることを確認する。旧 TestListenAddress の入力契約は生成 API のテストへ引き継ぐ。run と本番用イメージの既存検査で、型から構築したアドレスの待ち受けと不正設定の終了を確認する。

@@ -9,6 +9,8 @@ import subprocess
 import sys
 import tempfile
 
+import validate
+
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = "8.30.1"
 
@@ -66,13 +68,35 @@ def scan(repo, mode, *, staged=False, log_opts=None, data=None, run=subprocess.r
             raise SecretCheckError("秘密情報の候補を検出した（実値非表示）: " + "; ".join(locations))
 
 
+def check_commits(repo, commits):
+    """check_commits は指定した全コミットをマージ解決の差分も含めて検査する。"""
+    resolved = [validate.resolve_commit(commit, cwd=repo) for commit in commits]
+    for start in range(0, len(resolved), 100):
+        batch = resolved[start:start + 100]
+        scan(repo, "git", log_opts="--no-walk --diff-merges=first-parent " + " ".join(batch))
+        messages = validate.run(["git", "log", "--no-walk", "--format=%B", *batch], cwd=repo)
+        scan(repo, "stdin", data=messages)
+
+
 def main(argv=None, *, repo=ROOT):
     parser = argparse.ArgumentParser(description="秘密情報を実値非表示で検査する")
-    parser.add_argument("mode", choices=["staged"])
+    commands = parser.add_subparsers(dest="mode", required=True)
+    commands.add_parser("staged")
+    commands.add_parser("history")
+    commands.add_parser("pre-push").add_argument("remote")
+    commands.add_parser("message").add_argument("file")
     args = parser.parse_args(argv)
     try:
         if args.mode == "staged":
             scan(repo, "git", staged=True)
+        elif args.mode == "pre-push":
+            commits = validate.validate_pre_push(sys.stdin.read(), args.remote, cwd=repo)
+            check_commits(repo, commits)
+        elif args.mode == "history":
+            commits = validate.run(["git", "rev-list", "--all", "HEAD"], cwd=repo).splitlines()
+            check_commits(repo, commits)
+        elif args.mode == "message":
+            scan(repo, "stdin", data=Path(args.file).read_text())
     except SecretCheckError as error:
         print(f"秘密情報検査失敗: {error}", file=sys.stderr)
         return 1

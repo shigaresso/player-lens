@@ -29,6 +29,18 @@
 - [Issue #18](https://github.com/shigaresso/player-lens/issues/18) で、Draft PR 中に全検査の成功を確認してからレビュー準備へ進む運用に合わせる。`ready_for_review` はメタデータ検査だけとし、コード検査の起動条件から外す。Draft PR を含む作成・コミット追加・再開、main 更新・手動実行のコード検査は維持する。同じ SHA の全検査をレビュー準備の変更だけで重ねず、統合後の SHA の検査は main で実行する。
 - [Issue #9](https://github.com/shigaresso/player-lens/issues/9) で通常マージを基本とし、main 更新専用の `main-range` を追加する。作業コミットと PR・ローカルフックの検査は維持し、親が2つのコミットと同一リポジトリの main 向けマージ済み PR の統合 SHA・head を照合できた場合だけ、自動生成の統合メッセージを免除する。単にマージコミットを一律除外する方式は、未確認の統合を免除するため採用しない。
 
+## 秘密情報の自動検査（Issue #97）
+
+検出エンジンの自作、GitHub の機能だけへの依存、既存 CLI の利用を比較し、公開前点検で使用した Gitleaks v8.30.1 の CLI を採用する。標準の検出ルールを使い、Python は版確認・結果の秘匿・失敗伝播と既存の Git 更新検査への接続を担当する。独自 Action や実行用の Go 依存を増やさず、公式バイナリと SHA-256 を既存 install-tools.sh で固定する。Gitleaks 公式は機能追加を終了しセキュリティ修正を継続する方針を示しており、更新時に保守状況とルール変更を確認する。
+
+- pre-commit はステージ済み差分、commit-msg はメッセージ、pre-push は既存の規約検査が求める全送信コミットを検査する。履歴にはマージ解決の差分とコミットメッセージを含める。
+- conventions.yml に独立した secrets ジョブを追加し、同じ CLI で取得済み履歴を検査して、実 Gitleaks の正常・拒否・部分ステージ・資源保持等も検証する。CI は送信後の検査であり、フックや権限制御の代用とはしない。
+- 標準 allowlist は引き継ぐ。go.mod/go.sum・画像・依存物などのパス除外、既知の値・環境変数参照の許可があり、全ファイル・任意のパスワード・端末情報を網羅する保証とはしない。独自の広い除外・baseline は設けない。
+- ツール不在・版違い・実行失敗・結果破損も非0終了とする。プロジェクトの設定を明示し、GITLEAKS_* 環境変数や gitleaks:allow、独自 ignore ファイルで検査条件を変えない。検出値を出力・artifact に残さず、一時結果を削除する。誤検知の例外は理由・範囲・検証を記録して判断する。
+- Issue・PR 本文、添付、Actions ログ、配布物の継続巡回や GitHub Secret scanning/Push protection の設定は別範囲とする。運用規約の内容確認は維持する。
+
+実装・ローカル検証と未実施の GitHub CI は [Issue #97 の記録](../worklogs/97-secret-scanning.md) で区別する。設定と手動コマンドは [開発手順](../development.md#秘密情報の自動検査) に記載する。
+
 ## 利点と制約
 
 - 規約検査を Go アプリケーション・DB・Docker の導入より先に追加できた。規約ツールには Python、Git と固定版の検査ツールが必要となる。Issue #11 で Go の検査を別スクリプトとして導入し、push 前と独立 CI ジョブへ接続した。
@@ -47,3 +59,5 @@
 - [ADR-0001](0001-runtime-and-deployment.md)
 - [Lefthook の stdin](https://lefthook.dev/usage/features/pass-stdin/)
 - [固定版の script 実行経路](https://github.com/evilmartians/lefthook/blob/v2.1.9/internal/run/controller/command/build_script.go)
+
+- [Gitleaks v8.30.1 の公式仕様](https://github.com/gitleaks/gitleaks/tree/v8.30.1)、[標準設定](https://github.com/gitleaks/gitleaks/blob/v8.30.1/config/gitleaks.toml)、[配布物](https://github.com/gitleaks/gitleaks/releases/tag/v8.30.1)

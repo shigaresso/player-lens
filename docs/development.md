@@ -29,6 +29,32 @@ python3 scripts/verify_hooks.py
 
 `.dockerignore` はビルドに必要なモジュール定義と `cmd/`・`internal/` だけを許可し、その配下も含めて `.env` と `.env.*` を除外する。設定例もビルドには含めない。この設定はビルドコンテキストに適用され、Compose の環境変数読み込みや開発用 bind mount の共有範囲は制限しない。
 
+## 秘密情報の自動検査
+
+Gitleaks v8.30.1 の公式バイナリを `scripts/install-tools.sh` で SHA-256 とともに固定して `.tools/gitleaks` へ導入する。macOS arm64 と Linux x64 に対応し、アプリケーションの Go 依存・本番イメージには追加しない。
+
+```sh
+bash scripts/install-tools.sh
+.tools/lefthook install
+python3 scripts/check_secrets.py staged
+python3 scripts/check_secrets.py history
+python3 scripts/verify_secrets.py
+```
+
+`staged` は Gitleaks のステージ済み差分検査を使い、初回コミットと部分ステージを扱う。作業ツリーの未ステージ変更をコミット対象と取り違えず、index・ファイルを変更しない。`message` は指定したメッセージを標準入力から検査する。`history` は HEAD と取得済み全参照に到達可能な全コミットを、マージ解決の差分とメッセージも含めて検査する。
+
+既存 Lefthook の pre-commit と commit-msg から上記検査を呼ぶ。pre-push は Git の stdin に来る全 ref 更新を既存の規約・更新検査で確認し、その全コミットを Gitleaks へ渡してから共通検査・アプリ検査へ進む。途中で秘密情報を追加・削除しても検査対象になる。新規 ref は fetch 済みの remote 参照から未送信のコミットを求める。削除と空更新には新しい検査対象がない。フックの回避を禁止する規則は維持する。
+
+`.gitleaks.toml` は固定版の標準ルールを継承し、独自の広い除外・baseline は追加しない。標準設定には go.mod/go.sum、画像・一部のバイナリ・依存物等のパス除外と、環境変数参照・例示値等の allowlist がある。全 blob を個別ファイルとして検査した Issue #96 の点検と同じ測定範囲ではない。任意のパスワード、端末ユーザー名、実レビューや文章中の機微情報をすべて検出する保証ではなく、AGENTS.md の内容確認も続ける。
+
+実行時はプロジェクトの設定を明示し、GITLEAKS_* の環境変数と gitleaks:allow コメント・独自 ignore ファイルによる変更を使わない。ツール不在・版違い・Git/ツールの失敗・タイムアウト・結果の破損は成功としない。ツールの stdout/stderr は転記せず、検出したルール・相対パス・行番号のみを示す。実値を伏せたレポートもアクセスを絞った一時領域に置き、成功・失敗のいずれでも削除する。CI artifact には保存しない。
+
+候補が検出されたらローカルの該当箇所を確認し、実際の秘密情報なら記述と未送信履歴を修正する。既に送信した資格情報の失効・更新と履歴の扱いは、漏洩の影響に応じて対応する。誤検知でも通過のためにファイル全体を除外せず、根拠と必要な狭い例外を Issue・レビュー・テストに記録する。検出値を Issue・PR・コマンド出力へ転載しない。
+
+通常の Python テストでは実行依存を差し替える。`verify_secrets.py` は実 Gitleaks と一時 Git リポジトリで正常・拒否・初回・部分ステージ・途中コミット・マージ解決・メッセージ・資源保持を確認する。`verify_hooks.py` は実 Lefthook からの呼び出しと停止を確認し、アプリ検査・Docker は引き続きテスト用の処理に差し替える。
+
+`conventions.yml` の独立した secrets ジョブは、既存の PR・main 更新・手動実行イベントで固定版を導入し、履歴検査と実ツール検証を実行する。ローカルフックはスキップ可能で、CI は送信後の検出になる。ローカルの成功と実 GitHub CI、Secret scanning/Push protection の設定やマージ強制を混同しない。Issue・PR 本文、添付、Actions ログ、配布物の継続点検はこの CLI の対象外とする。
+
 ## VS Code のファイルネスティング
 
 リポジトリのルートを VS Code で開くと、`.vscode/settings.json` のワークスペース設定で実装と関連テストをまとめる。通常テストと integration テストは同名の Go 実装の下に、`client.go` と MCP の `collection.go`・`handler.go` の複数の契約テストは同じ親の下に表示する。`go.sum` は存在する場合に `go.mod` の下へまとめる。初期状態は折り畳みとする。
@@ -43,9 +69,9 @@ Python は同じディレクトリの `test_<実装名>.py` を `<実装名>.py`
 
 | フック | 検査 |
 | --- | --- |
-| commit-msg | メッセージファイルを共通検査へ渡す |
-| pre-commit | 共通検査と、変更された Go の index の内容の整形検査を実行する。自動修正・再ステージはしない |
-| pre-push | stdin の全 ref 更新のコミットを検査してから、規約の共通検査とアプリケーション検査を実行する |
+| commit-msg | メッセージファイルを秘密情報検査と規約検査へ渡す |
+| pre-commit | ステージ済み差分の秘密情報検査、共通検査、変更された Go の index の内容の整形検査を実行する。自動修正・再ステージはしない |
+| pre-push | stdin の全 ref 更新の規約と秘密情報を検査してから、規約の共通検査とアプリケーション検査を実行する |
 
 `pre-push` は登録済み remote 名を前提とする。新規 ref は fetch 済みの remote 参照を使って対象を求め、参照がなければ失敗する。既存 ref は remote が提示した旧 SHA から対象を求める。削除はコミットの取得対象にしない。複数 ref のいずれかが違反すれば全体が失敗する。main への直接の更新・削除は拒否する。
 

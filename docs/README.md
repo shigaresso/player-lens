@@ -26,11 +26,11 @@
 | [受付とルーティング](handler-routing.md) | Controller の一覧性、handler 直下と詳細の境界、生成・登録・SDK 委譲 | Issue #77 で Controller の直下配置と補助フォルダを区別する構成に揃えた。[検証記録](worklogs/77-route-handler-layout.md) に実行時の契約と確認範囲を記載する。Issue #80 で healthz と MCP の入口を Handle に統一し、[記録](worklogs/80-named-mcp-controller.md) に検証を残す |
 | [ユースケース](use-cases.md) | 操作全体の一覧・責務と adapter・入口の境界 | 収集と収集・保存操作を導入した。CLI と MCP を接続した。Web は未接続 |
 | [ADR-0001：Go・Docker・Render による実行・配置](adr/0001-runtime-and-deployment.md) | 実行環境、開発・検証用 Docker、本番用 CI、Render 配置 | 採用。Compose・本番用イメージと検証 CI、配置経路の準備を追加した。digest 配置は未確認 |
-| [開発手順と規約検査](development.md) | 規約バリデーター、Git フック、Issue・PR の作成手順とテンプレート、CI | ローカル検査と PR・Issue イベントの規約 CI を確認した |
+| [開発手順と規約検査](development.md) | 規約バリデーター、Git フック、秘密情報検査、Issue・PR の作成手順とテンプレート、CI | 規約 CI を確認した。Issue #97 の秘密情報検査はローカル実行と実 CI を区別して記録する |
 | [Render 配置手順](deployment.md) | GHCR・生成設定・公開接続・無料枠と資格情報 | 手順を導入した。registry 送信と digest 配置は未実行 |
 | [Release 手順](releases.md) | Draft の作成・公開、本文・タグ・対象・CI の事前検査 | Issue #5 で CLI と通常テストを追加した。実 CI・公開結果は Issue に記録する |
 | [移植ガイド](reuse.md) | 他のプロジェクトへの規約・検査・フック・CI の導入 | v0.0.1 の移植対象と調整箇所を記録した |
-| [ADR-0002：規約検査の実行環境](adr/0002-conventions-tooling.md) | Python、検査ツール、フック・CI の責務 | 採用。保護設定は現時点の契約では利用できず未設定 |
+| [ADR-0002：規約検査の実行環境](adr/0002-conventions-tooling.md) | Python、検査ツール、秘密情報検査、フック・CI の責務 | 採用。Issue #97 で固定版 Gitleaks の接続を追加した。実行結果は作業記録へ記載する |
 | [ADR-0003：Go の整形・リンター](adr/0003-go-format-and-lint.md) | Go の整形、リンター、検証用 Docker、フック・CI | 採用。固定版の解析と index の整形検査を導入した。実 CI の結果は Issue・PR に記録する |
 | [ADR-0004：Steam の公開レビュー API](adr/0004-steam-review-api.md) | Steam API の選択、引数形式、取得 adapter の上限と再試行の責務 | 採用。実装とローカル検証は Issue #17 の作業記録へ記載する |
 | [ADR-0005：上限付き収集と部分結果](adr/0005-bounded-review-collection.md) | 収集操作の依存・上限・途中失敗・重複の判断 | 採用。配置を ADR-0013 で部分置換した。実装と検証は Issue #21・#56 に記録する |
@@ -72,3 +72,5 @@ Issue #35 でレビュー収集結果へ版付きの分析ガイドを添付し�
 Issue #40 で MCP の失敗・結果変換を収集の実行手順から分離した。公開契約を維持し、[作業記録](worklogs/40-mcp-result-conversion.md) に検証結果と未実施のコード CI・配置を記録する。
 
 導入が進んだら、対応 PR でこの状態を更新する。`docs/use-cases.md` は操作の追加・変更時に更新する。自動生成の仕様目次は別 Issue で形式と検査を決定してから導入する。
+
+Issue #97 で固定版 Gitleaks のステージ済み差分・メッセージ・送信履歴・CI 検査を追加した。[開発手順](development.md#秘密情報の自動検査) に対象と標準除外を記載し、[作業記録](worklogs/97-secret-scanning.md) に実施した検証と未実施の GitHub CI を残す。

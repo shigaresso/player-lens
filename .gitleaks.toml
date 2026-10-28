@@ -1,0 +1,5 @@
+title = "PlayerLens の秘密情報検査"
+
+# 独自の検出ルール・baseline・追加 allowlist は設けず、固定版の標準ルールを使う。
+[extend]
+useDefault = true

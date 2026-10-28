@@ -17,6 +17,26 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  secrets:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: 履歴を含めて対象ソースを取得
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Python を準備
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: 固定版の検査ツールを準備
+        run: bash scripts/install-tools.sh
+      - name: 履歴とコミットメッセージの秘密情報を検査
+        run: python3 scripts/check_secrets.py history
+      - name: 実ツールの拒否と正常な入力を確認
+        run: python3 scripts/verify_secrets.py
   verify:
     runs-on: ubuntu-24.04
     timeout-minutes: 10

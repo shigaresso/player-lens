@@ -1,4 +1,4 @@
-# サーバー関連テストを責務に合わせて統合し表示を整理した
+# サーバー起動処理と関連テストの配置・表示を整理した
 
 ## 背景・目的
 
@@ -31,9 +31,21 @@ internal/reviewmcp/adapter の TestNewHandlerRejectsInvalidLimits は、同じ�
 
 JSON の構文と、対象フォルダの設定上の親子対応7組を確認した。cmd/server/adapter の routes・limits・port_number・mcp_config・server の通常テストと steam_fetcher の integration テスト、internal/reviewmcp/adapter の server の通常テストが、それぞれ対応する実装だけを親候補に持つことを確認した。これは設定の静的確認であり、エディター上の実表示の確認ではない。
 
-本番 Go コード・結合テストのファイルと build tag は変更していない。steam_fetcher_integration_test.go はローカル TLS の実接続と接続解放を検証するため、独立ファイルと integration 指定を維持した。表示上のネスティングはテストの実行対象を変えない。
+初回のテスト整理では本番 Go コード・結合テストのファイルと build tag は変更していない。steam_fetcher_integration_test.go はローカル TLS の実接続と接続解放を検証するため、独立ファイルと integration 指定を維持した。表示上のネスティングはテストの実行対象を変えない。
 
-## 検証
+## 追加対応：run のファイル分離
+
+ユーザーの追加依頼に基づいて同じ Issue の範囲と完了条件を更新し、cmd/server/main.go から run と shutdownTimeout を run_server.go へ移した。main.go はプロセスの入口と run の呼び出しを維持する。同じ package main の中でファイルを分け、既存の run_test.go は run_server_test.go へ改名した。
+
+追加対応前の HEAD と比較し、main と run の関数本文・shutdownTimeout の定義・テストファイル全体が同一であることを確認した。import は各ファイルで使うものへ分けた。設定の読み取り・依存構築・defer・待ち受け・ログ・終了の順序は変更していない。
+
+専用のネスティング設定は追加せず、既存の汎用パターンで run_server_test.go の親候補が run_server.go だけになることを確認した。これは設定の静的確認であり、エディター上の実表示の確認ではない。
+
+追加対応前の Green は直前の全体検証結果を使い、形式的な Red は作らなかった。移動後に Docker Compose verify で go test -count=1 ./cmd/server を実行し、通常テストの成功を確認した。
+
+追加対応後にも bash scripts/check-app.sh が終了コード0で成功した。整形・vet・全通常テスト・lint 0 issues・Git 非依存3条件・race 付き通常／結合テストを確認した。本番用 image ID sha256:07003c543490fb2e36cb429bd563b4bd07ba06c2ff5f7f4bedd8aae5e9cfbb8d を一度ビルドし、同じイメージで HTTP/MCP・PORT・不正設定の非0終了・SIGTERM/SIGINT の正常終了を確認した。main.go からのファイル分離後も、パッケージ単位のビルドと既存の起動・終了の契約が成功した。
+
+## 初回のテスト整理の検証
 
 テストの構成整理なので形式的な Red は作らず、変更前後の Green と契約の引き継ぎを確認した。いずれも固定版 Docker Compose verify で -count=1 を指定した。
 

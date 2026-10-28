@@ -15,6 +15,8 @@
 
 main は logger とプロセスの context を生成し、run は各 handler とルーターを組み立てる。server adapter/handler の NewHealthHandler(logger, now) は生存確認の handler を生成する。Issue #80 で実行入口を healthHandler.Handle とし、生成関数は http.HandlerFunc(handler.Handle) を返す。標準ライブラリの ServeHTTP が Handle を呼び、公開する http.Handler 契約を維持する。生成時にはリクエスト処理・時刻取得・ログ出力を行わない。MCP の handler は従来どおり reviewmcp.NewHandler で生成する。
 
+Issue #103 の追加対応で、cmd/server/main.go はプロセスの入口を維持し、run と shutdownTimeout の定数は同じ package main の run_server.go に置く。既存の run_test.go は run_server_test.go へ改名する。関数と定数・テストの本文、起動と終了・資源解放の順序は変えず、実装と通常テストの対応をファイル名から読めるようにする。
+
 run は http.NewServeMux でルーターを生成し、RegisterRoutes(mux, healthHandler, mcpHandler) で経路を登録してから待ち受けを開始する。RegisterRoutes は既存の mux に生成済み handler を登録するだけで、依存や handler・ルーターを生成せず、handler を実行しない。無関係な既存経路は維持する。旧 server adapter の NewHandler は残さない。
 
 RegisterRoutes は GET /healthz（HEAD を含む）と、MCP が非 nil の場合の /tools を登録する。mux と healthHandler は有効な非 nil の値を渡し、登録は受付開始前に行う。競合するパターンは事前に登録しない。重複登録などは標準 ServeMux の panic に従い、独自の検査や復旧は追加しない。各 handler は並行利用可能なものを渡す。

@@ -1,6 +1,7 @@
 package adapter_test
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -44,10 +45,13 @@ func TestProtect(t *testing.T) {
 			}
 
 			calls := 0
-			handler := accessadapter.Protect(access, "許可されていない Host です", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			handler, err := accessadapter.Protect(access, "許可されていない Host です", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				calls++
 				w.WriteHeader(202)
 			}))
+			if err != nil {
+				t.Fatal(err)
+			}
 
 			request := httptest.NewRequest("POST", "https://reviews.example/tools", nil)
 			request.Host = tc.host
@@ -77,6 +81,29 @@ func TestProtect(t *testing.T) {
 
 			if response.Header().Get("WWW-Authenticate") != "" {
 				t.Fatal("OAuthのchallengeを返した")
+			}
+		})
+	}
+}
+
+func TestProtectConfiguration(t *testing.T) {
+	valid, err := mcpaccess.NewPublic("https://reviews.example/tools")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, tc := range []struct {
+		name   string
+		access mcpaccess.Access
+		next   http.Handler
+	}{
+		{"Accessのnil・ゼロ値を拒否する", nil, http.NotFoundHandler()},
+		{"nilハンドラーを拒否する", valid, nil},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			handler, err := accessadapter.Protect(tc.access, "許可されていない Host です", tc.next)
+			if handler != nil || !errors.Is(err, mcpaccess.ErrInvalidConfig) {
+				t.Fatalf("handler=%v err=%v", handler, err)
 			}
 		})
 	}

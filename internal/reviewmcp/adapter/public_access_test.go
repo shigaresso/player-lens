@@ -17,10 +17,13 @@ func TestPublicMCPAccess(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	handler := NewHandler(testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+	handler, err := NewHandler(testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 		t.Fatal("受付検査でSteamに接続した")
 		return steamdomain.ReviewPage{}, nil
 	}), mcpdomain.DefaultLimits(), config)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	for _, tc := range []struct {
 		name, host, origin, body string

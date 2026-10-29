@@ -14,20 +14,36 @@ import (
 )
 
 func TestCollectReviewsInvalidInput(t *testing.T) {
-	t.Run("AppIDゼロを拒否する", func(t *testing.T) {
-		fetcher := pageFetcherFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
-			t.Fatal("不正入力で取得した")
-			return steamdomain.ReviewPage{}, nil
-		})
-		got, err := steamapplication.CollectReviews(context.Background(), fetcher, 0, collectionOptions(t, steamdomain.CollectionOptionsConfig{}))
-		if !errors.Is(err, steamdomain.ErrInvalidArgument) || !reflect.DeepEqual(got, steamdomain.Collection{}) {
-			t.Fatalf("result=%#v error=%v", got, err)
-		}
+	for _, tt := range []struct {
+		name        string
+		appID       steamdomain.AppID
+		options     steamdomain.CollectionOptionsConfig
+		nilFetcher  bool
+		wantContext string
+	}{
+		{"AppIDゼロを拒否する", 0, steamdomain.CollectionOptionsConfig{}, false, "prepare Steam review collection: positive AppID is required:"},
+		{"取得依存なしでは依存の欠落だけを説明する", 440, steamdomain.CollectionOptionsConfig{}, true, "page fetcher is required:"},
+		{"両方が不正でも取得依存の欠落を先に説明する", 0, steamdomain.CollectionOptionsConfig{}, true, "page fetcher is required:"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			var fetcher steamapplication.PageFetcher = pageFetcherFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+				t.Fatal("不正入力で取得した")
+				return steamdomain.ReviewPage{}, nil
+			})
+			if tt.nilFetcher {
+				fetcher = nil
+			}
 
-		if !strings.HasPrefix(err.Error(), "prepare Steam review collection: positive AppID is required:") {
-			t.Fatalf("拒否の説明=%v", err)
-		}
-	})
+			got, err := steamapplication.CollectReviews(context.Background(), fetcher, tt.appID, collectionOptions(t, tt.options))
+			if !errors.Is(err, steamdomain.ErrInvalidArgument) || !reflect.DeepEqual(got, steamdomain.Collection{}) {
+				t.Fatalf("result=%#v error=%v", got, err)
+			}
+
+			if !strings.HasPrefix(err.Error(), tt.wantContext) {
+				t.Fatalf("拒否の説明=%v wantContext=%q", err, tt.wantContext)
+			}
+		})
+	}
 }
 
 func TestCollectReviewsMaximumReviews(t *testing.T) {

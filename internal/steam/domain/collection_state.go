@@ -5,8 +5,6 @@ import "fmt"
 // CollectionState は1回の収集結果と次の取得条件を所有する。
 // ゼロ値は使わず NewCollectionState で生成し、1つの収集操作から順番に更新する。
 // 通信・context・時刻の取得は行わない。
-//
-//contractcheck:controlled
 type CollectionState struct {
 	result      Collection
 	cursor      string

@@ -23,9 +23,9 @@ domain の Access は AllowsHost だけを持つ共通契約とする。NewLocal
 
 reviewmcp/adapter の NewHTTPConfig(publicURL) が公開／ローカルを選ぶ。未指定なら NewLocal、指定時は NewPublic を呼び、許可条件・固定の拒否文言・StreamableHTTPOptions を HTTPConfig の非公開フィールドへまとめる。共通の SDK 設定は1か所で定義し、公開時だけ DisableLocalhostProtection を有効にする。設定値は生成後に外部から変更できない。構築時には通信・時計・新しい資源を必要としない。
 
-cmd の ReadMCPHTTPConfig が環境変数を読み NewHTTPConfig に渡す。URL の検査はクライアント構築・待ち受けより前に行う。NewHandler は生成済みの HTTPConfig を受け取り、設定済みの値をそのまま使う。Issue #105 では HTTPConfig の生成・更新を定義ファイルへ限定し、NewHandler は生成成功した設定を信頼する。ゼロ値を直接渡す行為は呼び出し側の契約違反であり、NewHandler による再検査と ErrInvalidConfig の返却は保証しない。[ADR-0019](../adr/0019-construction-contracts.md) に検査と限界を記載する。IsPublic・HostRejectionMessage と domain.New は廃止し、利用側でモードを選び直さない。
+cmd の ReadMCPHTTPConfig が環境変数を読み NewHTTPConfig に渡す。URL の検査はクライアント構築・待ち受けより前に行う。NewHandler は生成済みの HTTPConfig を受け取り、設定済みの値をそのまま使う。HTTPConfig のゼロ値は未生成として ErrInvalidConfig と nil handler を返す。IsPublic・HostRejectionMessage と domain.New は廃止し、利用側でモードを選び直さない。
 
-両モードとも mcpaccess/adapter.Protect(access, deniedMessage, next) が Host→cross-origin→next の共通手順を実行する。Issue #107 では、Access と next は生成成功した非 nil の依存を渡す呼び出し側の契約とし、Protect は存在を再検査せず http.Handler を返す。生成失敗のない Protect・HTTPConfig.newHandler・NewHandler の error 戻り値を削除する。Host が不許可なら403と、生成時に渡された固定の拒否文言を返す。ローカル用は「ローカルの Host のみ利用できます」、公開用は「許可されていない Host です」を維持する。Host／Origin で拒否した場合は next を呼ばず、許可時は next を1回だけ呼び、その応答を維持する。ローカルと公開の Host 判定・正規化は従来の本体を引き継ぐ。
+両モードとも mcpaccess/adapter.Protect(access, deniedMessage, next) が Host→cross-origin→next の共通手順を実行する。Access の nil・next の nil は ErrInvalidConfig と nil handler を返す。Host が不許可なら403と、生成時に渡された固定の拒否文言を返す。ローカル用は「ローカルの Host のみ利用できます」、公開用は「許可されていない Host です」を維持する。Host／Origin で拒否した場合は next を呼ばず、許可時は next を1回だけ呼び、その応答を維持する。ローカルと公開の Host 判定・正規化は従来の本体を引き継ぐ。
 
 ## 資源・共有範囲
 

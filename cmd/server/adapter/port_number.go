@@ -10,8 +10,6 @@ const defaultPortNumber uint16 = 8080
 // ValidatedPortNumber は1〜65535の有効なサーバーポート番号を保持する。
 // ゼロ値は既定の8080を表す。生成後は変更せず、文字列表現には String を使う。
 // ポート番号の有効性を表し、そのポートで待ち受け可能であることは保証しない。
-//
-//contractcheck:controlled
 type ValidatedPortNumber struct {
 	number uint16
 }

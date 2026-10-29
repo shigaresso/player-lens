@@ -17,7 +17,6 @@ const (
 	k_EUserReviewsPurchaseType_All        steamdomain.EUserReviewsPurchaseType     = 1
 )
 
-//contractcheck:data 検査済み条件を外部 API の JSON へ変換する送信用データ
 type reviewPageRequest struct {
 	AppID          steamdomain.AppID                        `json:"appid"`
 	Filter         steamdomain.EUserReviewsAppReviewsFilter `json:"filter"`

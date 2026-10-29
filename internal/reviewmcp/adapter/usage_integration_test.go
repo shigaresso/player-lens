@@ -31,10 +31,13 @@ func TestMCPSharedUsageWindows(t *testing.T) {
 		} {
 			t.Run(version+"の別セッションと異なる版で"+tc.name, func(t *testing.T) {
 				var calls atomic.Int32
-				handler := NewHandler(testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+				handler, err := NewHandler(testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 					calls.Add(1)
 					return steamdomain.ReviewPage{}, nil
 				}), tc.limits, localHTTPConfig(t))
+				if err != nil {
+					t.Fatal(err)
+				}
 
 				server := httptest.NewServer(handler)
 				t.Cleanup(server.Close)
@@ -85,7 +88,7 @@ func TestMCPSharedConcurrentSlots(t *testing.T) {
 			defer unblock()
 
 			var calls atomic.Int32
-			handler := NewHandler(testutil.FetchFunc(func(ctx context.Context, _ steamdomain.AppID, _ steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+			handler, err := NewHandler(testutil.FetchFunc(func(ctx context.Context, _ steamdomain.AppID, _ steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				if calls.Add(1) == 1 {
 					close(started)
 					select {
@@ -97,6 +100,9 @@ func TestMCPSharedConcurrentSlots(t *testing.T) {
 
 				return steamdomain.ReviewPage{}, nil
 			}), testutil.Limits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 2, RequestsPerDay: 2, MaxConcurrent: 1}), localHTTPConfig(t))
+			if err != nil {
+				t.Fatal(err)
+			}
 
 			server := httptest.NewServer(handler)
 			t.Cleanup(server.Close)

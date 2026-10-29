@@ -2,7 +2,6 @@ package adapter
 
 import (
 	"errors"
-	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -44,7 +43,7 @@ func TestReadMCPLimits(t *testing.T) {
 
 					return ""
 				})
-				if err == nil || !reflect.ValueOf(limits).IsZero() {
+				if err == nil || limits != (mcpdomain.Limits{}) {
 					t.Fatalf("limits=%+v err=%v", limits, err)
 				}
 			})
@@ -83,7 +82,7 @@ func TestReadMCPLimitsFailureCause(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			limits, err := ReadMCPLimits(func(key string) string { return tt.values[key] })
-			if !errors.Is(err, tt.cause) || !strings.Contains(err.Error(), tt.message) || !reflect.ValueOf(limits).IsZero() {
+			if !errors.Is(err, tt.cause) || !strings.Contains(err.Error(), tt.message) || limits != (mcpdomain.Limits{}) {
 				t.Fatalf("ゼロ値と既存の診断・原因を返す: limits=%v err=%v; cause=%v message=%q", limits, err, tt.cause, tt.message)
 			}
 		})
@@ -147,7 +146,7 @@ func TestReadMCPLimitsReadsBeforeParsing(t *testing.T) {
 
 		return ""
 	})
-	if !errors.Is(err, strconv.ErrSyntax) || !reflect.ValueOf(limits).IsZero() {
+	if !errors.Is(err, strconv.ErrSyntax) || limits != (mcpdomain.Limits{}) {
 		t.Fatalf("解析失敗でゼロ値と原因を返す: limits=%v err=%v", limits, err)
 	}
 

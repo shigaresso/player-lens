@@ -8,8 +8,6 @@ import (
 
 // LimitsConfig は未検証の収集開始回数・同時実行数の設定値を表す。
 // 各値は正の整数とし、利用する前に NewLimits へ渡す。
-//
-//contractcheck:data 生成前の環境設定を検査するための入力データ
 type LimitsConfig struct {
 	RequestsPerMinute int
 	RequestsPerDay    int
@@ -17,10 +15,8 @@ type LimitsConfig struct {
 }
 
 // Limits は生成時に正数を確認した、収集開始回数・同時実行数の上限を保持する。
-// NewLimits または DefaultLimits で生成する。ゼロ値は未初期化であり、利用側へ渡さない。
+// NewLimits または DefaultLimits で生成する。ゼロ値は未初期化であり、adapter.NewHandler は拒否する。
 // 設定値は生成後に変更せず、利用回数や同時実行数の状態は handler が別に所有する。
-//
-//contractcheck:controlled
 type Limits struct {
 	config LimitsConfig
 }

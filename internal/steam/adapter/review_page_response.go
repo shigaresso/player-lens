@@ -8,7 +8,6 @@ import (
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
 )
 
-//contractcheck:data Steam の未検証 JSON 応答を読み取る受信用データ
 type reviewPageResponse struct {
 	Response *struct {
 		Reviews []reviewPageReview `json:"reviews"`
@@ -16,7 +15,6 @@ type reviewPageResponse struct {
 	} `json:"response"`
 }
 
-//contractcheck:data Steam のレビュー1件を読み取る受信用データ
 type reviewPageReview struct {
 	RecommendationID string                       `json:"recommendationid"`
 	Text             string                       `json:"review"`

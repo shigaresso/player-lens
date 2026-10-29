@@ -13,8 +13,6 @@ import (
 
 // HealthCheck は1回の生存確認の応答処理結果を表す。
 // Route は登録時の固定パスを渡し、Duration は応答処理の所要時間とする。
-//
-//contractcheck:data HTTP 完了時の状態と原因をログへ渡すデータ
 type HealthCheck struct {
 	Route    string
 	Method   string

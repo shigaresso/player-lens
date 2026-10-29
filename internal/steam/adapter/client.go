@@ -22,8 +22,6 @@ var ErrInvalidResponse = errors.New("invalid Steam review response")
 var ErrResponseTooLarge = errors.New("steam review response exceeds 2 MiB")
 
 // HTTPStatusError は200以外の応答を表す。再試行するかどうかは呼び出し側が決める。
-//
-//contractcheck:data HTTP ステータスを errors.As で伝えるエラーデータ
 type HTTPStatusError struct{ StatusCode int }
 
 // Error は本文を含めず HTTP ステータスを返す。
@@ -32,16 +30,12 @@ func (e *HTTPStatusError) Error() string {
 }
 
 // Client は1回の API 通信を担当する。接続プールの解放は呼び出し側が担当する。
-//
-//contractcheck:controlled
 type Client struct {
 	httpClient *http.Client
 	endpoint   string
 }
 
 // NewClient は外から渡された HTTP クライアントと接続先を使う。空の接続先は公式 API となる。
-//
-//contractcheck:constructor
 func NewClient(httpClient *http.Client, endpoint string) (*Client, error) {
 	if httpClient == nil {
 		return nil, fmt.Errorf("HTTP client is required: %w", steamdomain.ErrInvalidArgument)

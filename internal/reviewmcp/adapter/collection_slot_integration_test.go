@@ -35,13 +35,16 @@ func TestMCPSlotDuringResponseConversion(t *testing.T) {
 				}
 			})}
 			var calls atomic.Int32
-			handler := NewHandler(testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+			handler, err := NewHandler(testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				if calls.Add(1) == 1 {
 					return steamdomain.ReviewPage{}, cause
 				}
 
 				return steamdomain.ReviewPage{}, nil
 			}), testutil.Limits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 10, RequestsPerDay: 10, MaxConcurrent: 1}), localHTTPConfig(t))
+			if err != nil {
+				t.Fatal(err)
+			}
 
 			server := httptest.NewServer(handler)
 			t.Cleanup(server.Close)

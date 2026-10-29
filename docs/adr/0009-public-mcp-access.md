@@ -2,8 +2,6 @@
 
 ## 状態
 
-Issue #105 の [ADR-0019](0019-construction-contracts.md) が NewHandler の HTTPConfig のゼロ値拒否を生成側と静的検査の契約へ置き換える。Protect の構築時の依存確認は維持する。
-
 採用。Issue #29 の旧 OAuth 方針をユーザーとの議論に基づいて変更した。旧ローカル実装9コミットは `codex/29-public-mcp-auth` の `8e5c2c654a4e7ded23c039411822236a38b0bb32` に保護した。現ブランチへ OAuth を取り込まない。公開配置と実 ChatGPT 接続は未確認とする。
 
 ## 背景と比較
@@ -39,6 +37,3 @@ Issue #77 では HTTP の Protect／ProtectLocal を Controller と区別し、m
 Protect は条件と拒否文言を受け取る1つの HTTP 保護手順とする。Host→Origin→next の順序、403文言、後続の応答、SDK の保護設定を維持する。未生成の HTTPConfig や nil の保護依存は構築エラーとする。旧 domain.New・IsPublic・HostRejectionMessage・ProtectLocal は残さない。
 
 先行実装では Access を mode フラグ付き構造体、その後は表示文言・公開状態も提供する interface としていた。前者は状態の関係が読みにくく、後者はドメインの許可判定に HTTP の表示と構築の関心を集めていた。今回は可変部分を組み立てる場所を HTTP adapter とし、ドメインの実体を分けたまま共通手順に渡す方式を採用した。段階ごとの検証は Issue と作業記録へ残す。
-
-
-Issue #107 では nil の保護依存を利用側で再検査する契約を置き換える。Protect は生成成功した Access と handler を受け取る事前条件を信頼し、構築エラーと error 戻り値を持たない。NewHandler の構築失敗も HTTPConfig の生成時へ集約し、許可条件・Host/Origin の実行時判断は維持する。型と必須引数の検査は ADR-0019 に従う。

@@ -19,12 +19,15 @@ func TestHTTPRequestCancellation(t *testing.T) {
 		t.Run(version+"の切断が取得へ伝播する", func(t *testing.T) {
 			started := make(chan struct{})
 			finished := make(chan error, 1)
-			handler := NewHandler(testutil.FetchFunc(func(ctx context.Context, _ steamdomain.AppID, _ steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+			handler, err := NewHandler(testutil.FetchFunc(func(ctx context.Context, _ steamdomain.AppID, _ steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				close(started)
 				<-ctx.Done()
 				finished <- ctx.Err()
 				return steamdomain.ReviewPage{}, ctx.Err()
 			}), mcpdomain.DefaultLimits(), localHTTPConfig(t))
+			if err != nil {
+				t.Fatal(err)
+			}
 
 			server := httptest.NewServer(handler)
 			t.Cleanup(server.Close)

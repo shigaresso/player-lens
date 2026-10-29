@@ -42,7 +42,7 @@ func TestParseInput(t *testing.T) {
 	} {
 		t.Run(name+"ため拒否する", func(t *testing.T) {
 			appID, options, err := ParseInput([]byte(input))
-			if !errors.Is(err, steamdomain.ErrInvalidArgument) || appID != 0 || options != (steamdomain.DefaultCollectionOptions()) {
+			if !errors.Is(err, steamdomain.ErrInvalidArgument) || appID != 0 || options != (steamdomain.CollectionOptions{}) {
 				t.Fatalf("不正入力の結果 = %d, %+v, %v", appID, options, err)
 			}
 		})

@@ -26,7 +26,7 @@ Issue #68 で、レビュー1件の ID と項目の変換を convertReview に�
 
 Issue #58 で、重複・カーソル・成功ページ数・終了判断を steam/domain の CollectionState にまとめた。状態生成時に App ID を検査し、生成済みの CollectionOptions から設定のコピーを保持する。条件の検査は Issue #60 で NewCollectionOptions へ移し、状態では繰り返さない。NextPage と AddPage で続行と状態更新を扱う。CollectReviews は取得・期限・キャンセルと失敗の原因、Fail による失敗確定を担当する。Result はレビュー配列もコピーして返す。状態は通信や context を持たず、新しいユースケースではない。[ADR-0014](adr/0014-steam-collection-state.md) に境界を記録する。
 
-`NormalizePageOptions` は1ページの取得条件を検査・正規化する。収集条件は `NewCollectionOptions` が未検証の `CollectionOptionsConfig` から生成し、検査・正規化とコピーの保持を担当する。`CollectionOptions` の内部のゼロ値も有効な既定条件で、外側では DefaultCollectionOptions から生成し、`Config()` はコピーを返す。結果の `Collection.Options` は表示・保存用の Config とし、空の Collection の未指定項目を保つ。旧公開 NormalizeCollectionOptions は残さず、条件が不正なテストの契約を生成 API・CLI/MCP の入口へ引き継ぐ。[ADR-0015](adr/0015-collection-options-boundary.md) に境界を記録する。`jsonoutput.MarshalCollection` は通信しない JSON 変換、`jsonoutput.Saver` は writer への出力を担当する。DB の永続保存・分析・レポート生成は未導入とする。
+`NormalizePageOptions` は1ページの取得条件を検査・正規化する。収集条件は `NewCollectionOptions` が未検証の `CollectionOptionsConfig` から生成し、検査・正規化とコピーの保持を担当する。`CollectionOptions` のゼロ値も有効な既定条件で、`Config()` はコピーを返す。結果の `Collection.Options` は表示・保存用の Config とし、空の Collection の未指定項目を保つ。旧公開 NormalizeCollectionOptions は残さず、条件が不正なテストの契約を生成 API・CLI/MCP の入口へ引き継ぐ。[ADR-0015](adr/0015-collection-options-boundary.md) に境界を記録する。`jsonoutput.MarshalCollection` は通信しない JSON 変換、`jsonoutput.Saver` は writer への出力を担当する。DB の永続保存・分析・レポート生成は未導入とする。
 
 入口側が HTTP クライアントと `Client` を組み立て、同じ `CollectReviews` へ渡す。操作内に具体的な HTTP クライアントや DB を固定せず、同じ Go アプリケーション内の呼び出しに HTTP・MCP 通信を挟まない。
 
@@ -42,7 +42,7 @@ Issue #52 で、JSON 読み取りを MCP 受信型の `toolInput.UnmarshalJSON`�
 
 MCP の開始回数と同時数は handler が所有する入口の制限とし、収集操作・CLI へ混ぜない。limiter は受付可否と型付きの拒否理由を返し、failure.go の usageFailure が MCP の公開コードと説明文へ変換する。[利用制限仕様](specs/mcp-usage-limits.md) と [ADR-0008](adr/0008-mcp-usage-limits.md) に従う。
 
-Issue #54 で、利用制限の設定は未検証の `LimitsConfig` から `NewLimits` で生成する構成にした。環境変数の解析は main 側、正数検査と設定値のコピー保持は生成 API が担当し、Issue #105 で生成側の契約と [生成・更新境界の検査](adr/0019-construction-contracts.md) へ移し、`NewHandler` は未初期化のゼロ値と取得依存の nil を再検査しない。生成済みの設定と handler の可変な受付状態を区別する。設定の生成・取得は通信や利用枠の操作を行わず、新たな収集ユースケースではない。
+Issue #54 で、利用制限の設定は未検証の `LimitsConfig` から `NewLimits` で生成する構成にした。環境変数の解析は main 側、正数検査と設定値のコピー保持は生成 API が担当し、`NewHandler` は未初期化のゼロ値だけを拒否する。生成済みの設定と handler の可変な受付状態を区別する。設定の生成・取得は通信や利用枠の操作を行わず、新たな収集ユースケースではない。
 
 Issue #62 で、application が adapter から渡された同期的な結果処理関数を呼び、その完了後に同時枠を返す構成に修復した。JSON・SDK 応答生成は adapter に残し、application は SDK 型を含めない。結果処理の失敗でも枠を返し、収集の原因は Result.Err で処理関数へ渡す。開始前キャンセル・受付拒否も一度処理するが、確保していない枠は返さない。[ADR-0016](adr/0016-mcp-response-slot-lifetime.md) に記録する。
 

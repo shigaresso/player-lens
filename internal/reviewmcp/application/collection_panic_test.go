@@ -45,7 +45,7 @@ func TestCollectReviewsPanicReleasesSlot(t *testing.T) {
 					}
 				}()
 
-				err := mcpapplication.CollectReviews(t.Context(), fetcher, 440, steamdomain.DefaultCollectionOptions(), gate, func(mcpapplication.Result) error {
+				err := mcpapplication.CollectReviews(t.Context(), fetcher, 440, steamdomain.CollectionOptions{}, gate, func(mcpapplication.Result) error {
 					responses++
 					panic(cause)
 				})

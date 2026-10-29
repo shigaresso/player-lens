@@ -68,10 +68,14 @@ func TestMCPShutdownWaitsForActiveCollection(t *testing.T) {
 		}
 	})
 	resultDone := make(chan struct{})
-	var result *mcp.CallToolResult
-	var callErr error
+	type callOutcome struct {
+		result *mcp.CallToolResult
+		err    error
+	}
+	outcomes := make(chan callOutcome, 1)
 	go func() {
-		result, callErr = session.CallTool(ctx, &mcp.CallToolParams{Name: "collect_reviews", Arguments: map[string]any{"app_id": 440, "max_reviews": 1}})
+		result, callErr := session.CallTool(ctx, &mcp.CallToolParams{Name: "collect_reviews", Arguments: map[string]any{"app_id": 440, "max_reviews": 1}})
+		outcomes <- callOutcome{result: result, err: callErr}
 		close(resultDone)
 	}()
 	t.Cleanup(func() {
@@ -103,8 +107,9 @@ func TestMCPShutdownWaitsForActiveCollection(t *testing.T) {
 		t.Fatal("処理中の MCP 応答が返らなかった")
 	}
 
-	if callErr != nil || result.IsError {
-		t.Fatalf("result=%+v err=%v", result, callErr)
+	outcome := <-outcomes
+	if outcome.err != nil || outcome.result.IsError {
+		t.Fatalf("result=%+v err=%v", outcome.result, outcome.err)
 	}
 
 	select {

@@ -1,13 +1,18 @@
 package adapter
 
 import (
+	"net/http"
+
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	accessadapter "github.com/shigaresso/player-lens/internal/mcpaccess/adapter"
 	mcpaccess "github.com/shigaresso/player-lens/internal/mcpaccess/domain"
 )
 
 // HTTPConfig は MCP の HTTP 入口に渡す許可条件・拒否文言・SDK 設定を保持する。
-// NewHTTPConfig で生成し、設定変更時は作り直す。ゼロ値は NewHandler が拒否する。
+// NewHTTPConfig で生成し、設定変更時は作り直す。未生成の値は利用側へ渡さない。
 // 非公開フィールドに保持し、呼び出し元が個別の値を組み替える API は提供しない。
+//
+//contractcheck:controlled
 type HTTPConfig struct {
 	access        mcpaccess.Access
 	deniedMessage string
@@ -44,4 +49,9 @@ func NewHTTPConfig(publicURL string) (HTTPConfig, error) {
 		deniedMessage: "許可されていない Host です",
 		sdkOptions:    options,
 	}, nil
+}
+
+func (config HTTPConfig) newHandler(getServer func(*http.Request) *mcp.Server) (http.Handler, error) {
+	handler := mcp.NewStreamableHTTPHandler(getServer, &config.sdkOptions)
+	return accessadapter.Protect(config.access, config.deniedMessage, handler)
 }

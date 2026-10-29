@@ -2,6 +2,7 @@ package domain_test
 
 import (
 	"errors"
+	"reflect"
 	"testing"
 
 	mcpdomain "github.com/shigaresso/player-lens/internal/reviewmcp/domain"
@@ -31,7 +32,7 @@ func TestNewLimits(t *testing.T) {
 				if err != nil || limits.Config() != tc.config {
 					t.Fatalf("limits=%+v err=%v", limits, err)
 				}
-			} else if !errors.Is(err, steamdomain.ErrInvalidArgument) || limits != (mcpdomain.Limits{}) {
+			} else if !errors.Is(err, steamdomain.ErrInvalidArgument) || !reflect.ValueOf(limits).IsZero() {
 				t.Fatalf("不正設定の生成結果: limits=%+v err=%v", limits, err)
 			}
 		})
@@ -68,7 +69,11 @@ func TestLimitsConfigIsolation(t *testing.T) {
 	}
 
 	t.Run("未初期化の値からはゼロ設定を返す", func(t *testing.T) {
-		var limits mcpdomain.Limits
+		limits, err := mcpdomain.NewLimits(mcpdomain.LimitsConfig{})
+		if err == nil {
+			t.Fatal("未初期化の設定の生成が成功した")
+		}
+
 		if config := limits.Config(); config != (mcpdomain.LimitsConfig{}) {
 			t.Fatalf("未初期化の設定 = %+v", config)
 		}

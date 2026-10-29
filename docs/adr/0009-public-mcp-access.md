@@ -2,6 +2,8 @@
 
 ## 状態
 
+Issue #105 の [ADR-0019](0019-construction-contracts.md) が NewHandler の HTTPConfig のゼロ値拒否を生成側と静的検査の契約へ置き換える。Protect の構築時の依存確認は維持する。
+
 採用。Issue #29 の旧 OAuth 方針をユーザーとの議論に基づいて変更した。旧ローカル実装9コミットは `codex/29-public-mcp-auth` の `8e5c2c654a4e7ded23c039411822236a38b0bb32` に保護した。現ブランチへ OAuth を取り込まない。公開配置と実 ChatGPT 接続は未確認とする。
 
 ## 背景と比較

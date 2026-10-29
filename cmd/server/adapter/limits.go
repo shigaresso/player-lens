@@ -22,12 +22,13 @@ func ReadMCPLimits(getenv func(string) string) (mcpdomain.Limits, error) {
 		requestsPerDay:    getenv(mcpRequestsPerDayEnv),
 		maxConcurrent:     getenv(mcpMaxConcurrentEnv),
 	}
-	config, err := parseMCPLimits(input)
-	if err != nil {
-		return mcpdomain.Limits{}, err
+	config, parseErr := parseMCPLimits(input)
+	limits, err := mcpdomain.NewLimits(config)
+	if parseErr != nil {
+		return limits, parseErr
 	}
 
-	return mcpdomain.NewLimits(config)
+	return limits, err
 }
 
 // mcpLimitsInput は環境変数から取得済みの未解析の文字列を保持する。

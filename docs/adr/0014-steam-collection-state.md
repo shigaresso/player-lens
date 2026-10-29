@@ -2,6 +2,8 @@
 
 ## 状態と対象
 
+Issue #105 の [ADR-0019](0019-construction-contracts.md) により、CollectionState の生成・更新を定義ファイルへ限定する検査を追加し、CollectReviews の取得依存の存在確認は生成側の契約へ移す。状態遷移・コピー・資源の契約は維持する。
+
 採用。[Issue #58](https://github.com/shigaresso/player-lens/issues/58) の Steam 収集操作に適用する。ADR-0005 の上限・部分結果と ADR-0013 の各領域内のレイヤーを維持し、収集状態の管理を steam/domain に配置する。
 
 条件の検査・正規化の担当は [ADR-0015](0015-collection-options-boundary.md) で部分的に置き換えた。状態は生成済みの CollectionOptions を受け取り、App ID の検査と設定のコピーの保持を担当する。以下の重複・終了・部分結果・資源の契約は維持する。

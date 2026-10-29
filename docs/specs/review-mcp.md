@@ -61,7 +61,7 @@ Issue #84 で、MCP 用 application は開始前キャンセル／期限超過�
 
 `handler/protocol/result.go` の `encodeResult` と `marshalToolResult` は公開情報を toolFailureInfo のまま受け取り、コードと説明文を別引数へ分解しない。`marshalToolResult` は Collection・公開情報・ガイドを同じ JSON の構造化結果・テキストへ変換する。`encodeResult` は省略件数を引数に受け取らず、SDK の通常応答と省略応答のサイズを判定する。`encodeOversizedResult` は省略件数を数えて本文を除いた応答を作り、`encodeResult` を再び呼ばない。`encodeCollectionResult` が取得の原因をサーバー側へ保持し、応答量超過の原因も失わせない。変換は通信・時計・保存に依存しない。利用枠は応答変換まで保持し、application の CollectReviews の defer が成功・変換失敗とも返却する。application は SDK 型を扱わない。Issue #56 で早期返却になった動作を Issue #62 で修復する（[ADR-0016](../adr/0016-mcp-response-slot-lifetime.md)）。
 
-公開 URL が未指定なら HTTP Host は localhost またはループバック IP に限定する。Issue #29 で、明示した公開 URL の Host からも認証なしで利用する設定を追加した。Issue #82 で NewLocal／NewPublic が生成する Access は Host 判定だけとし、NewHTTPConfig が許可条件・拒否文言・SDK 設定をまとめる構成にした。両モードで単一の mcpaccess/adapter.Protect を使う。NewHandler は生成済み HTTPConfig を受け取り、設定済みの値をそのまま使う。未生成の HTTPConfig のゼロ値は構築エラーとする。許可されない Host は403で拒否する。[公開 MCP 仕様](mcp-public-access.md) に従う。Docker 転送では SDK の接続先アドレスによる自動 localhost 判定が働かない場合があるため、Host を明示的に検査する。cross-origin 保護と併用する。
+公開 URL が未指定なら HTTP Host は localhost またはループバック IP に限定する。Issue #29 で、明示した公開 URL の Host からも認証なしで利用する設定を追加した。Issue #82 で NewLocal／NewPublic が生成する Access は Host 判定だけとし、NewHTTPConfig が許可条件・拒否文言・SDK 設定をまとめる構成にした。両モードで単一の mcpaccess/adapter.Protect を使う。NewHandler は生成済み HTTPConfig を受け取り、設定済みの値をそのまま使う。Issue #105 で生成側の契約と型情報を使う生成境界の検査へ移し、未生成の HTTPConfig を直接渡す行為は呼び出し側の契約違反とする。許可されない Host は403で拒否する。[公開 MCP 仕様](mcp-public-access.md) に従う。Docker 転送では SDK の接続先アドレスによる自動 localhost 判定が働かない場合があるため、Host を明示的に検査する。cross-origin 保護と併用する。
 
 HTTP の読み書き10秒・終了待機10秒は維持する。遅い本文の送信時間も HTTP の10秒に含まれるため、常に8秒の実行時間を使い切れるとは保証しない。JSON 応答であり長時間の SSE 接続を要求しない。
 
@@ -69,7 +69,7 @@ HTTP の読み書き10秒・終了待機10秒は維持する。遅い本文の�
 
 Issue #27 で1分6回・24時間100回・同時2件の制限を導入した。1つの handler の状態を HTTP ごとの Server と複数セッション・4版で共有する。拒否は `rate_limited`・`daily_limit_reached`・`busy` と空の結果を返し、Steam を呼ばない。開始回数の消費、枠の返却、固定窓と設定・再起動・複数台の制約は [利用制限仕様](mcp-usage-limits.md) と [ADR-0008](../adr/0008-mcp-usage-limits.md) に従う。
 
-Issue #54 で `NewHandler` の設定は `NewLimits` または `DefaultLimits` で生成した値を受け取る構成にした。各上限の検証は生成側へ集約し、`NewHandler` は未初期化のゼロ値を拒否する。handler ごとの可変状態の所有と共有範囲は変更しない。
+Issue #54 で `NewHandler` の設定は `NewLimits` または `DefaultLimits` で生成した値を受け取る構成にした。各上限の検証は生成側へ集約し、Issue #105 では生成・組み立て側で保証する契約へ移し、`NewHandler` は未初期化のゼロ値と取得依存の nil を再検査しない。handler ごとの可変状態の所有と共有範囲は変更しない。
 
 ## デバッグと検証
 

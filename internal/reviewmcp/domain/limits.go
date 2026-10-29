@@ -15,8 +15,10 @@ type LimitsConfig struct {
 }
 
 // Limits は生成時に正数を確認した、収集開始回数・同時実行数の上限を保持する。
-// NewLimits または DefaultLimits で生成する。ゼロ値は未初期化であり、adapter.NewHandler は拒否する。
+// NewLimits または DefaultLimits で生成する。ゼロ値は未初期化であり、利用側へ渡さない。
 // 設定値は生成後に変更せず、利用回数や同時実行数の状態は handler が別に所有する。
+//
+//contractcheck:controlled
 type Limits struct {
 	config LimitsConfig
 }

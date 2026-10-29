@@ -10,9 +10,9 @@
 
 ## 入力と正規化
 
-`CollectReviews(ctx, fetcher, appID, options)` は正の App ID、利用可能な取得依存と非 nil の context を受ける。options は有効な `CollectionOptions` を渡す。App ID が0、または取得依存が nil なら通信せず、`Collection{}` と `ErrInvalidArgument` を返す。interface に利用不能な値を渡さない責務は呼び出し側にある。
+`CollectReviews(ctx, fetcher, appID, options)` は正の App ID、利用可能な取得依存と非 nil の context を受ける。options は有効な `CollectionOptions` を渡す。App ID が0なら通信せず、`Collection{}` と `ErrInvalidArgument` を返す。取得依存の存在は生成・組み立て側の契約とし、利用不能な interface を渡さない責務は呼び出し側にある。Issue #105 で利用側の nil 再検査を削除し、静的解析で危険な受け渡しを検査する。
 
-取得依存の nil を先に確認し、その後に状態生成で App ID を確認する。両方が不正でも取得依存の欠落を先に返す。Issue #90 で、nil の拒否文言は取得依存が必要であることだけを表すように整えた。拒否の条件・優先順とゼロ値・原因は維持する。
+状態生成で App ID を確認する。nil の取得依存は正常な入力エラーとして扱わず、生成済みの依存を渡す事前条件への違反となる。生成・更新側と静的検査の責務は [ADR-0019](../adr/0019-construction-contracts.md) に記載する。
 
 `CollectionOptionsConfig` は公開フィールドを持つ未検証の設定、`CollectionOptions` は非公開フィールドで有効な条件を保持する値とする。`NewCollectionOptions(config)` が通信なしで既定値と検査・正規化を適用し、入力を変更せずコピーを保持する。不正時はゼロ値と `ErrInvalidArgument` を保持するエラーを返す。呼び出し側はエラーを処理してから収集操作へ渡す。公開の NormalizeCollectionOptions は生成 API へ移行し、互換ラッパーは残さない。
 
@@ -49,7 +49,7 @@
 
 ## 収集状態の境界（Issue #58）
 
-steam/domain の CollectionState は結果・既読 ID・既読カーソルと次の取得条件を非公開で持つ。NewCollectionState が正の App ID を検査し、有効な CollectionOptions の設定コピーを保持する。状態のゼロ値は使用しない。条件の検査・正規化は NewCollectionOptions で完了しており、状態では繰り返さない。CollectReviews は取得依存を確認してから状態を生成し、App ID の検査を重複させない。不正入力の戻り値と ErrInvalidArgument の原因識別は維持する。
+steam/domain の CollectionState は結果・既読 ID・既読カーソルと次の取得条件を非公開で持つ。NewCollectionState が正の App ID を検査し、有効な CollectionOptions の設定コピーを保持する。状態のゼロ値は使用しない。条件の検査・正規化は NewCollectionOptions で完了しており、状態では繰り返さない。CollectReviews は生成済みの取得依存を受け取って状態を生成し、App ID の検査を重複させない。不正入力の戻り値と ErrInvalidArgument の原因識別は維持する。
 
 NextPage は次の条件と続行可否、AddPage は成功ページの反映と循環のエラー、Fail は取得や context 失敗の結果への反映を担当する。Issue #86 で、AddPage の重複排除は同じ CollectionState の非公開メソッド appendUnseenReviews に分離した。既読 ID の確認・登録と配列への追加をまとめ、終了判定の位置と優先順を維持する。終了後は NextPage がゼロ値と false を返し、AddPage と Fail は結果を変更しない。終了後の AddPage は nil を返す。
 

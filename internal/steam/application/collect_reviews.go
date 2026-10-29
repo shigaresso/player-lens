@@ -17,15 +17,13 @@ type PageFetcher interface {
 }
 
 // CollectReviews は先頭から上限付きでページを取得する。再試行と保存は行わない。
-// fetcher は有効な取得依存を渡す。入力不正ではゼロ値と ErrInvalidArgument を返す。
+// fetcher は生成成功した有効な取得依存を渡す。存在は生成・組み立て側で保証し、再検査しない。
+// App ID が不正ならゼロ値と ErrInvalidArgument を返す。
 // options は有効な収集条件を渡す。設定からの生成・検査は NewCollectionOptions が担当する。
 // 呼び出し側の短い期限を優先し、収集全体を最大2分とする。
 // 取得・循環・context の失敗では部分結果と StopFailed、原因を保持したエラーを返す。
+// nonnil(fetcher)
 func CollectReviews(ctx context.Context, fetcher PageFetcher, appID steamdomain.AppID, options steamdomain.CollectionOptions) (steamdomain.Collection, error) {
-	if fetcher == nil {
-		return steamdomain.Collection{}, fmt.Errorf("page fetcher is required: %w", steamdomain.ErrInvalidArgument)
-	}
-
 	state, err := steamdomain.NewCollectionState(appID, options)
 	if err != nil {
 		return steamdomain.Collection{}, fmt.Errorf("prepare Steam review collection: %w", err)

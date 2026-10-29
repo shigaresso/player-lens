@@ -2,6 +2,8 @@
 
 ## 状態
 
+Issue #105 の [ADR-0019](0019-construction-contracts.md) が NewHandler の未初期化チェックを生成側と静的検査の契約へ置き換える。以下の Issue #54 の記述は当時の判断として残す。
+
 採用。Issue #27 の方針を記録した。実装・検証の結果は [作業記録](../worklogs/27-mcp-usage-limits.md) を参照する。
 
 ## 背景と比較

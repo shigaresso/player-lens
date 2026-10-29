@@ -188,6 +188,71 @@ func (v *Value) Read() int { return v.number }
         print(f"生成契約: {name}と入力保持を確認した", flush=True)
 
 
+def verify_application_contracts(directory):
+    module = directory / "application"
+    module.mkdir()
+    tracked = subprocess.run(["git", "ls-files", "-z", "--", "go.mod", "go.sum", "cmd", "internal"],
+                             cwd=ROOT, capture_output=True, check=True).stdout
+    for name in tracked.decode().split("\0"):
+        if name:
+            destination = module / name
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(ROOT / name, destination)
+    server = module / "cmd/server/run_server.go"
+    server.write_text(server.read_text() + '''
+func invalidMCPFetcherProbe(config reviewmcp.HTTPConfig) error {
+    limits, err := serveradapter.ReadMCPLimits(os.Getenv)
+    if err != nil { return err }
+    _, err = reviewmcp.NewHandler(nil, limits, config)
+    return err
+}
+func invalidTypedMCPFetcherProbe(config reviewmcp.HTTPConfig) error {
+    limits, err := serveradapter.ReadMCPLimits(os.Getenv)
+    if err != nil { return err }
+    fetcher, cleanup, err := serveradapter.NewSteamFetcher()
+    if err != nil { return err }
+    defer cleanup()
+    fetcher = nil
+    _, err = reviewmcp.NewHandler(fetcher, limits, config)
+    return err
+}
+''')
+    collection = module / "internal/steam/application/collect_reviews.go"
+    collection.write_text(collection.read_text() + '''
+func invalidCollectionFetcherProbe() (steamdomain.Collection, error) {
+    return CollectReviews(context.Background(), nil, 440, steamdomain.CollectionOptions{})
+}
+func invalidCollectionStateProbe() { _ = steamdomain.CollectionState{} }
+''')
+    mcp_server = module / "internal/reviewmcp/adapter/server.go"
+    mcp_server.write_text(mcp_server.read_text() + '''
+func invalidControlledConstructionProbe() {
+    _ = mcpdomain.Limits{}
+    _ = HTTPConfig{}
+}
+''')
+    originals = {path: path.read_bytes() for path in module.rglob("*") if path.is_file()}
+    result = compose("run", "--rm", "--no-deps", "-T", "--volume", f"{module}:/src:ro",
+                     "lint", "contractcheck", "./...")
+    output = result.stdout + result.stderr
+    if result.returncode == 0 or any(
+            f"{name} の生成は定義ファイル" not in output
+            for name in ("Limits", "HTTPConfig", "CollectionState")):
+        raise RuntimeError(f"実アプリケーションの生成境界を拒否しなかった:\n{output}")
+    result = compose("run", "--rm", "--no-deps", "-T", "--volume", f"{module}:/src:ro",
+                     "lint", "nilaway", "-include-pkgs=github.com/shigaresso/player-lens",
+                     "-pretty-print=false", "-experimental-struct-init",
+                     "-group-error-messages=false", "./cmd/server", "./internal/steam/application")
+    output = result.stdout + result.stderr
+    if (result.returncode == 0 or output.count("NewHandler()") < 2 or
+            "CollectReviews()" not in output):
+        raise RuntimeError(f"実アプリケーションの必須引数を拒否しなかった:\n{output}")
+    if any(path.read_bytes() != source for path, source in originals.items()):
+        raise RuntimeError("実アプリケーションの契約検査で入力が変更された")
+    print("実アプリ: NewHandler の nil・型付き nil と CollectReviews の nil を拒否した", flush=True)
+    print("実アプリ: Limits・HTTPConfig・CollectionState の生成境界を検査した", flush=True)
+
+
 def main():
     result = compose("build", "verify", "lint")
     if result.returncode:
@@ -196,6 +261,7 @@ def main():
         root = Path(directory)
         verify_lint(root)
         verify_contracts(root)
+        verify_application_contracts(root)
         verify_staged_format(root)
         verify_format_commands(root)
 

@@ -33,6 +33,8 @@ healthz の NewHealthHandler は http.HandlerFunc(handler.Handle) を返す。HT
 
 ## SDK と middleware の境界
 
+NewHandler は引数の確認→共有 Limiter の生成→リクエストごとの Server 生成関数の準備→SDK HTTP Handler の生成→Protect の順に組み立てる。sharedLimiter は複数のリクエストで共有し、createServerForRequest は SDK が必要としたときに呼び出す関数として渡す。その呼び出しでリクエストの context と同じ sharedLimiter を newServer に渡す。sdkHTTPHandler が保護で包む対象を表す。
+
 MCP の HTTP エンベロープ・初期化・discover・tools/list・tools/call・未知の操作のディスパッチは固定版 SDK が実装する。newServer は Server の設定とツール登録、collection_definition.go は説明・schema・annotations を担当し、独自の SDK controller は追加しない。
 
 Issue #82 でローカル用・公開用の Access を Host 判定だけに絞り、HTTP 側の NewHTTPConfig に条件・文言・SDK 設定の生成をまとめた。公開／ローカルを選ぶ分岐はこの生成関数に1か所だけ置き、NewHandler と Protect は設定済みの値を使う。ProtectLocal は廃止した。Host/Origin 保護は mcpaccess/adapter に維持し、Host 拒否→cross-origin 保護→next の順序を変えない。未定義・子パス・旧 /mcp・OAuth metadata の404、healthz の未許可メソッドの405は既存ルーターに任せる。http.Handler を返すことだけで Controller と分類しない。Handle はこのアプリの Controller の実行メソッド名であり、Go 全体や SDK が要求する名称ではない。HTTP と MCP の引数・戻り値を統一する共通 interface は追加しない。

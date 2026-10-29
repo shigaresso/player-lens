@@ -5,6 +5,9 @@
 !cmd/**
 !internal/
 !internal/**
+!tools/
+!tools/**
+tools/bin/
 
 # 許可したソース配下にも環境ファイルを含めない
 **/.env

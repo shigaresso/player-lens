@@ -37,6 +37,7 @@ go.work.sum
 __pycache__/
 *.py[cod]
 .tools/
+/tools/bin/
 
 # Editor/IDE
 # .idea/

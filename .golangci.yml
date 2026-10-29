@@ -14,10 +14,13 @@ linters:
     - ineffassign
     - staticcheck
     - unused
+    - nilnil
     - wsl_v5
   settings:
     errcheck:
       check-blank: true
+    nilnil:
+      only-two: false
     wsl_v5:
       default: none
       enable:

@@ -9,8 +9,13 @@ CMD ["sh", "-c", "go build -o /tmp/player-lens ./cmd/server && exec /tmp/player-
 
 FROM golangci/golangci-lint:v2.14.0@sha256:ad862ba6b3798cbe0fd9fd7408d498fd74fbd2623a92406b2fd3898faf0bf98f AS lint-tool
 
+FROM development AS contract-tools
+COPY tools /opt/player-lens-tools
+RUN --mount=type=cache,target=/go-cache --mount=type=cache,target=/go/pkg/mod cd /opt/player-lens-tools && go build -mod=readonly -o /out/contractcheck ./cmd/contractcheck && go build -mod=readonly -o /out/nilaway go.uber.org/nilaway/cmd/nilaway
+
 FROM development AS lint
 COPY --from=lint-tool /usr/bin/golangci-lint /usr/local/bin/golangci-lint
+COPY --from=contract-tools /out/contractcheck /out/nilaway /usr/local/bin/
 
 FROM development AS build
 # MCP SDK を含む現在の依存は CGO 不要。依存を変更するときはこの設定を見直す。

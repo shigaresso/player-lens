@@ -51,6 +51,12 @@ func Run() error {
         ("不正な正規表現", "source.go",
          'package example\nimport "regexp"\nfunc Value() string { return regexp.MustCompile("[").String() }\n', "staticcheck"),
         ("無効な代入", "source.go", "package example\nfunc Value() int { value := 1; value = 2; return value }\n", "ineffassign"),
+        ("nil と成功を同時に返さない", "source.go",
+         "package example\ntype Value struct{}\nfunc New() (*Value, error) { return nil, nil }\n", "nilnil"),
+        ("後始末を含む生成関数の nil と成功を同時に返さない", "source.go",
+         "package example\ntype Value struct{}\nfunc New() (*Value, func(), error) { return nil, nil, nil }\n", "nilnil"),
+        ("生成エラーを空識別子へ捨てない", "source.go",
+         'package example\nimport "os"\nfunc Run() { _ = os.Chdir("/") }\n', "errcheck"),
         ("未使用コード", "source.go", "package example\nfunc unusedValue() int { return 1 }\n", "unused"),
         ("処理とエラー確認のセット", "source.go", error_group, None),
         ("処理とエラー確認の分断", "source.go",
@@ -74,7 +80,8 @@ func Run() error {
         path.write_text(source)
         try:
             result = compose("run", "--rm", "--no-deps", "-T", "--volume",
-                             f"{module}:/src:ro", "lint")
+                             f"{module}:/src:ro", "lint", "golangci-lint", "run",
+                             "--config", ".golangci.yml", "./...")
             if (expected is None and result.returncode != 0) or (expected is not None and
                     (result.returncode != 1 or f"({expected})" not in result.stdout + result.stderr)):
                 raise RuntimeError(f"{name} の判定が異なる:\n{result.stdout}\n{result.stderr}")
@@ -131,6 +138,56 @@ def verify_format_commands(directory):
     print("整形: 全体検査と明示的な修正を確認した", flush=True)
 
 
+def verify_contracts(directory):
+    module = directory / "contracts"
+    module.mkdir()
+    (module / "go.mod").write_text("module example.invalid/contracts\n\ngo 1.27.1\n")
+    value = """package example
+//contractcheck:controlled
+type Value struct{ number int }
+func New() *Value { return &Value{number: 1} }
+func (v *Value) Read() int { return v.number }
+"""
+    cases = [
+        ("生成済みの依存を確認せず利用できる", "contractcheck", value,
+         "package example\nfunc Run() int { return New().Read() }\n", None),
+        ("生成境界の迂回", "contractcheck", value,
+         "package example\nfunc Run() *Value { return &Value{} }\n", "生成は定義ファイル"),
+        ("定義ファイル外からのポインター更新", "contractcheck", value,
+         "package example\nfunc Run(v *Value) { v.number = 0 }\n", "更新は定義ファイル"),
+        ("nil にならない生成と利用", "nilaway", value,
+         "package example\nfunc Run() int { return New().Read() }\n", None),
+        ("関数をまたぐ nil の受け渡し", "nilaway",
+         "package example\ntype Value struct{ number int }\nfunc New() *Value { return nil }\n",
+         "package example\nfunc use(v *Value) int { return v.number }; func Run() int { return use(New()) }\n", "Potential nil panic"),
+        ("interface に入れた nil ポインターの受け渡し", "nilaway",
+         "package example\ntype Reader interface{ Read() int }; type Value struct{ number int }; func (v *Value) Read() int { return v.number }; func New() Reader { var v *Value; return v }\n",
+         "package example\nfunc Run() int { return New().Read() }\n", "Potential nil panic"),
+        ("生成後の更新で依存が nil になる経路", "nilaway",
+         "package example\ntype Value struct{ number *int }\nfunc New() *Value { return &Value{number: new(int)} }; func (v *Value) Reset() { v.number = nil }\n",
+         "package example\nfunc Run() int { v := New(); v.Reset(); return *v.number }\n", "Potential nil panic"),
+        ("map の存在しないキーからの nil", "nilaway", value,
+         'package example\nfunc Run() int { values := map[string]*Value{}; return values["missing"].Read() }\n', "Potential nil panic"),
+    ]
+    for name, tool, definition, usage, expected in cases:
+        files = {"value.go": definition, "use.go": usage}
+        for filename, source in files.items():
+            (module / filename).write_text(source)
+        command = [tool]
+        if tool == "nilaway":
+            command += ["-include-pkgs=example.invalid/contracts", "-pretty-print=false",
+                        "-experimental-struct-init"]
+        result = compose("run", "--rm", "--no-deps", "-T", "--volume",
+                         f"{module}:/src:ro", "lint", *command, "./...")
+        output = result.stdout + result.stderr
+        if (expected is None and result.returncode != 0) or (expected is not None and
+                (result.returncode == 0 or expected not in output)):
+            raise RuntimeError(f"{name} の判定が異なる:\n{output}")
+        if any((module / filename).read_text() != source for filename, source in files.items()):
+            raise RuntimeError(f"{name} の検査で入力が変更された")
+        print(f"生成契約: {name}と入力保持を確認した", flush=True)
+
+
 def main():
     result = compose("build", "verify", "lint")
     if result.returncode:
@@ -138,6 +195,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix="player lens go tools ") as directory:
         root = Path(directory)
         verify_lint(root)
+        verify_contracts(root)
         verify_staged_format(root)
         verify_format_commands(root)
 

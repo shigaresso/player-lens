@@ -22,7 +22,6 @@ type PageFetcher interface {
 // options は有効な収集条件を渡す。設定からの生成・検査は NewCollectionOptions が担当する。
 // 呼び出し側の短い期限を優先し、収集全体を最大2分とする。
 // 取得・循環・context の失敗では部分結果と StopFailed、原因を保持したエラーを返す。
-// nonnil(fetcher)
 func CollectReviews(ctx context.Context, fetcher PageFetcher, appID steamdomain.AppID, options steamdomain.CollectionOptions) (steamdomain.Collection, error) {
 	state, err := steamdomain.NewCollectionState(appID, options)
 	if err != nil {

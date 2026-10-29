@@ -10,7 +10,7 @@
 
 ## 入力と正規化
 
-`CollectReviews(ctx, fetcher, appID, options)` は正の App ID、利用可能な取得依存と非 nil の context を受ける。options は有効な `CollectionOptions` を渡す。App ID が0なら通信せず、`Collection{}` と `ErrInvalidArgument` を返す。取得依存の存在は生成・組み立て側の契約とし、利用不能な interface を渡さない責務は呼び出し側にある。Issue #105 で利用側の nil 再検査を削除し、静的解析で危険な受け渡しを検査する。
+`CollectReviews(ctx, fetcher, appID, options)` は正の App ID、利用可能な取得依存と非 nil の context を受ける。options は有効な `CollectionOptions` を渡す。App ID が0なら通信せず、`Collection{}` と `ErrInvalidArgument` を返す。取得依存の存在は生成・組み立て側の契約とし、利用不能な interface を渡さない責務は呼び出し側にある。Issue #105 で利用側の nil 再検査を削除した。現在の静的解析は対象型の生成・更新境界を検査し、取得依存の非 nil は生成・組み立て側と呼び出し元の契約とする。
 
 状態生成で App ID を確認する。nil の取得依存は正常な入力エラーとして扱わず、生成済みの依存を渡す事前条件への違反となる。生成・更新側と静的検査の責務は [ADR-0019](../adr/0019-construction-contracts.md) に記載する。
 

@@ -51,10 +51,6 @@ func Run() error {
         ("不正な正規表現", "source.go",
          'package example\nimport "regexp"\nfunc Value() string { return regexp.MustCompile("[").String() }\n', "staticcheck"),
         ("無効な代入", "source.go", "package example\nfunc Value() int { value := 1; value = 2; return value }\n", "ineffassign"),
-        ("nil と成功を同時に返さない", "source.go",
-         "package example\ntype Value struct{}\nfunc New() (*Value, error) { return nil, nil }\n", "nilnil"),
-        ("後始末を含む生成関数の nil と成功を同時に返さない", "source.go",
-         "package example\ntype Value struct{}\nfunc New() (*Value, func(), error) { return nil, nil, nil }\n", "nilnil"),
         ("生成エラーを空識別子へ捨てない", "source.go",
          'package example\nimport "os"\nfunc Run() { _ = os.Chdir("/") }\n', "errcheck"),
         ("未使用コード", "source.go", "package example\nfunc unusedValue() int { return 1 }\n", "unused"),
@@ -149,36 +145,19 @@ func New() *Value { return &Value{number: 1} }
 func (v *Value) Read() int { return v.number }
 """
     cases = [
-        ("生成済みの依存を確認せず利用できる", "contractcheck", value,
+        ("生成関数を通した値の利用", value,
          "package example\nfunc Run() int { return New().Read() }\n", None),
-        ("生成境界の迂回", "contractcheck", value,
+        ("生成境界の迂回", value,
          "package example\nfunc Run() *Value { return &Value{} }\n", "生成は定義ファイル"),
-        ("定義ファイル外からのポインター更新", "contractcheck", value,
+        ("定義ファイル外からのポインター更新", value,
          "package example\nfunc Run(v *Value) { v.number = 0 }\n", "更新は定義ファイル"),
-        ("nil にならない生成と利用", "nilaway", value,
-         "package example\nfunc Run() int { return New().Read() }\n", None),
-        ("関数をまたぐ nil の受け渡し", "nilaway",
-         "package example\ntype Value struct{ number int }\nfunc New() *Value { return nil }\n",
-         "package example\nfunc use(v *Value) int { return v.number }; func Run() int { return use(New()) }\n", "Potential nil panic"),
-        ("interface に入れた nil ポインターの受け渡し", "nilaway",
-         "package example\ntype Reader interface{ Read() int }; type Value struct{ number int }; func (v *Value) Read() int { return v.number }; func New() Reader { var v *Value; return v }\n",
-         "package example\nfunc Run() int { return New().Read() }\n", "Potential nil panic"),
-        ("生成後の更新で依存が nil になる経路", "nilaway",
-         "package example\ntype Value struct{ number *int }\nfunc New() *Value { return &Value{number: new(int)} }; func (v *Value) Reset() { v.number = nil }\n",
-         "package example\nfunc Run() int { v := New(); v.Reset(); return *v.number }\n", "Potential nil panic"),
-        ("map の存在しないキーからの nil", "nilaway", value,
-         'package example\nfunc Run() int { values := map[string]*Value{}; return values["missing"].Read() }\n', "Potential nil panic"),
     ]
-    for name, tool, definition, usage, expected in cases:
+    for name, definition, usage, expected in cases:
         files = {"value.go": definition, "use.go": usage}
         for filename, source in files.items():
             (module / filename).write_text(source)
-        command = [tool]
-        if tool == "nilaway":
-            command += ["-include-pkgs=example.invalid/contracts", "-pretty-print=false",
-                        "-experimental-struct-init"]
         result = compose("run", "--rm", "--no-deps", "-T", "--volume",
-                         f"{module}:/src:ro", "lint", *command, "./...")
+                         f"{module}:/src:ro", "lint", "contractcheck", "./...")
         output = result.stdout + result.stderr
         if (expected is None and result.returncode != 0) or (expected is not None and
                 (result.returncode == 0 or expected not in output)):
@@ -198,32 +177,8 @@ def verify_application_contracts(directory):
             destination = module / name
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(ROOT / name, destination)
-    server = module / "cmd/server/run_server.go"
-    server.write_text(server.read_text() + '''
-func invalidMCPFetcherProbe(config reviewmcp.HTTPConfig) error {
-    limits, err := serveradapter.ReadMCPLimits(os.Getenv)
-    if err != nil { return err }
-    _, err = reviewmcp.NewHandler(nil, limits, config)
-    return err
-}
-func invalidTypedMCPFetcherProbe(config reviewmcp.HTTPConfig) error {
-    limits, err := serveradapter.ReadMCPLimits(os.Getenv)
-    if err != nil { return err }
-    fetcher, cleanup, err := serveradapter.NewSteamFetcher()
-    if err != nil { return err }
-    defer cleanup()
-    fetcher = nil
-    _, err = reviewmcp.NewHandler(fetcher, limits, config)
-    return err
-}
-''')
     collection = module / "internal/steam/application/collect_reviews.go"
-    collection.write_text(collection.read_text() + '''
-func invalidCollectionFetcherProbe() (steamdomain.Collection, error) {
-    return CollectReviews(context.Background(), nil, 440, steamdomain.CollectionOptions{})
-}
-func invalidCollectionStateProbe() { _ = steamdomain.CollectionState{} }
-''')
+    collection.write_text(collection.read_text() + "\nfunc invalidCollectionStateProbe() { _ = steamdomain.CollectionState{} }\n")
     mcp_server = module / "internal/reviewmcp/adapter/server.go"
     mcp_server.write_text(mcp_server.read_text() + '''
 func invalidControlledConstructionProbe() {
@@ -239,17 +194,8 @@ func invalidControlledConstructionProbe() {
             f"{name} の生成は定義ファイル" not in output
             for name in ("Limits", "HTTPConfig", "CollectionState")):
         raise RuntimeError(f"実アプリケーションの生成境界を拒否しなかった:\n{output}")
-    result = compose("run", "--rm", "--no-deps", "-T", "--volume", f"{module}:/src:ro",
-                     "lint", "nilaway", "-include-pkgs=github.com/shigaresso/player-lens",
-                     "-pretty-print=false", "-experimental-struct-init",
-                     "-group-error-messages=false", "./cmd/server", "./internal/steam/application")
-    output = result.stdout + result.stderr
-    if (result.returncode == 0 or output.count("NewHandler()") < 2 or
-            "CollectReviews()" not in output):
-        raise RuntimeError(f"実アプリケーションの必須引数を拒否しなかった:\n{output}")
     if any(path.read_bytes() != source for path, source in originals.items()):
         raise RuntimeError("実アプリケーションの契約検査で入力が変更された")
-    print("実アプリ: NewHandler の nil・型付き nil と CollectReviews の nil を拒否した", flush=True)
     print("実アプリ: Limits・HTTPConfig・CollectionState の生成境界を検査した", flush=True)
 
 

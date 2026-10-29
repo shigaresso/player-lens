@@ -47,7 +47,7 @@
 | [ADR-0016：MCP の応答完了と同時枠](adr/0016-mcp-response-slot-lifetime.md) | 結果処理の同期実行と同時枠の保持・返却、レイヤー間の連携 | 採用。応答変換完了まで枠を保持する構成に修復した。[検証記録](worklogs/62-mcp-response-slot-lifetime.md) に実施結果を残す |
 | [ADR-0017：生存確認の構造化ログ](adr/0017-health-structured-logging.md) | healthz の生成と経路登録、完了イベント、slog と context、出力と保存の責務 | 採用。ログ導入は Issue #72、生成と登録の分離は Issue #74 の作業記録に記載する |
 | [ADR-0018：検証済みサーバーポート](adr/0018-validated-server-port.md) | PORT の生成時の検査、ゼロ値と既定値、待ち受けアドレス構築との境界 | 採用。Issue #99 の実装・検証は [作業記録](worklogs/99-validated-port-number.md) に記載する |
-| [ADR-0019：生成・更新と依存の契約](adr/0019-construction-contracts.md) | 生成・更新境界の型情報による検査、nil の解析、利用側の事前条件 | 採用。Issue #105 で初回3型への適用とローカル検証を確認した。[作業記録](worklogs/105-construction-contracts.md) に検出限界と未実施の実 CI を記録する |
+| [ADR-0019：生成・更新と依存の契約](adr/0019-construction-contracts.md) | 生成・更新境界の型情報による検査、利用側の事前条件 | 採用。Issue #105 で初回3型への適用とローカル検証を確認した。[作業記録](worklogs/105-construction-contracts.md) に検出限界と未実施の実 CI を記録する |
 
 変更が複数の範囲にまたがる場合は、対応する文書をすべて読む。参照した節と ADR、要件に対応する検証を Issue・PR に記録する。ADR を追加・置換するときは、この一覧と適用範囲を更新する。
 

@@ -20,7 +20,6 @@ const maxRequestBodyBytes = 16 * 1024
 // HTTP クライアントと接続プールの終了は呼び出し側が担当する。
 // config は NewHTTPConfig で生成し、ローカル用・公開用ともに渡す。
 // 未生成の依存・設定は呼び出し側の契約違反とし、利用側では再検査しない。許可 Host から認証なしで受け付ける。
-// nonnil(fetcher)
 func NewHandler(fetcher steamapplication.PageFetcher, limits mcpdomain.Limits, config HTTPConfig) (http.Handler, error) {
 	gate := mcpdomain.NewLimiter(limits, time.Now)
 	return config.newHandler(func(request *http.Request) *mcp.Server {

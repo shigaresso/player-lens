@@ -1,6 +1,10 @@
 # Issue #105：生成・更新の境界と依存の契約
 
-## 対象と設計
+## 現在の採用範囲
+
+ユーザーの追加指示により nilnil と NilAway はいったん外す。生成・更新境界の contractcheck、既存の errcheck・lint・テストは維持する。以下の導入時の評価・検証は削除前に実施した記録であり、現在の検査に含まれていることを意味しない。削除後の結果は末尾へ追記する。
+
+## 対象と設計（当初の導入）
 
 Issue: https://github.com/shigaresso/player-lens/issues/105
 
@@ -33,7 +37,7 @@ SDK callback に fetcher を保持する NewHandler では、通常の nil フ�
 
 NewHandler と CollectReviews に NilAway の nonnil(fetcher) 注釈を追加し、必要な依存が存在する契約を呼び出し位置で明示した。SDK や callback の内部への推論だけに依存しない。NewHandler の nil と、生成後に nil にしたポインターを interface に渡すケース、CollectReviews の nil をいずれも検出した。実アプリケーションの一時コピーへの違反挿入を verify_go_tools.py に残し、3つの型の対象宣言と必須引数の注釈・設定が失われた場合も検査が失敗するようにした。作業ツリーや入力ファイルを書き換えない。
 
-## 最終検証
+## 当初の導入時の検証（2ツールの削除前）
 
 ローカルの Docker Compose、Go 1.27.1、linux/arm64 で確認した。
 
@@ -56,3 +60,21 @@ Limits の失敗値は NewLimits の結果を伝播し、数値解析の原因�
 対象は明示した3型から始め、ゼロ値が有効な型や未検証の入力 DTO は一律禁止しない。配置と nil の検査だけで、更新内容の業務不変条件や全 nil panic を完全証明したとは扱わない。通常の go test ./... は独立モジュールを含まないため、共通 lint 内で検査モジュールの vet・テスト・lint を別に実行した。
 
 実 Steam・LLM・Render・GitHub CI は実行していない。coverage 閾値・分岐・mutation は現在未導入であり、Stryker を実行したとは記載しない。push・PR 作成・Issue のクローズは行わず、検査基盤とアプリケーションの契約移行をローカルコミットに分ける。
+
+## nilnil・NilAway の削除
+
+ユーザーの追加指示を Issue #105 に反映し、nilnil の有効化・設定と専用 fixture、NilAway の実行・ビルド・依存と不要な間接依存、nonnil(fetcher) 注釈と専用の違反 probe を削除した。golangci-lint の固定した配布バイナリ自体は維持するため、同梱された未使用の nilnil 実装を取り除く独自ビルドは行わない。有効な検査から外した。
+
+contractcheck の実装・対象3型・ユニットテスト・実 CLI の正常/拒否/入力保持と実ソースの生成違反の検証を維持した。生成成功した依存を渡す事前条件と、利用側の存在確認を繰り返さない方針は維持し、存在確認の再追加や新しい自作禁止ルールの追加は行っていない。一般的な nil の流れ、nil と成功の同時返却、利用側の引数の nil 再検査を機械的に禁止する専用ルールは未導入である。
+
+削除後もローカルの Docker Compose、Go 1.27.1、linux/arm64 で確認した。振る舞いを増やさない削除のため、形式だけの Red は追加しなかった。
+
+| コマンド・確認 | 結果 |
+| --- | --- |
+| bash scripts/check.sh | Python 182件、空白・シェル構文・Lefthook・actionlint が成功した |
+| bash scripts/check-app.sh | 全パッケージの gofmt・vet・ユニットテスト、共通 lint、結合テストを含む race、本番用イメージが成功した。アプリケーションと検査モジュールの lint はともに0件だった |
+| python3 scripts/verify_go_tools.py | 既存 lint、contractcheck の正常・拒否・入力保持、実ソースの3型の違反、ステージ済み整形・部分ステージ保持・明示的な整形修正を確認した |
+| 削除と残存ツール | 実行・ビルド・依存・注釈の参照が残っていないことを検索した。検証用イメージで contractcheck が存在し、NilAway が存在せず、nilnil が有効な lint に含まれないことを確認した。独立モジュールを tidy し、不要な依存を削除した |
+| 文書と差分 | 変更した Markdown のローカルリンク133件（アンカーを除く）、開発手順の変更したアンカー、git diff --check を確認した。端末のホーム絶対パスを変更内容へ含めなかった |
+
+本番用 image ID は `sha256:75cfb3c6cb3e3de91a18b67f9822733c5a7a2f9f65f04ddb977f741e365b8ac2`。同じイメージで PORT=8080/10000、HTTP・MCP、ローカル・公開の保護、不正設定の非0終了と公開 URL の非表示、SIGINT/SIGTERM の正常終了を確認した。contractcheck の実装・テストは変更していない。必須 pre-commit・commit-msg はローカルコミット時にも実行する。GitHub CI・実 Steam・LLM・Render は未実行であり、push・PR 作成・Issue のクローズは行わない。

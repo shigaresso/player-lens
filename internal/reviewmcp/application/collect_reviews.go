@@ -15,6 +15,8 @@ const toolTimeout = 8 * time.Second
 // Result は収集結果、受付の拒否理由、取得の失敗を分けて保持する。
 // 拒否時は Err が nil で、Collection に入力条件と失敗の終了理由を保持する。
 // 取得の失敗は Err に元の原因と Collection に部分結果を保持する。
+//
+//contractcheck:data 収集・受付・応答変換の間で結果と原因を受け渡すデータ
 type Result struct {
 	Collection steamdomain.Collection
 	Rejection  mcpdomain.RejectionReason

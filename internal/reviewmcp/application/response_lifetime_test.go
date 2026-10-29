@@ -37,7 +37,7 @@ func TestCollectReviewsResponseLifetime(t *testing.T) {
 				return steamdomain.ReviewPage{}, tc.fetchErr
 			})
 			responses := 0
-			err = mcpapplication.CollectReviews(t.Context(), fetcher, 440, steamdomain.CollectionOptions{}, gate, func(result mcpapplication.Result) error {
+			err = mcpapplication.CollectReviews(t.Context(), fetcher, 440, steamdomain.DefaultCollectionOptions(), gate, func(result mcpapplication.Result) error {
 				responses++
 				if !errors.Is(result.Err, tc.fetchErr) || result.Rejection != mcpdomain.NotRejected || result.Collection.AppID != 440 {
 					t.Errorf("result=%+v", result)
@@ -112,7 +112,7 @@ func TestCollectReviewsResponseFailureWithoutAcquisition(t *testing.T) {
 			err = mcpapplication.CollectReviews(ctx, fetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				t.Fatal("受付していない収集で取得した")
 				return steamdomain.ReviewPage{}, nil
-			}), 440, steamdomain.CollectionOptions{}, gate, func(result mcpapplication.Result) error {
+			}), 440, steamdomain.DefaultCollectionOptions(), gate, func(result mcpapplication.Result) error {
 				responses++
 				if tc.cancelled {
 					if !errors.Is(result.Err, context.Canceled) || result.Rejection != mcpdomain.NotRejected {

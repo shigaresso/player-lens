@@ -43,7 +43,7 @@ func TestNewCollectionOptions(t *testing.T) {
 			}
 
 			if tt.invalid {
-				if got != (steamdomain.CollectionOptions{}) {
+				if got != (steamdomain.DefaultCollectionOptions()) {
 					t.Fatalf("拒否時の値=%#v", got)
 				}
 

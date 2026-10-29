@@ -11,10 +11,14 @@ import (
 
 // Saver は収集結果を JSON と改行にして writer へ出力する。
 // NewSaver で組み立てる。共有 writer への同時書き込みの同期は呼び出し側が担当する。
+//
+//contractcheck:controlled
 type Saver struct{ writer io.Writer }
 
 // NewSaver は利用可能な writer を受け取る。nil は拒否する。
 // writer の Close は呼び出し側が担当し、Saver は所有権を引き継がない。
+//
+//contractcheck:constructor
 func NewSaver(writer io.Writer) (*Saver, error) {
 	if writer == nil {
 		return nil, errors.New("JSON output writer is required")

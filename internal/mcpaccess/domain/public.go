@@ -9,6 +9,8 @@ import (
 )
 
 // publicAccess は検査済みの公開 authority を保持する。
+//
+//contractcheck:controlled
 type publicAccess struct {
 	authority string
 }

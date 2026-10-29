@@ -14,7 +14,7 @@ func NewSteamFetcher() (*steamadapter.Client, func(), error) {
 	fetcher, err := steamadapter.NewClient(&http.Client{Transport: transport, Timeout: 10 * time.Second}, "")
 	if err != nil {
 		transport.CloseIdleConnections()
-		return nil, nil, err
+		return fetcher, nil, err
 	}
 
 	return fetcher, transport.CloseIdleConnections, nil

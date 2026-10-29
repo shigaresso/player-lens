@@ -8,6 +8,8 @@ import (
 
 // LimitsConfig は未検証の収集開始回数・同時実行数の設定値を表す。
 // 各値は正の整数とし、利用する前に NewLimits へ渡す。
+//
+//contractcheck:data 生成前の環境設定を検査するための入力データ
 type LimitsConfig struct {
 	RequestsPerMinute int
 	RequestsPerDay    int

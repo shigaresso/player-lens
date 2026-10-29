@@ -33,7 +33,7 @@ func TestMCPResultResponse(t *testing.T) {
 		} {
 			t.Run(version+"で"+tc.name, func(t *testing.T) {
 				var calls atomic.Int32
-				handler, err := NewHandler(testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+				handler := NewHandler(testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 					call := calls.Add(1)
 					if tc.code == "response_too_large" {
 						return steamdomain.ReviewPage{Reviews: []steamdomain.Review{{RecommendationID: 10, Text: strings.Repeat("x", 70000)}}, NextCursor: "next"}, nil
@@ -49,9 +49,6 @@ func TestMCPResultResponse(t *testing.T) {
 
 					return steamdomain.ReviewPage{}, nil
 				}), mcpdomain.DefaultLimits(), localHTTPConfig(t))
-				if err != nil {
-					t.Fatal(err)
-				}
 
 				server := httptest.NewServer(handler)
 				t.Cleanup(server.Close)

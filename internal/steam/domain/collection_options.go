@@ -10,6 +10,8 @@ const MaxCollectionPages = 100
 
 // CollectionOptionsConfig は未検証の収集条件と表示用の設定コピーを表す。
 // ゼロ値の入力は全評価・英語・100件/ページ・1000件・100ページの指定となる。
+//
+//contractcheck:data 生成前の入力と表示用の設定コピーを表すデータ
 type CollectionOptionsConfig struct {
 	ReviewType ReviewType
 	Language   string
@@ -56,6 +58,8 @@ func normalizeCollectionOptions(options CollectionOptionsConfig) (CollectionOpti
 // CollectionOptions は生成時に検査・正規化した有効な収集条件を保持する。
 // ゼロ値も全評価・英語・100件/ページ・1000件・100ページの有効な条件を表す。
 // 設定の取得には Config を使い、変更する場合は新しい値を生成する。
+//
+//contractcheck:controlled
 type CollectionOptions struct {
 	config CollectionOptionsConfig
 }
@@ -88,4 +92,10 @@ func (options CollectionOptions) Config() CollectionOptionsConfig {
 
 func defaultCollectionOptionsConfig() CollectionOptionsConfig {
 	return CollectionOptionsConfig{ReviewType: ReviewTypeAll, Language: "english", PageSize: MaxPageSize, MaxReviews: 1000, MaxPages: MaxCollectionPages}
+}
+
+// DefaultCollectionOptions は有効な既定の収集条件を生成する。
+// 内部のゼロ表現を返し、Config は全評価・英語・100件/ページ・1000件・100ページを返す。
+func DefaultCollectionOptions() CollectionOptions {
+	return CollectionOptions{}
 }

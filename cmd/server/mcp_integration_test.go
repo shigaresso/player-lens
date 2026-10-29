@@ -44,10 +44,7 @@ func TestMCPShutdownWaitsForActiveCollection(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	mcpHandler, err := reviewmcp.NewHandler(fetcher, mcpdomain.DefaultLimits(), config)
-	if err != nil {
-		t.Fatal(err)
-	}
+	mcpHandler := reviewmcp.NewHandler(fetcher, mcpdomain.DefaultLimits(), config)
 
 	healthHandler := serverhandler.NewHealthHandler(slog.New(slog.NewJSONHandler(io.Discard, nil)), time.Now)
 	router := http.NewServeMux()

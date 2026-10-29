@@ -39,13 +39,10 @@ func TestPublicMCPProtocolsAndSharedBudget(t *testing.T) {
 			}
 
 			var calls atomic.Int32
-			handler, err := NewHandler(testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+			handler := NewHandler(testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				calls.Add(1)
 				return steamdomain.ReviewPage{Reviews: []steamdomain.Review{{RecommendationID: 16, Text: "分析用の本文"}}, NextCursor: "next"}, nil
 			}), testutil.Limits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 1, RequestsPerDay: 10, MaxConcurrent: 1}), config)
-			if err != nil {
-				t.Fatal(err)
-			}
 
 			server := httptest.NewServer(handler)
 			t.Cleanup(server.Close)

@@ -32,6 +32,8 @@ func ReadMCPLimits(getenv func(string) string) (mcpdomain.Limits, error) {
 }
 
 // mcpLimitsInput は環境変数から取得済みの未解析の文字列を保持する。
+//
+//contractcheck:data 環境変数から読み取った未検証の文字列入力
 type mcpLimitsInput struct {
 	requestsPerMinute string
 	requestsPerDay    string

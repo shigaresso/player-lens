@@ -12,6 +12,8 @@ import (
 
 // collectReviewsHandler は HTTP リクエストごとの固定の依存を保持する。
 // 呼び出しごとの context は Handle 内で所有し、フィールドを書き換えない。
+//
+//contractcheck:controlled
 type collectReviewsHandler struct {
 	fetcher        steamapplication.PageFetcher
 	requestContext context.Context

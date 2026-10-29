@@ -1,6 +1,8 @@
 package domain
 
 // Review は Steam の数値 ID と本文、推薦、作成・更新の UNIX 秒を保持する。
+//
+//contractcheck:data 取得と表示の間でレビューの項目を受け渡すデータ
 type Review struct {
 	RecommendationID RecommendationID
 	Text             string           `json:"review"`
@@ -11,6 +13,8 @@ type Review struct {
 }
 
 // ReviewPage は取得条件とレビュー、次のカーソルを保持する。空ページも成功となる。
+//
+//contractcheck:data 取得 adapter が生成した応答と取得条件を受け渡すデータ
 type ReviewPage struct {
 	AppID      AppID
 	Options    PageOptions
@@ -19,6 +23,8 @@ type ReviewPage struct {
 }
 
 // StopReason は収集の終了理由を表す。上限到達は全件の取得完了を意味しない。
+//
+//contractcheck:data 収集の終了状態を表示・保存へ受け渡す識別値
 type StopReason string
 
 const (
@@ -35,6 +41,8 @@ const (
 // Collection は収集結果を表す。Reviews は同じ ID の最初の本文を取得順に保持する。
 // PagesFetched は空ページを含む取得成功ページ数で、失敗したページは含まない。
 // Options は元の条件のコピーを保持する。空の Collection では未指定のままとする。
+//
+//contractcheck:data 収集結果のコピーと表示・保存・失敗結果への変換に使うデータ
 type Collection struct {
 	AppID        AppID
 	Options      CollectionOptionsConfig

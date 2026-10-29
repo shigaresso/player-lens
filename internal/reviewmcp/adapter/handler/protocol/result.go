@@ -12,6 +12,7 @@ import (
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
 )
 
+//contractcheck:data MCP の JSON 出力形式への対応を表すデータ
 type toolOutput struct {
 	Collection     json.RawMessage `json:"collection"`
 	ReturnedCount  int             `json:"returned_count"`
@@ -28,6 +29,8 @@ const maxResultBytes = 128 * 1024
 var ErrResponseTooLarge = errors.New("MCP collection response exceeds size limit")
 
 // toolResultEncodingError は公開する文言と内部の原因を分けた応答生成エラー。
+//
+//contractcheck:data 公開文言と内部の原因を分離して返すエラーデータ
 type toolResultEncodingError struct {
 	cause error
 }

@@ -35,32 +35,16 @@ func TestCollectAndSaveReviews(t *testing.T) {
 }
 
 func TestCollectAndSaveReviewsInvalidInput(t *testing.T) {
-	for _, test := range []struct {
-		name     string
-		appID    steamdomain.AppID
-		options  steamdomain.CollectionOptionsConfig
-		nilSaver bool
-	}{
-		{"AppIDが0ならI/Oしない", 0, steamdomain.CollectionOptionsConfig{}, false},
-		{"保存先がnilならI/Oしない", 440, steamdomain.CollectionOptionsConfig{}, true},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			fetcher := pageFetcherFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
-				t.Fatal("入力不正で取得した")
-				return steamdomain.ReviewPage{}, nil
-			})
-			var saver steamapplication.CollectionSaver = collectionSaverFunc(func(context.Context, steamdomain.Collection) error {
-				t.Fatal("入力不正で保存した")
-				return nil
-			})
-			if test.nilSaver {
-				saver = nil
-			}
-
-			result, err := steamapplication.CollectAndSaveReviews(t.Context(), fetcher, saver, test.appID, collectionOptions(t, test.options))
-			if !errors.Is(err, steamdomain.ErrInvalidArgument) || !reflect.DeepEqual(result, steamdomain.Collection{}) {
-				t.Fatalf("result=%+v err=%v", result, err)
-			}
-		})
+	fetcher := pageFetcherFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+		t.Fatal("入力不正で取得した")
+		return steamdomain.ReviewPage{}, nil
+	})
+	saver := collectionSaverFunc(func(context.Context, steamdomain.Collection) error {
+		t.Fatal("入力不正で保存した")
+		return nil
+	})
+	result, err := steamapplication.CollectAndSaveReviews(t.Context(), fetcher, saver, 0, steamdomain.DefaultCollectionOptions())
+	if !errors.Is(err, steamdomain.ErrInvalidArgument) || !reflect.DeepEqual(result, steamdomain.Collection{}) {
+		t.Fatalf("result=%+v err=%v", result, err)
 	}
 }

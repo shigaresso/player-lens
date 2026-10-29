@@ -1,6 +1,7 @@
 package adapter_test
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 
@@ -35,7 +36,7 @@ func TestNewValidatedPortNumber(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := serveradapter.NewValidatedPortNumber(tt.input)
 			if tt.wantErr {
-				if err == nil || !strings.Contains(err.Error(), "PORT は1〜65535の数字で指定する:") || got != (serveradapter.ValidatedPortNumber{}) {
+				if err == nil || !strings.Contains(err.Error(), "PORT は1〜65535の数字で指定する:") || !reflect.ValueOf(got).IsZero() {
 					t.Fatalf("不正な入力ではゼロ値とPORTの説明を返す: port=%v err=%v", got, err)
 				}
 
@@ -64,7 +65,11 @@ func TestValidatedPortNumberDefaults(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var defaultPort serveradapter.ValidatedPortNumber
+			defaultPort, err := serveradapter.NewValidatedPortNumber("")
+			if err != nil {
+				t.Fatal(err)
+			}
+
 			got, err := serveradapter.NewValidatedPortNumber(tt.input)
 			if err != nil {
 				t.Fatal(err)

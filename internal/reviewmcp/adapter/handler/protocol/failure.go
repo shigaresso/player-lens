@@ -9,6 +9,8 @@ import (
 
 // toolFailureInfo は MCP ツールの失敗について公開するコードと説明文を表す。
 // 元のエラーは呼び出し側が別途保持し、ゼロ値は公開する失敗情報がないことを表す。
+//
+//contractcheck:data 公開する失敗コードと説明を受け渡すデータ
 type toolFailureInfo struct {
 	code    string
 	message string

@@ -51,7 +51,7 @@ func NewHTTPConfig(publicURL string) (HTTPConfig, error) {
 	}, nil
 }
 
-func (config HTTPConfig) newHandler(getServer func(*http.Request) *mcp.Server) (http.Handler, error) {
+func (config HTTPConfig) newHandler(getServer func(*http.Request) *mcp.Server) http.Handler {
 	handler := mcp.NewStreamableHTTPHandler(getServer, &config.sdkOptions)
 	return accessadapter.Protect(config.access, config.deniedMessage, handler)
 }

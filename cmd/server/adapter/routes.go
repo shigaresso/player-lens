@@ -11,6 +11,8 @@ import (
 // 登録は受付開始前に行い、競合するパターンは事前に登録しない。
 // 重複登録などの不正な登録は標準の http.ServeMux と同じく panic する。
 // mux と handler の生成・実行、サーバーの起動と終了は呼び出し側が担当する。
+//
+//contractcheck:optional mcpHandler nil の場合は tools の経路を登録しない
 func RegisterRoutes(mux *http.ServeMux, healthHandler, mcpHandler http.Handler) {
 	if mcpHandler != nil {
 		mux.Handle("/tools", mcpHandler)

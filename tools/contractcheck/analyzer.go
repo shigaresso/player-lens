@@ -1,4 +1,4 @@
-// Package contractcheck は明示した型の生成・更新境界を検査する。
+// Package contractcheck は本番型の分類・生成と更新の境界・利用側の引数の再検査を検査する。
 package contractcheck
 
 import (
@@ -19,7 +19,7 @@ func (*boundaryFact) AFact() {}
 
 func (f *boundaryFact) String() string { return "controlled in " + f.File }
 
-// Analyzer は contractcheck:controlled を付けた型の生成位置を検査する。
+// Analyzer は保証対象型の生成・更新位置と利用側の再検査、本番型の分類漏れを検査する。
 var Analyzer = &analysis.Analyzer{
 	Name:       "contractcheck",
 	Doc:        "生成と更新を対象型の定義ファイルに限定する",
@@ -31,44 +31,14 @@ var Analyzer = &analysis.Analyzer{
 func run(pass *analysis.Pass) (any, error) {
 	definitions := make(map[string]string)
 	for _, file := range pass.Files {
-		for _, decl := range file.Decls {
-			group, ok := decl.(*ast.GenDecl)
-			if !ok {
-				continue
-			}
-
-			for _, spec := range group.Specs {
-				s, ok := spec.(*ast.TypeSpec)
-				if !ok || !marked(group.Doc, s.Doc) {
-					continue
-				}
-
-				obj := pass.TypesInfo.Defs[s.Name]
-				structure, ok := obj.Type().Underlying().(*types.Struct)
-				if !ok {
-					pass.Reportf(s.Pos(), "対象型は struct とする")
-					continue
-				}
-
-				valid := true
-				for i := 0; i < structure.NumFields(); i++ {
-					if structure.Field(i).Exported() {
-						valid = false
-					}
-				}
-
-				if !valid {
-					pass.Reportf(s.Pos(), "対象型のフィールドは非公開にする")
-					continue
-				}
-
-				pass.ExportObjectFact(obj, &boundaryFact{File: filepath.Base(pass.Fset.Position(s.Pos()).Filename)})
-				definitions[obj.Name()] = filepath.Base(pass.Fset.Position(s.Pos()).Filename)
-			}
-		}
+		registerTypes(pass, file, definitions)
 	}
 
 	for _, file := range pass.Files {
+		if len(definitions) > 0 || pass.Pkg.Path() == project || strings.HasPrefix(pass.Pkg.Path(), project+"/") {
+			checkArguments(pass, file)
+		}
+
 		parents := parentNodes(file)
 		aliases := make(map[types.Object]*types.Named)
 		ast.Inspect(file, func(node ast.Node) bool {
@@ -473,22 +443,6 @@ func zeroTypes(pass *analysis.Pass, t types.Type, seen map[types.Type]bool) []*t
 	}
 
 	return nil
-}
-
-func marked(groups ...*ast.CommentGroup) bool {
-	for _, group := range groups {
-		if group == nil {
-			continue
-		}
-
-		for _, comment := range group.List {
-			if strings.TrimSpace(comment.Text) == "//contractcheck:controlled" {
-				return true
-			}
-		}
-	}
-
-	return false
 }
 
 func controlled(pass *analysis.Pass, t types.Type) (*types.Named, *boundaryFact) {

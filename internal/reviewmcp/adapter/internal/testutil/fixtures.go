@@ -13,6 +13,8 @@ import (
 )
 
 // FetchFunc はテストごとの取得結果を注入する関数型である。
+//
+//contractcheck:data テスト用の取得処理を差し替える関数データ
 type FetchFunc func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error)
 
 // FetchReviewsPage は注入した取得関数を呼ぶ。
@@ -21,6 +23,8 @@ func (f FetchFunc) FetchReviewsPage(ctx context.Context, appID steamdomain.AppID
 }
 
 // DecodedOutput は公開する MCP 結果を検査するための受信型である。
+//
+//contractcheck:data テストで MCP の応答を読み取る受信用データ
 type DecodedOutput struct {
 	Collection struct {
 		SchemaVersion int               `json:"schema_version"`
@@ -108,6 +112,8 @@ func Limits(t *testing.T, config mcpdomain.LimitsConfig) mcpdomain.Limits {
 
 // ConversionProbeError は公開用の失敗分類が原因を調べる時点を観測する。
 // Error は収集時のラップでも呼ばれるため、errors.Is による分類を使う。
+//
+//contractcheck:data テストでエラー分類の呼び出しを観測するデータ
 type ConversionProbeError struct{ Classify func() }
 
 // Error は取得失敗の固定表現を返す。

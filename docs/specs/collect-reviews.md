@@ -16,7 +16,7 @@
 
 `CollectionOptionsConfig` は公開フィールドを持つ未検証の設定、`CollectionOptions` は非公開フィールドで有効な条件を保持する値とする。`NewCollectionOptions(config)` が通信なしで既定値と検査・正規化を適用し、入力を変更せずコピーを保持する。不正時はゼロ値と `ErrInvalidArgument` を保持するエラーを返す。呼び出し側はエラーを処理してから収集操作へ渡す。公開の NormalizeCollectionOptions は生成 API へ移行し、互換ラッパーは残さない。
 
-`CollectionOptions{}` 自体も以下の有効な既定条件を表す。明示した既定条件の生成値も同じゼロ値に揃える。`Config()` は設定のコピーを返し、生成元やコピーの変更は生成済みの値に影響しない。コピーからの再生成は同じ値になる。利用側は条件を再検査せず、ゼロ値からの取得も固定の既定値を返す。判断は [ADR-0015](../adr/0015-collection-options-boundary.md) に記録する。
+内部の `CollectionOptions{}` は以下の有効な既定条件を表す。Issue #107 では外側の直接構築を禁止し、既定条件は `DefaultCollectionOptions()` で生成する。明示した既定条件の生成値も同じゼロ値に揃える。`Config()` は設定のコピーを返し、生成元やコピーの変更は生成済みの値に影響しない。コピーからの再生成は同じ値になる。利用側は条件を再検査せず、ゼロ値からの取得も固定の既定値を返す。判断は [ADR-0015](../adr/0015-collection-options-boundary.md) に記録する。
 
 | 項目 | 既定値 | 有効範囲 |
 | --- | --- | --- |

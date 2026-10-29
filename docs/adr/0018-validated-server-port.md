@@ -29,3 +29,6 @@ ListenAddress は入力の検査と待ち受けアドレスの構築をまとめ
 - [HTTP サーバー仕様](../specs/http-server.md) の「設定と終了の契約」「検証との対応」
 - [ADR-0013](0013-domain-folder-layers.md) の設定解析の配置、[ADR-0015](0015-collection-options-boundary.md) のゼロ値と有効な既定値の考え方
 - 実装と検証は [Issue #99 の記録](../worklogs/99-validated-port-number.md) に残す。
+
+
+Issue #107 で ValidatedPortNumber を生成・更新境界の検査へ追加した。外側では有効なゼロ表現も直接作らず NewValidatedPortNumber の生成結果を使う。型内部のゼロ値が8080を表す意味は維持する。適用と限界は ADR-0019 に従う。

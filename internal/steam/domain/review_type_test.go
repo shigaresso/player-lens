@@ -31,7 +31,7 @@ func TestReviewTypeNormalization(t *testing.T) {
 			}
 
 			if tt.invalid {
-				if page != (steamdomain.PageOptions{}) || collection != (steamdomain.CollectionOptions{}) {
+				if page != (steamdomain.PageOptions{}) || collection != (steamdomain.DefaultCollectionOptions()) {
 					t.Fatalf("拒否時に結果を返した: page=%+v collection=%+v", page, collection)
 				}
 

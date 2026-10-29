@@ -30,6 +30,3 @@ CLI と MCP は未検証の入力を Config に変換して生成 API を呼ぶ�
 
 - [収集仕様](../specs/collect-reviews.md)、[CLI 仕様](../specs/review-cli.md)、[MCP 仕様](../specs/review-mcp.md)、[利用制限](../specs/mcp-usage-limits.md)
 - ADR-0005〜0008・0012〜0014、[ユースケース](../use-cases.md)
-
-
-Issue #107 では外側のゼロ値の直接構築を禁止し、定義ファイルの DefaultCollectionOptions から同じ既定条件を生成する。内部のゼロ値・生成失敗値・Config の既定値とコピーの意味は維持する。更新・生成境界の検査は ADR-0019 に従う。

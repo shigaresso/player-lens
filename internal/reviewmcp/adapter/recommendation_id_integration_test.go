@@ -30,7 +30,7 @@ func TestMCPNumericRecommendationIDs(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var calls atomic.Int32
-			handler := NewHandler(testutil.FetchFunc(func(_ context.Context, appID steamdomain.AppID, options steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+			handler, err := NewHandler(testutil.FetchFunc(func(_ context.Context, appID steamdomain.AppID, options steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				if appID != 4294967295 {
 					t.Errorf("appID=%d", appID)
 				}
@@ -41,6 +41,9 @@ func TestMCPNumericRecommendationIDs(t *testing.T) {
 
 				return steamdomain.ReviewPage{Reviews: []steamdomain.Review{{RecommendationID: 0}, {RecommendationID: 18446744073709551615}}, NextCursor: "next"}, nil
 			}), mcpdomain.DefaultLimits(), localHTTPConfig(t))
+			if err != nil {
+				t.Fatal(err)
+			}
 
 			server := httptest.NewServer(handler)
 			t.Cleanup(server.Close)

@@ -11,7 +11,6 @@ import (
 // HealthPath は生存確認の登録とログが共有する公開パスを表す。
 const HealthPath = "/healthz"
 
-//contractcheck:controlled
 type healthHandler struct {
 	logger *slog.Logger
 	now    func() time.Time

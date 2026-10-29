@@ -7,7 +7,6 @@ import (
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
 )
 
-//contractcheck:data JSON 出力形式への対応を表すデータ
 type collectionDocument struct {
 	SchemaVersion int                    `json:"schema_version"`
 	AppID         steamdomain.AppID      `json:"app_id"`
@@ -17,7 +16,6 @@ type collectionDocument struct {
 	StopReason    steamdomain.StopReason `json:"stop_reason"`
 }
 
-//contractcheck:data JSON 出力用の取得条件データ
 type collectionOptions struct {
 	ReviewType string `json:"review_type"`
 	Language   string `json:"language"`
@@ -26,7 +24,6 @@ type collectionOptions struct {
 	MaxPages   int    `json:"max_pages"`
 }
 
-//contractcheck:data JSON 出力用のレビュー項目データ
 type reviewDocument struct {
 	RecommendationID string                       `json:"id"`
 	Text             string                       `json:"text"`

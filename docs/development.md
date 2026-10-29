@@ -265,22 +265,16 @@ Issue の作成後の検査は、作成そのものを防がない。日本語�
 
 ## 生成・更新境界の検査（Issue #105）
 
-生成・組み立て側が有効な値と存在する依存を保証し、呼び出し元が生成失敗を処理する。利用側は事前条件を信頼する。型ごとの適用範囲・ゼロ値の契約と限界は [ADR-0019](adr/0019-construction-contracts.md) に記載する。Issue #107 で本番コード全体の型の分類と利用側の再検査の禁止を追加した。
+生成・組み立て側が有効な値と存在する依存を保証し、呼び出し元が生成失敗を処理する。利用側は事前条件を信頼する。型ごとの適用範囲・既定のゼロ値との区別と限界は [ADR-0019](adr/0019-construction-contracts.md) に記載する。
 
-`//contractcheck:controlled` は生成と内部状態の更新を宣言ファイルへ限定する。初回の Limits・HTTPConfig・CollectionState に CollectionOptions・ValidatedPortNumber・Client・Saver・Limiter・window・healthHandler・collectReviewsHandler・localAccess・publicAccess を加え、13型が対象である。対象は非公開フィールドを持つ struct とする。型別名と別パッケージも検査し、テストからの迂回も拒否する。生成済みのコピー・受け渡しと定義側の更新メソッドの呼び出しは許可する。
+`//contractcheck:controlled` を型の宣言へ付けると、型情報を使う contractcheck が生成と内部状態の更新を宣言ファイルへ限定する。Limits・HTTPConfig・CollectionState が初回の対象である。型別名や別パッケージも検査し、テスト全体の除外は行わない。生成済みの値のコピー・受け渡しは許可する。暗黙のゼロ値生成と存在確認なしの map・channel 取得も検査し、bool の正しい分岐や更新内容の妥当性を完全に証明するものとは区別する。
 
-本番の cmd・internal の自作型には分類を必須とする。interface・関数型の依存契約は `//contractcheck:dependency`、未検証入力・API 数値型・表示用データ・エラーなどは `//contractcheck:data 理由` と記載する。未指定・未知または重複した分類・対象外理由の欠落は検査エラーとなる。data は検証済みを意味しない。AppID・PageOptions・ReviewType の現行の入力検査は入力・正規化・状態生成などの境界へ維持する。対象外とする理由の妥当性はレビューでも確認する。
+型の追加・変更時には AGENTS.md に従い、生成済みの有効性を保証して利用する型を検査対象へ登録し、必要ならリンターを拡張して許可例・違反例を検証する。適用対象外にする場合は理由と契約を Issue・仕様または ADR に記録する。現在の自動検査は明示した3型が対象であり、他の既存型への適用と、対象指定・適用対象外の理由の記載漏れの自動検出は未導入である。導入までは対象の判断と登録漏れをレビューでも確認する。
 
-分類を必須とするパッケージはアプリケーションのモジュールパス以下で、テスト専用の宣言と tools の別モジュールは本番型の分類と区別する。対象型の生成・更新境界の検査はテストにも適用する。standalone の `-project` は分類必須のモジュールパスを指定し、既定値は github.com/shigaresso/player-lens とする。実 CLI の独立した fixture には専用モジュールパスを渡す。
+`tools/` はアプリケーションから独立した Go モジュールで、x/tools v0.52.0 と必要な依存を go.mod/go.sum に固定する。ユーザーの追加指示により nilnil と NilAway は削除した。既存 golangci-lint v2.14.0 の配布バイナリは維持し、nilnil の検査は有効にしない。errcheck の空識別子へのエラー破棄の検査は維持する。一般的な nil の流れ、必須引数の非 nil、nil と成功の同時返却、利用側の引数の nil 再検査を専用ルールで強制しているとは扱わない。
 
-利用側の必須引数について nil の比較（型変換・括弧を含む）・switch の nil 分岐、変数への代入やクロージャ・パッケージ変数の関数リテラルを経由する同じ確認を拒否する。保証対象の Validate・Valid・IsValid・IsZero・IsNil メソッドの呼び出しとメソッド値の取得も再検査として拒否する。生成関数内の依存検査は `//contractcheck:constructor` を付け、同じ定義ファイルの保証対象を返す receiver のない関数だけを認める。任意引数は `//contractcheck:optional 引数名 理由` を付ける。存在しない引数・nil を許容しない型・理由の欠落はエラーとする。任意引数でも非 nil の保証対象値の再検証は許可しない。error 引数は nil が正常な結果を表すため区別する。状態・受付・終了・context や I/O の結果の判断を禁止しない。
+`bash scripts/check-lint.sh` は検証用 Docker で scripts/lint.sh を実行し、アプリケーションの既存 lint・contractcheck、検査モジュールの vet・テスト・lint を順に実行する。GOFLAGS に integration タグを指定してテストも含める（解析ドライバーの -tags は無効な互換オプションのため使わない）。独自検査の解析結果には、そのパッケージで宣言された対象型と定義ファイルの一覧を返す。
 
-CollectionOptions の外側での直接のゼロ値構築は DefaultCollectionOptions へ移行し、失敗値の比較はコピーまたは reflect.Value.IsZero で確認する。内部のゼロ値の意味は維持する。Protect・CollectAndSaveReviews は必須依存の存在を再検査しない。Protect から NewHandler までの失敗のない生成経路は error 戻り値を持たず、不正な公開 URL は NewHTTPConfig が引き続き拒否する。
+既存 pre-push の check-app.sh と go-lint CI から同じ経路を呼ぶ。pre-commit は従来のステージ済み gofmt 検査を維持する。`python3 scripts/verify_go_tools.py` は実 CLI に正常・違反 fixture を渡し、非0終了・診断・入力保持を確認する。Git 管理下の実ソースの作業ツリーの内容を一時コピーし、3型の直接生成を挿入して拒否する。対象の宣言や接続が消えても正常扱いにしない。検査モジュール自身の fixture は tools/contractcheck/testdata に共有し、通常の対象パッケージ一覧から隠すためではなく解析テストの入力として明示的に実行する。
 
-`tools/` は独立した Go モジュールで、x/tools v0.52.0 と必要な依存を go.mod/go.sum に固定する。nilnil と NilAway は使用しない。既存 golangci-lint v2.14.0 の配布バイナリは維持し、nilnil の検査は有効にしない。errcheck の空識別子へのエラー破棄の検査は維持する。
-
-`bash scripts/check-lint.sh` は検証用 Docker で scripts/lint.sh を実行し、アプリケーションの既存 lint・contractcheck、検査モジュールの vet・テスト・lint を順に実行する。GOFLAGS で integration タグを指定し、無効な -tags 互換オプションに依存しない。pre-push と go-lint CI から同じ経路を呼ぶ。pre-commit は従来のステージ済み gofmt 検査を維持する。
-
-`python3 scripts/verify_go_tools.py` は実 CLI の正常・拒否・入力保持を確認する。実ソースの一時コピーへ13型の直接生成・分類漏れ・必須引数の再検査を挿入して拒否する。tools/contractcheck/testdata は解析テストの共有入力として明示的に実行する。実行バイナリは検証イメージ、キャッシュは既存 Docker volume、実 CLI の fixture は一時ディレクトリに置き、本番の依存・イメージと Git/Docker の除外を維持する。
-
-検査は構文と型情報による規約の強制であり、呼び出し側の error 分岐や bool、任意の検証 helper・reflection・unsafe・外部コードの意味、全 nil panic や業務不変条件まで証明しない。生成・更新の契約テストとレビューを併用する。実行結果と未実施の GitHub CI は [Issue #107 の記録](worklogs/107-project-construction-contracts.md) に残す。
+実行バイナリは検証用イメージ内、コンパイル・モジュール・lint キャッシュは既存 Docker volume、実 CLI の fixture は一時ディレクトリに置く。本番ステージへ tools や検査バイナリをコピーせず、アプリケーションの go.mod に検査専用依存を加えない。Docker コンテキストへ tools のソースを許可する一方、環境ファイルと端末メタデータの除外は維持する。ローカルバイナリを tools/bin に作る場合は Git と Docker の対象から除外する。

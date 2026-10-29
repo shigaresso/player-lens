@@ -9,7 +9,6 @@ import (
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
 )
 
-//contractcheck:data MCP の JSON を読み取り生成前の条件を検査する入力データ
 type toolInput struct {
 	ReviewType string            `json:"review_type"`
 	AppID      steamdomain.AppID `json:"app_id"`
@@ -53,7 +52,6 @@ func (input *toolInput) UnmarshalJSON(data []byte) error {
 	}
 
 	// メソッドを持たない別の型へ読み、UnmarshalJSON の再帰呼び出しを避ける。
-	//contractcheck:data 再帰しない JSON 読み取りのための未検証入力型
 	type rawToolInput toolInput
 	var decoded rawToolInput
 	if err := json.Unmarshal(data, &decoded); err != nil {

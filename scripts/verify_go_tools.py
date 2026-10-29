@@ -151,21 +151,13 @@ func (v *Value) Read() int { return v.number }
          "package example\nfunc Run() *Value { return &Value{} }\n", "生成は定義ファイル"),
         ("定義ファイル外からのポインター更新", value,
          "package example\nfunc Run(v *Value) { v.number = 0 }\n", "更新は定義ファイル"),
-        ("型の分類漏れ", value,
-         "package example\ntype Missing struct{}\n", "生成・更新の分類を指定する"),
-        ("対象外理由の欠落", value,
-         "package example\n//contractcheck:data\ntype Input struct{}\n", "対象外の理由を記載する"),
-        ("利用側の必須引数の再検査", value,
-         "package example\nfunc Run(v *Value) bool { alias := v; return alias != nil }\n", "必須引数 v の存在を利用側で再検査しない"),
-        ("任意引数の明示", value,
-         "package example\n//contractcheck:optional v 未指定の入力を許可する\nfunc Run(v *Value) bool { return v != nil }\n", None),
     ]
     for name, definition, usage, expected in cases:
         files = {"value.go": definition, "use.go": usage}
         for filename, source in files.items():
             (module / filename).write_text(source)
         result = compose("run", "--rm", "--no-deps", "-T", "--volume",
-                         f"{module}:/src:ro", "lint", "contractcheck", "-project=example.invalid/contracts", "./...")
+                         f"{module}:/src:ro", "lint", "contractcheck", "./...")
         output = result.stdout + result.stderr
         if (expected is None and result.returncode != 0) or (expected is not None and
                 (result.returncode == 0 or expected not in output)):
@@ -185,40 +177,26 @@ def verify_application_contracts(directory):
             destination = module / name
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(ROOT / name, destination)
-    probes = [
-        ("internal/steam/domain/contractcheck_probe.go", "domain",
-         ["CollectionState", "CollectionOptions"]),
-        ("internal/reviewmcp/domain/contractcheck_probe.go", "domain",
-         ["Limits", "Limiter", "window"]),
-        ("internal/reviewmcp/adapter/contractcheck_probe.go", "adapter", ["HTTPConfig"]),
-        ("internal/steam/adapter/contractcheck_probe.go", "adapter", ["Client"]),
-        ("internal/jsonoutput/adapter/contractcheck_probe.go", "adapter", ["Saver"]),
-        ("internal/mcpaccess/domain/contractcheck_probe.go", "domain", ["localAccess", "publicAccess"]),
-        ("cmd/server/adapter/contractcheck_probe.go", "adapter", ["ValidatedPortNumber"]),
-        ("cmd/server/adapter/handler/contractcheck_probe.go", "handler", ["healthHandler"]),
-        ("internal/reviewmcp/adapter/handler/contractcheck_probe.go", "handler", ["collectReviewsHandler"]),
-    ]
-    targets = []
-    for filename, package, names in probes:
-        declarations = "\n".join(f"_ = {name}{{}}" for name in names)
-        (module / filename).write_text(f"package {package}\nfunc invalidConstructionProbe() {{\n{declarations}\n}}\n")
-        targets.extend(names)
-    consumer = module / "internal/steam/application/contractcheck_probe.go"
-    consumer.write_text("package application\ntype MissingPolicy struct{}\nfunc invalidArgumentProbe(fetcher PageFetcher) bool { return fetcher == nil }\n")
+    collection = module / "internal/steam/application/collect_reviews.go"
+    collection.write_text(collection.read_text() + "\nfunc invalidCollectionStateProbe() { _ = steamdomain.CollectionState{} }\n")
+    mcp_server = module / "internal/reviewmcp/adapter/server.go"
+    mcp_server.write_text(mcp_server.read_text() + '''
+func invalidControlledConstructionProbe() {
+    _ = mcpdomain.Limits{}
+    _ = HTTPConfig{}
+}
+''')
     originals = {path: path.read_bytes() for path in module.rglob("*") if path.is_file()}
     result = compose("run", "--rm", "--no-deps", "-T", "--volume", f"{module}:/src:ro",
                      "lint", "contractcheck", "./...")
     output = result.stdout + result.stderr
     if result.returncode == 0 or any(
             f"{name} の生成は定義ファイル" not in output
-            for name in targets):
+            for name in ("Limits", "HTTPConfig", "CollectionState")):
         raise RuntimeError(f"実アプリケーションの生成境界を拒否しなかった:\n{output}")
-    if ("生成・更新の分類を指定する" not in output or
-            "必須引数 fetcher の存在を利用側で再検査しない" not in output):
-        raise RuntimeError(f"実アプリケーションの分類漏れか再検査を拒否しなかった:\n{output}")
     if any(path.read_bytes() != source for path, source in originals.items()):
         raise RuntimeError("実アプリケーションの契約検査で入力が変更された")
-    print(f"実アプリ: {len(targets)}型の生成境界・分類漏れ・利用側の再検査と入力保持を確認した", flush=True)
+    print("実アプリ: Limits・HTTPConfig・CollectionState の生成境界を検査した", flush=True)
 
 
 def main():

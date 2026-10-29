@@ -6,8 +6,6 @@ import (
 )
 
 // localAccess は追加の設定を持たないローカル用の許可条件である。
-//
-//contractcheck:controlled
 type localAccess struct{}
 
 // NewLocal は従来のローカル Host 判定を行う許可条件を生成する。

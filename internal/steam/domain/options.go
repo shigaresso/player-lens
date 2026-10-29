@@ -17,8 +17,6 @@ const maxCursorBytes = 4096
 var languagePattern = regexp.MustCompile(`^[a-z][a-z0-9_-]{0,31}$`)
 
 // PageOptions は1ページの取得条件を表す。ゼロ値は全評価・英語・先頭・20件となる。
-//
-//contractcheck:data 公開フィールドを持つ未検証のページ取得入力であり正規化境界で検査する
 type PageOptions struct {
 	ReviewType ReviewType
 	Language   string

@@ -7,8 +7,6 @@ import (
 
 // RejectionReason は利用制限の拒否理由を表す。ゼロ値は拒否なしを表す。
 // 公開コードと説明文への変換は adapter が担当する。
-//
-//contractcheck:data 受付の判断結果を表す識別値であり依存や設定の保証対象ではない
 type RejectionReason int
 
 const (
@@ -22,7 +20,6 @@ const (
 	ConcurrentLimitReached
 )
 
-//contractcheck:controlled
 type window struct {
 	start time.Time
 	count int
@@ -37,8 +34,6 @@ func (w *window) reset(now time.Time, duration time.Duration) {
 
 // Limiter は共有する開始回数と同時実行数の状態を所有する。
 // ゼロ値は使用せず、NewLimiter で生成する。
-//
-//contractcheck:controlled
 type Limiter struct {
 	mu     sync.Mutex
 	limits Limits

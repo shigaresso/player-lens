@@ -13,10 +13,13 @@ import (
 )
 
 func TestHandlerLimits(t *testing.T) {
-	handler := NewHandler(testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+	handler, err := NewHandler(testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 		t.Fatal("拒否する HTTP リクエストで取得した")
 		return steamdomain.ReviewPage{}, nil
 	}), mcpdomain.DefaultLimits(), localHTTPConfig(t))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	for _, tc := range []struct {
 		name        string
@@ -51,10 +54,13 @@ func TestHandlerLimits(t *testing.T) {
 }
 
 func TestLocalHost(t *testing.T) {
-	handler := NewHandler(testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+	handler, err := NewHandler(testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 		t.Fatal("HTTP Host 検査で取得した")
 		return steamdomain.ReviewPage{}, nil
 	}), mcpdomain.DefaultLimits(), localHTTPConfig(t))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	for _, tc := range []struct {
 		name     string

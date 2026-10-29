@@ -18,7 +18,7 @@ func TestCollectionOptionsZero(t *testing.T) {
 		{"明示した既定条件も同じゼロ値を生成する", true, defaults},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			options := steamdomain.DefaultCollectionOptions()
+			var options steamdomain.CollectionOptions
 			if tc.generate {
 				var err error
 				options, err = steamdomain.NewCollectionOptions(tc.input)
@@ -27,7 +27,7 @@ func TestCollectionOptionsZero(t *testing.T) {
 				}
 			}
 
-			if options != (steamdomain.DefaultCollectionOptions()) || options.Config() != defaults {
+			if options != (steamdomain.CollectionOptions{}) || options.Config() != defaults {
 				t.Fatalf("options=%+v config=%+v", options, options.Config())
 			}
 		})
@@ -67,13 +67,5 @@ func TestCollectionOptionsConfigCopy(t *testing.T) {
 				t.Fatalf("config=%+v; want=%+v", got, tc.want)
 			}
 		})
-	}
-}
-
-func TestDefaultCollectionOptions(t *testing.T) {
-	options := steamdomain.DefaultCollectionOptions()
-	want := steamdomain.CollectionOptionsConfig{ReviewType: steamdomain.ReviewTypeAll, Language: "english", PageSize: 100, MaxReviews: 1000, MaxPages: 100}
-	if options.Config() != want {
-		t.Fatalf("既定条件を生成する: config=%+v", options.Config())
 	}
 }

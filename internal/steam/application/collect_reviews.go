@@ -12,8 +12,6 @@ import (
 // 空ページは成功、不正入力や取得失敗は原因を保持したエラーとする。
 // 渡された context のキャンセルと期限を尊重する。
 // 通信と応答 Body の解放は実装側、接続プールの終了は組み立てた呼び出し側が担当する。
-//
-//contractcheck:dependency
 type PageFetcher interface {
 	FetchReviewsPage(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error)
 }

@@ -39,6 +39,3 @@ Issue #77 では HTTP の Protect／ProtectLocal を Controller と区別し、m
 Protect は条件と拒否文言を受け取る1つの HTTP 保護手順とする。Host→Origin→next の順序、403文言、後続の応答、SDK の保護設定を維持する。未生成の HTTPConfig や nil の保護依存は構築エラーとする。旧 domain.New・IsPublic・HostRejectionMessage・ProtectLocal は残さない。
 
 先行実装では Access を mode フラグ付き構造体、その後は表示文言・公開状態も提供する interface としていた。前者は状態の関係が読みにくく、後者はドメインの許可判定に HTTP の表示と構築の関心を集めていた。今回は可変部分を組み立てる場所を HTTP adapter とし、ドメインの実体を分けたまま共通手順に渡す方式を採用した。段階ごとの検証は Issue と作業記録へ残す。
-
-
-Issue #107 では nil の保護依存を利用側で再検査する契約を置き換える。Protect は生成成功した Access と handler を受け取る事前条件を信頼し、構築エラーと error 戻り値を持たない。NewHandler の構築失敗も HTTPConfig の生成時へ集約し、許可条件・Host/Origin の実行時判断は維持する。型と必須引数の検査は ADR-0019 に従う。

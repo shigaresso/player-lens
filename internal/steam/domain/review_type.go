@@ -5,8 +5,6 @@ import "fmt"
 // ReviewType は内部の取得条件に使う全評価・おすすめ・非おすすめの数値列挙型。
 // 値は Steam の EUserReviewsReviewType に対応し、ゼロ値は全評価を表す。
 // 未知の数値は取得条件と出力境界で拒否する。
-//
-//contractcheck:data 公開された数値の入力表現であり未知値は解析・正規化・出力境界で拒否する
 type ReviewType EUserReviewsReviewType
 
 const (

@@ -12,7 +12,7 @@ import (
 // 不正時はゼロ値と steamdomain.ErrInvalidArgument を保持したエラーを返す。
 func ParseInput(data []byte) (steamdomain.AppID, steamdomain.CollectionOptions, error) {
 	invalid := func() (steamdomain.AppID, steamdomain.CollectionOptions, error) {
-		return 0, steamdomain.DefaultCollectionOptions(), fmt.Errorf("invalid MCP collection input: %w", steamdomain.ErrInvalidArgument)
+		return 0, steamdomain.CollectionOptions{}, fmt.Errorf("invalid MCP collection input: %w", steamdomain.ErrInvalidArgument)
 	}
 	var input toolInput
 	if err := json.Unmarshal(data, &input); err != nil {

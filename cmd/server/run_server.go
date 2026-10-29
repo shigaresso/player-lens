@@ -38,7 +38,10 @@ func run(ctx context.Context, port string, logger *slog.Logger) error {
 	}
 	defer closeIdleConnections()
 
-	mcpHandler := reviewmcp.NewHandler(fetcher, limits, mcpConfig)
+	mcpHandler, err := reviewmcp.NewHandler(fetcher, limits, mcpConfig)
+	if err != nil {
+		return fmt.Errorf("MCP サーバーの準備に失敗した: %w", err)
+	}
 
 	healthHandler := serverhandler.NewHealthHandler(logger, time.Now)
 	router := http.NewServeMux()

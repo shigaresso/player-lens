@@ -12,8 +12,6 @@ import (
 // CollectionSaver は収集結果を保存する利用側の契約を表す。
 // JSON・DB などの形式と資源の所有は実装側が担当し、context を尊重する。
 // エラーは原因を保持して返し、再試行しない。原子的な保存は実装ごとに定める。
-//
-//contractcheck:dependency
 type CollectionSaver interface {
 	SaveCollection(context.Context, steamdomain.Collection) error
 }
@@ -24,6 +22,10 @@ type CollectionSaver interface {
 // 保存は親の値を維持し、キャンセル・期限から独立した最大5秒の context を渡す。
 // 保存実装が期限を尊重する責務を持ち、操作が派生 context を解放する。
 func CollectAndSaveReviews(ctx context.Context, fetcher PageFetcher, saver CollectionSaver, appID steamdomain.AppID, options steamdomain.CollectionOptions) (steamdomain.Collection, error) {
+	if saver == nil {
+		return steamdomain.Collection{}, fmt.Errorf("collection saver is required: %w", steamdomain.ErrInvalidArgument)
+	}
+
 	result, collectErr := CollectReviews(ctx, fetcher, appID, options)
 	if result.AppID == 0 {
 		return result, collectErr

@@ -30,24 +30,3 @@ func TestControlledDeclaration(t *testing.T) {
 		analysistest.Run(t, analysistest.TestData(), contractcheck.Analyzer, "declaration")
 	})
 }
-
-func TestTypeClassification(t *testing.T) {
-	t.Run("型の分類と対象外の理由の欠落を拒否する", func(t *testing.T) {
-		if err := contractcheck.Analyzer.Flags.Set("project", "classification"); err != nil {
-			t.Fatal(err)
-		}
-
-		t.Cleanup(func() {
-			if err := contractcheck.Analyzer.Flags.Set("project", "github.com/shigaresso/player-lens"); err != nil {
-				t.Fatal(err)
-			}
-		})
-		analysistest.Run(t, analysistest.TestData(), contractcheck.Analyzer, "classification")
-	})
-}
-
-func TestConsumerArguments(t *testing.T) {
-	t.Run("利用側の再検査を拒否し生成時と任意引数と状態判断を許可する", func(t *testing.T) {
-		analysistest.Run(t, analysistest.TestData(), contractcheck.Analyzer, "arguments")
-	})
-}

@@ -77,7 +77,7 @@ services:
       - go-build:/go-cache
       - go-mod:/go/pkg/mod
       - go-lint:/lint-cache
-    command: ["bash", "scripts/lint.sh"]
+    command: ["golangci-lint", "run", "--config", ".golangci.yml", "./..."]
 
 volumes:
   go-build:

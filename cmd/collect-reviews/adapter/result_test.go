@@ -103,16 +103,7 @@ func TestRunOutputAndExit(t *testing.T) {
 }
 
 func TestRunDiagnosticFailure(t *testing.T) {
-	fetcher := fetcherFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
-		t.Fatal("help の診断でレビューを取得した")
-		return steamdomain.ReviewPage{}, nil
-	})
-	saver, err := jsonoutput.NewSaver(io.Discard)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if code := Run(t.Context(), []string{"--help"}, fetcher, saver, failedWriter{}); code != 1 {
+	if code := Run(t.Context(), []string{"--help"}, nil, nil, failedWriter{}); code != 1 {
 		t.Fatalf("診断出力の失敗: %d", code)
 	}
 }

@@ -16,4 +16,4 @@ lefthook validate
 actionlint -shellcheck=''
 bash -n scripts/check.sh scripts/pre-push.sh scripts/install-tools.sh .lefthook/pre-commit/check.sh .lefthook/pre-push/check.sh
 # 規約ツールの一時リポジトリでも、追加したシェル検査の構文を確認する。
-bash -n scripts/check-app.sh scripts/check-go.sh scripts/go-check.sh scripts/check-lint.sh scripts/lint.sh scripts/verify_go_vcs.sh
+bash -n scripts/check-app.sh scripts/check-go.sh scripts/go-check.sh scripts/check-lint.sh scripts/verify_go_vcs.sh

@@ -37,11 +37,15 @@ func NewHandler(fetcher steamapplication.PageFetcher, limits mcpdomain.Limits, c
 		return nil, fmt.Errorf("prepare review MCP handler: HTTP config is required: %w", mcpaccess.ErrInvalidConfig)
 	}
 
-	gate := mcpdomain.NewLimiter(limits, time.Now)
-	handler := mcp.NewStreamableHTTPHandler(func(request *http.Request) *mcp.Server {
-		return newServer(fetcher, request.Context(), gate)
-	}, &config.sdkOptions)
-	return accessadapter.Protect(config.access, config.deniedMessage, handler)
+	sharedLimiter := mcpdomain.NewLimiter(limits, time.Now)
+
+	createServerForRequest := func(request *http.Request) *mcp.Server {
+		return newServer(fetcher, request.Context(), sharedLimiter)
+	}
+
+	sdkHTTPHandler := mcp.NewStreamableHTTPHandler(createServerForRequest, &config.sdkOptions)
+
+	return accessadapter.Protect(config.access, config.deniedMessage, sdkHTTPHandler)
 }
 
 func newServer(fetcher steamapplication.PageFetcher, requestContext context.Context, gate *mcpdomain.Limiter) *mcp.Server {

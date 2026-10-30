@@ -45,9 +45,9 @@ Issue #35 で、すべてのツール結果に `analysis_guide`（文字列の `
 
 HTTP 本文は16 KiBまでとし、SDK が超過を413で拒否する。シリアライズした SDK の CallToolResult は128 KiBまで（JSON-RPC 外枠は含まない）。超過時は `response_too_large`、レビュー配列を空にした収集条件・取得ページ数・終了理由、省略件数、件数を減らす案内を返す。本文を切り詰めたレビューや完全な成功として返さず、元のレビューを外部保存しない。本文省略は一度だけ行い、省略後の応答も128 KiBを超える場合は結果を返さず、サイズ超過として識別できる変換エラーで終了する。応答を生成できない場合も収集・変換の原因をサーバー側で保持し、表示文字列に内部の収集原因を含めない。
 
-ツールの期限は8秒。短い呼び出し側の期限・キャンセルを優先する。旧プロトコルを含め、元の HTTP リクエストと SDK の context のキャンセルを収集へ伝える。サーバーを HTTP リクエストごとに組み立て、stateless transport が一時セッションを閉じる。タイマー・context の連携 callback はハンドラーで解放する。HTTP クライアントと接続プールは main が組み立て、終了時に idle 接続を閉じる。再試行は追加しない。
+レビュー収集用の期限は8秒。短い呼び出し側の期限・キャンセルを優先する。旧プロトコルを含め、元の HTTP リクエストと SDK の context のキャンセルを収集へ伝える。サーバーを HTTP リクエストごとに組み立て、stateless transport が一時セッションを閉じる。タイマー・context の連携 callback はハンドラーで解放する。HTTP クライアントと接続プールは main が組み立て、終了時に idle 接続を閉じる。再試行は追加しない。
 
-Issue #84 で、MCP 用 application は開始前キャンセル／期限超過を入口で早期 return する。steam/domain.NewFailedCollection で入力条件と空配列を保持した失敗結果を作り、元の原因を MCP 用の文脈でラップして respond へ一度渡す。下位の収集をキャンセル結果の生成目的で呼ばない。受付拒否・収集中の失敗も共通の失敗結果生成を利用し、公開応答、部分結果、利用枠を応答変換完了まで保持する契約は維持する。
+Issue #84 で、MCP 用 application は開始前キャンセル／期限超過を入口で早期 return する。steam/domain.NewFailedCollection で入力条件と空配列を保持した失敗結果を作り、元の原因を MCP 用の文脈でラップして Result.Err に保持する。下位の収集をキャンセル結果の生成目的で呼ばない。受付拒否・収集中の失敗も共通の失敗結果生成を利用し、公開応答と部分結果は維持する。同時枠の保持範囲は Issue #113 で収集終了までに変更し、Result を返す前に枠を返却する。
 
 ### ツール登録と実行の境界（Issue #50）
 
@@ -57,9 +57,9 @@ Issue #84 で、MCP 用 application は開始前キャンセル／期限超過�
 
 ### 結果変換の境界（Issue #40）
 
-`collectReviewsHandler.Handle` は入力検査と、application への収集・結果処理の接続を担当する。application は利用枠・取得用の期限・収集を管理し、adapter から渡した同期的な結果処理関数を一度だけ呼ぶ。この関数が公開用の失敗分類と SDK 応答変換を行い、変換完了まで枠を保持する。結果処理関数は非 nil で同期的に完了するものを渡し、変換エラーは application からそのまま返す。`handler/protocol/failure.go` の `toolFailureInfo` は公開するコードと説明文を持つ情報型で、元のエラーは別途保持する。`collectionFailure` は収集エラーをこの公開情報へ変換し、`usageFailure` は limiter の拒否理由を公開コードと説明文へ変換する。複合原因ではキャンセル・期限・取得失敗の順を維持する。
+`collectReviewsHandler.Handle` は入力解析→application.CollectReviews→protocol.EncodeResult を順に呼ぶ。Issue #113 で同期 callback を廃止し、application は利用枠・取得期限・収集を管理して既存の Result を直接返す。Collection に収集結果、Rejection に受付の拒否理由、Err に収集の原因を保持する。所有する枠と取得用 context は戻る前に解放する。Controller は結果を受け取って公開用の失敗分類と SDK 応答変換を行い、変換エラーを SDK へ返す。`handler/protocol/failure.go` の `toolFailureInfo` は公開するコードと説明文を持つ情報型で、元のエラーは別途保持する。`collectionFailure` は収集エラーをこの公開情報へ変換し、`usageFailure` は limiter の拒否理由を公開コードと説明文へ変換する。複合原因ではキャンセル・期限・取得失敗の順を維持する。
 
-`handler/protocol/result.go` の `encodeResult` と `marshalToolResult` は公開情報を toolFailureInfo のまま受け取り、コードと説明文を別引数へ分解しない。`marshalToolResult` は Collection・公開情報・ガイドを同じ JSON の構造化結果・テキストへ変換する。`encodeResult` は省略件数を引数に受け取らず、SDK の通常応答と省略応答のサイズを判定する。`encodeOversizedResult` は省略件数を数えて本文を除いた応答を作り、`encodeResult` を再び呼ばない。`encodeCollectionResult` が取得の原因をサーバー側へ保持し、応答量超過の原因も失わせない。変換は通信・時計・保存に依存しない。利用枠は応答変換まで保持し、application の CollectReviews の defer が成功・変換失敗とも返却する。application は SDK 型を扱わない。Issue #56 で早期返却になった動作を Issue #62 で修復する（[ADR-0016](../adr/0016-mcp-response-slot-lifetime.md)）。
+`handler/protocol/result.go` の `encodeResult` と `marshalToolResult` は公開情報を toolFailureInfo のまま受け取り、コードと説明文を別引数へ分解しない。`marshalToolResult` は Collection・公開情報・ガイドを同じ JSON の構造化結果・テキストへ変換する。`encodeResult` は省略件数を引数に受け取らず、SDK の通常応答と省略応答のサイズを判定する。`encodeOversizedResult` は省略件数を数えて本文を除いた応答を作り、`encodeResult` を再び呼ばない。`encodeCollectionResult` が取得の原因をサーバー側へ保持し、応答量超過の原因も失わせない。変換は通信・時計・保存に依存しない。同時枠は収集終了時に返却済みとなり、変換中も別の収集を受け付ける。変換失敗・panic で他の収集の枠を返さない。application は SDK 型を扱わない。Issue #62 の旧保持要件は Issue #113 の [ADR-0020](../adr/0020-mcp-collection-slot-lifetime.md) で変更し、[ADR-0016](../adr/0016-mcp-response-slot-lifetime.md) は履歴として残す。
 
 公開 URL が未指定なら HTTP Host は localhost またはループバック IP に限定する。Issue #29 で、明示した公開 URL の Host からも認証なしで利用する設定を追加した。Issue #82 で NewLocal／NewPublic が生成する Access は Host 判定だけとし、NewHTTPConfig が許可条件・拒否文言・SDK 設定をまとめる構成にした。両モードで単一の mcpaccess/adapter.Protect を使う。NewHandler は生成済み HTTPConfig を受け取り、設定済みの値をそのまま使う。未生成の HTTPConfig のゼロ値は構築エラーとする。許可されない Host は403で拒否する。[公開 MCP 仕様](mcp-public-access.md) に従う。Docker 転送では SDK の接続先アドレスによる自動 localhost 判定が働かない場合があるため、Host を明示的に検査する。cross-origin 保護と併用する。
 
@@ -77,4 +77,4 @@ Issue #54 で `NewHandler` の設定は `NewLimits` または `DefaultLimits` �
 
 入力・変換・失敗・期限をユニットテスト、実 SDK クライアントの接続・一覧・呼び出し・エラー・HTTP 切断を integration タグで確認する。Steam は差し替え、実 Steam・実 LLM を自動テストから呼ばない。本番イメージでは初期化・一覧・不正入力を通信なしで確認する。ChatGPT の実接続・分析回答は手動確認とし、未実施なら理由を記録する。
 
-Issue #77 で、collect の入力不正応答は protocol.InvalidInputResult、UseCase の結果の公開表現は protocol.EncodeResult に委ねる構成にした。Controller の同期 callback 内で変換し、同時枠の保持期間は維持する。受信型・JSON 出力型は非公開、応答量超過は protocol.ErrResponseTooLarge で識別できる。ガイドと公開 schema の内容は変更しない。
+Issue #77 で、collect の入力不正応答は protocol.InvalidInputResult、UseCase の結果の公開表現は protocol.EncodeResult に委ねる構成にした。Issue #113 で同期 callback を廃止し、Controller は UseCase の戻り値を変換する。同時枠の保持は収集終了までとする。受信型・JSON 出力型は非公開、応答量超過は protocol.ErrResponseTooLarge で識別できる。ガイドと公開 schema の内容は変更しない。

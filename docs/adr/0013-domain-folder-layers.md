@@ -57,4 +57,4 @@ MCP の SDK と共有 limiter の構築・Server の設定と登録・ツール�
 
 収集状態の生成・ページ反映と application の取得手順の境界は [ADR-0014](0014-steam-collection-state.md) で具体化する。
 
-利用枠は応答変換の完了まで保持する。Issue #62 で application に同期的な結果処理関数を渡し、adapter が変換を行う間も同じ defer の範囲に含める。[ADR-0016](0016-mcp-response-slot-lifetime.md) に契約を具体化する。
+Issue #62 では [ADR-0016](0016-mcp-response-slot-lifetime.md) により応答変換完了まで利用枠を保持した。Issue #113 の [ADR-0020](0020-mcp-collection-slot-lifetime.md) で保持対象を収集に絞る。application は収集終了時に同時枠と取得用 context を解放して Result を返し、Controller が続けて応答変換を行う。確保・返却は application、SDK の応答形式は adapter という境界を維持する。

@@ -7,7 +7,6 @@ import (
 
 	mcpapplication "github.com/shigaresso/player-lens/internal/reviewmcp/application"
 	mcpdomain "github.com/shigaresso/player-lens/internal/reviewmcp/domain"
-	steamapplication "github.com/shigaresso/player-lens/internal/steam/application"
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
 )
 
@@ -37,7 +36,7 @@ func TestCollectReviews(t *testing.T) {
 
 		return steamdomain.ReviewPage{}, nil
 	})
-	result := collectResult(t, t.Context(), fetcher, 440, collectionOptions(t, steamdomain.CollectionOptionsConfig{Language: "japanese"}), gate)
+	result := mcpapplication.CollectReviews(t.Context(), fetcher, 440, collectionOptions(t, steamdomain.CollectionOptionsConfig{Language: "japanese"}), gate)
 	if result.Err != nil || result.Rejection != mcpdomain.NotRejected || result.Collection.AppID != 440 || result.Collection.StopReason != steamdomain.StopExhausted {
 		t.Fatalf("result=%+v", result)
 	}
@@ -65,17 +64,4 @@ func collectionOptions(t *testing.T, config steamdomain.CollectionOptionsConfig)
 	}
 
 	return options
-}
-
-func collectResult(t *testing.T, ctx context.Context, fetcher steamapplication.PageFetcher, appID steamdomain.AppID, options steamdomain.CollectionOptions, gate *mcpdomain.Limiter) mcpapplication.Result {
-	t.Helper()
-	var result mcpapplication.Result
-	if err := mcpapplication.CollectReviews(ctx, fetcher, appID, options, gate, func(got mcpapplication.Result) error {
-		result = got
-		return nil
-	}); err != nil {
-		t.Fatal(err)
-	}
-
-	return result
 }

@@ -11,7 +11,7 @@ import (
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
 )
 
-func TestCollectKeepsSlotDuringFailureConversion(t *testing.T) {
+func TestCollectReleasesSlotBeforeFailureConversion(t *testing.T) {
 	gate := mcpdomain.NewLimiter(testutil.Limits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 10, RequestsPerDay: 10, MaxConcurrent: 1}), time.Now)
 	classifications := 0
 	cause := &testutil.ConversionProbeError{Classify: func() {
@@ -21,8 +21,8 @@ func TestCollectKeepsSlotDuringFailureConversion(t *testing.T) {
 			release()
 		}
 
-		if reason != mcpdomain.ConcurrentLimitReached {
-			t.Errorf("応答変換中に同時枠が空いている: reason=%v", reason)
+		if reason != mcpdomain.NotRejected {
+			t.Errorf("応答変換前に同時枠を返却しなかった: reason=%v", reason)
 		}
 	}}
 	result, err := callCollectReviews(t, t.Context(), testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {

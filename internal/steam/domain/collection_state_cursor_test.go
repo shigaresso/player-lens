@@ -42,7 +42,7 @@ func TestCollectionStateCursor(t *testing.T) {
 				t.Fatalf("result=%#v err=%v", result, err)
 			}
 
-			if next, ok := state.NextPage(); ok || next != (steamdomain.PageOptions{}) {
+			if next, ok := state.NextFetchConditions(); ok || next != (steamdomain.PageOptions{}) {
 				t.Fatalf("終了後の next=%#v available=%v", next, ok)
 			}
 		})

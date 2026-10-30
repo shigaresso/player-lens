@@ -35,7 +35,7 @@ func TestCollectionStateFail(t *testing.T) {
 				t.Fatalf("result=%#v", result)
 			}
 
-			if next, ok := state.NextPage(); ok || next != (steamdomain.PageOptions{}) {
+			if next, ok := state.NextFetchConditions(); ok || next != (steamdomain.PageOptions{}) {
 				t.Fatalf("失敗後の next=%#v available=%v", next, ok)
 			}
 		})

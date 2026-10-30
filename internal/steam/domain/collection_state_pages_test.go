@@ -40,7 +40,7 @@ func TestCollectionStatePages(t *testing.T) {
 			}
 
 			for _, page := range tc.pages {
-				if _, ok := state.NextPage(); !ok {
+				if _, ok := state.NextFetchConditions(); !ok {
 					t.Fatal("終了条件の前に停止した")
 				}
 
@@ -59,7 +59,7 @@ func TestCollectionStatePages(t *testing.T) {
 				t.Fatalf("result=%#v", result)
 			}
 
-			next, ok := state.NextPage()
+			next, ok := state.NextFetchConditions()
 			if ok != (tc.reason == "") || next != tc.next {
 				t.Fatalf("next=%#v available=%v", next, ok)
 			}

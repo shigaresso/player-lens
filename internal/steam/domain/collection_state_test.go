@@ -32,7 +32,7 @@ func TestNewCollectionState(t *testing.T) {
 				t.Fatalf("result=%#v; want=%#v", got, want)
 			}
 
-			next, ok := state.NextPage()
+			next, ok := state.NextFetchConditions()
 			if !ok || next != (steamdomain.PageOptions{ReviewType: tc.want.ReviewType, Language: tc.want.Language, Cursor: steamdomain.FirstPageCursor, PageSize: tc.size}) {
 				t.Fatalf("next=%#v available=%v", next, ok)
 			}

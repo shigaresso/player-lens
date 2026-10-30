@@ -35,8 +35,8 @@ func CollectReviews(ctx context.Context, fetcher PageFetcher, appID steamdomain.
 	defer cancel()
 
 	for {
-		next, more := state.NextPage()
-		if !more {
+		nextFetchConditions, shouldContinue := state.NextFetchConditions()
+		if !shouldContinue {
 			return state.Result(), nil
 		}
 
@@ -46,7 +46,7 @@ func CollectReviews(ctx context.Context, fetcher PageFetcher, appID steamdomain.
 			return result, fmt.Errorf("collect Steam reviews before page %d: %w", result.PagesFetched+1, err)
 		}
 
-		page, err := fetcher.FetchReviewsPage(ctx, appID, next)
+		page, err := fetcher.FetchReviewsPage(ctx, appID, nextFetchConditions)
 		if err != nil {
 			state.Fail()
 			result := state.Result()

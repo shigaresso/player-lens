@@ -39,12 +39,7 @@ func (h collectReviewsHandler) Handle(sdkContext context.Context, request *mcp.C
 		return protocol.InvalidInputResult()
 	}
 
-	var response *mcp.CallToolResult
-	err = mcpapplication.CollectReviews(ctx, h.fetcher, appID, options, h.gate, func(result mcpapplication.Result) error {
-		var encodeErr error
-		response, encodeErr = protocol.EncodeResult(result)
+	result := mcpapplication.CollectReviews(ctx, h.fetcher, appID, options, h.gate)
 
-		return encodeErr
-	})
-	return response, err
+	return protocol.EncodeResult(result)
 }

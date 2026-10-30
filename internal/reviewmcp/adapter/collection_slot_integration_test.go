@@ -18,7 +18,7 @@ import (
 
 func TestMCPSlotDuringResponseConversion(t *testing.T) {
 	for _, version := range []string{"2026-07-28", "2025-11-25", "2025-06-18", "2025-03-26"} {
-		t.Run(version+"で応答変換中は別セッションを拒否し完了後に受付する", func(t *testing.T) {
+		t.Run(version+"で応答変換中も別セッションの収集を受付する", func(t *testing.T) {
 			ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 			defer cancel()
 
@@ -74,9 +74,9 @@ func TestMCPSlotDuringResponseConversion(t *testing.T) {
 				t.Fatal("応答変換が始まらなかった", ctx.Err())
 			}
 
-			busy, err := second.CallTool(ctx, params)
-			if err != nil || busy == nil || !busy.IsError || testutil.DecodeOutput(t, busy).ErrorCode != "busy" || calls.Load() != 1 {
-				t.Fatalf("応答変換中の別セッション=%+v err=%v calls=%d", busy, err, calls.Load())
+			concurrent, err := second.CallTool(ctx, params)
+			if err != nil || concurrent == nil || concurrent.IsError || calls.Load() != 2 {
+				t.Fatalf("応答変換中の別セッション=%+v err=%v calls=%d", concurrent, err, calls.Load())
 			}
 
 			unblock()
@@ -90,7 +90,7 @@ func TestMCPSlotDuringResponseConversion(t *testing.T) {
 			}
 
 			result, err := second.CallTool(ctx, params)
-			if err != nil || result == nil || result.IsError || calls.Load() != 2 {
+			if err != nil || result == nil || result.IsError || calls.Load() != 3 {
 				t.Fatalf("応答変換後の再受付=%+v err=%v calls=%d", result, err, calls.Load())
 			}
 		})

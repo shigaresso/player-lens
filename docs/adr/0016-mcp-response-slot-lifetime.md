@@ -2,7 +2,9 @@
 
 ## 状態と背景
 
-採用。[Issue #62](https://github.com/shigaresso/player-lens/issues/62) に対応する。ADR-0008 の「結果変換完了後に返却する」契約を維持し、ADR-0013 の application と adapter の連携を具体化する。
+置換済み。[ADR-0020](0020-mcp-collection-slot-lifetime.md) で、Issue #113 から保持対象を収集終了までに変更する。以下は当時の要件と判断を残した履歴であり、現在の保持期間・callback の契約として扱わない。
+
+当時は採用。[Issue #62](https://github.com/shigaresso/player-lens/issues/62) に対応する。ADR-0008 の「結果変換完了後に返却する」契約を維持し、ADR-0013 の application と adapter の連携を具体化する。
 
 Issue #56 の分離で、application の defer が adapter の応答変換より先に実行されるようになった。終了後の再受付テストだけでは、応答変換中の早期返却を検出できなかった。利用上限の意味は変更せず、既存の契約を修復する。
 

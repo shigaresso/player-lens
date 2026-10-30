@@ -41,7 +41,7 @@ func TestCollectReviewsRejection(t *testing.T) {
 			}
 
 			options := steamdomain.CollectionOptionsConfig{Language: "english", PageSize: 100, MaxReviews: 20, MaxPages: 3}
-			result := collectResult(t, t.Context(), fetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+			result := mcpapplication.CollectReviews(t.Context(), fetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				t.Fatal("拒否した操作で取得した")
 				return steamdomain.ReviewPage{}, nil
 			}), 440, collectionOptions(t, options), gate)
@@ -56,7 +56,7 @@ func TestCollectReviewsFailure(t *testing.T) {
 	cause := errors.New("fetch failed")
 	calls := 0
 	var fetchedContext context.Context
-	result := collectResult(t, t.Context(), fetchFunc(func(ctx context.Context, _ steamdomain.AppID, _ steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+	result := mcpapplication.CollectReviews(t.Context(), fetchFunc(func(ctx context.Context, _ steamdomain.AppID, _ steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 		fetchedContext = ctx
 		calls++
 		if calls == 1 {
@@ -80,8 +80,8 @@ func TestCollectReviewsCancelledBeforeStart(t *testing.T) {
 		expired bool
 		cause   error
 	}{
-		{"開始前キャンセルでは応答だけを一度生成する", false, context.Canceled},
-		{"開始前期限超過では応答だけを一度生成する", true, context.DeadlineExceeded},
+		{"開始前キャンセルでは取得せず失敗結果を返す", false, context.Canceled},
+		{"開始前期限超過では取得せず失敗結果を返す", true, context.DeadlineExceeded},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			limits, err := mcpdomain.NewLimits(mcpdomain.LimitsConfig{RequestsPerMinute: 1, RequestsPerDay: 1, MaxConcurrent: 1})
@@ -103,23 +103,18 @@ func TestCollectReviewsCancelledBeforeStart(t *testing.T) {
 			defer cancel()
 
 			config := steamdomain.CollectionOptionsConfig{ReviewType: steamdomain.ReviewTypeNegative, Language: "japanese", PageSize: 10, MaxReviews: 20, MaxPages: 3}
-			fetchCalls, responseCalls := 0, 0
-			var result mcpapplication.Result
-			err = mcpapplication.CollectReviews(ctx, fetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+			fetchCalls := 0
+			result := mcpapplication.CollectReviews(ctx, fetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				fetchCalls++
 				return steamdomain.ReviewPage{}, nil
-			}), 440, collectionOptions(t, config), gate, func(got mcpapplication.Result) error {
-				responseCalls++
-				result = got
-				return nil
-			})
+			}), 440, collectionOptions(t, config), gate)
 			want := steamdomain.Collection{AppID: 440, Options: config, Reviews: []steamdomain.Review{}, StopReason: steamdomain.StopFailed}
-			if err != nil || !errors.Is(result.Err, tc.cause) || result.Rejection != mcpdomain.NotRejected || !reflect.DeepEqual(result.Collection, want) {
-				t.Fatalf("result=%+v err=%v; want=%+v cause=%v", result, err, want, tc.cause)
+			if !errors.Is(result.Err, tc.cause) || result.Rejection != mcpdomain.NotRejected || !reflect.DeepEqual(result.Collection, want) {
+				t.Fatalf("result=%+v; want=%+v cause=%v", result, want, tc.cause)
 			}
 
-			if fetchCalls != 0 || clockCalls != 0 || responseCalls != 1 || t.Context().Err() != nil {
-				t.Fatalf("取得=%d 時計=%d 応答=%d 親=%v", fetchCalls, clockCalls, responseCalls, t.Context().Err())
+			if fetchCalls != 0 || clockCalls != 0 || t.Context().Err() != nil {
+				t.Fatalf("取得=%d 時計=%d 親=%v", fetchCalls, clockCalls, t.Context().Err())
 			}
 
 			release, reason := gate.Acquire()

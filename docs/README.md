@@ -44,9 +44,10 @@
 | [ADR-0013：各領域内のレイヤー分類](adr/0013-domain-folder-layers.md) | 既存領域を維持した domain・application・adapter と受付の handler 配置・依存 | 採用。各領域内の分類と依存検査を導入した。[検証記録](worklogs/56-domain-folder-layers.md) に実施結果を残す |
 | [ADR-0014：Steam の収集状態](adr/0014-steam-collection-state.md) | 収集状態・重複・カーソル・終了と取得手順の境界 | 採用。収集状態と取得手順を分離した。[検証記録](worklogs/58-steam-collection-state.md) に実施結果を残す。Issue #86 の重複排除の分離は [記録](worklogs/86-extract-review-deduplication.md) を参照する |
 | [ADR-0015：収集条件の生成と利用](adr/0015-collection-options-boundary.md) | 未検証の設定・有効な条件・ゼロ値・結果のコピーの境界 | 採用。収集条件の生成と利用を分離した。[検証記録](worklogs/60-collection-options-boundary.md) に実施結果を残す |
-| [ADR-0016：MCP の応答完了と同時枠](adr/0016-mcp-response-slot-lifetime.md) | 結果処理の同期実行と同時枠の保持・返却、レイヤー間の連携 | 採用。応答変換完了まで枠を保持する構成に修復した。[検証記録](worklogs/62-mcp-response-slot-lifetime.md) に実施結果を残す |
+| [ADR-0016：MCP の応答完了と同時枠](adr/0016-mcp-response-slot-lifetime.md) | 結果処理の同期実行と同時枠の保持・返却、レイヤー間の連携 | ADR-0020 で置換。旧要件での修復と [検証記録](worklogs/62-mcp-response-slot-lifetime.md) を履歴として保持する |
 | [ADR-0017：生存確認の構造化ログ](adr/0017-health-structured-logging.md) | healthz の生成と経路登録、完了イベント、slog と context、出力と保存の責務 | 採用。ログ導入は Issue #72、生成と登録の分離は Issue #74 の作業記録に記載する |
 | [ADR-0018：検証済みサーバーポート](adr/0018-validated-server-port.md) | PORT の生成時の検査、ゼロ値と既定値、待ち受けアドレス構築との境界 | 採用。Issue #99 の実装・検証は [作業記録](worklogs/99-validated-port-number.md) に記載する |
+| [ADR-0020：MCP の同時枠を収集終了時に返却](adr/0020-mcp-collection-slot-lifetime.md) | MCP の収集と応答変換の実行順序、Result の直接返却、利用枠・context の寿命 | 採用。Issue #113 で ADR-0016 の保持期間と callback の契約を置換する。実装・検証は同 Issue に記録する |
 
 変更が複数の範囲にまたがる場合は、対応する文書をすべて読む。参照した節と ADR、要件に対応する検証を Issue・PR に記録する。ADR を追加・置換するときは、この一覧と適用範囲を更新する。
 

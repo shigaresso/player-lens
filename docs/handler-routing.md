@@ -23,7 +23,7 @@ reviewmcp/adapter/
 
 ## Controller と詳細の依存
 
-MCP の Controller は Issue #80 で collectReviewsHandler.Handle という名前付きメソッドにまとめた。NewCollectReviewsHandler は HTTP ごとの固定の依存を持つ値を組み立て、その Handle のメソッド値を SDK に渡す。Handle が protocol.ParseInput で入力を生成し、不正時は protocol.InvalidInputResult へ変換する。有効なら application.CollectReviews に同期的な結果処理を渡し、その中で protocol.EncodeResult を呼ぶ。変換が終わるまで同時枠を保持し、HTTP/SDK の context 連携 callback を終了時に解放する。これらの流れを collect_reviews.go に残し、外の処理へ委譲するだけの入口にはしない。
+MCP の Controller は Issue #80 で collectReviewsHandler.Handle という名前付きメソッドにまとめた。NewCollectReviewsHandler は HTTP ごとの固定の依存を持つ値を組み立て、その Handle のメソッド値を SDK に渡す。Handle が protocol.ParseInput で入力を生成し、不正時は protocol.InvalidInputResult へ変換する。有効なら application.CollectReviews が直接返した Result を protocol.EncodeResult に渡す。Issue #113 で同時枠の保持を収集終了までに変更し、応答変換は枠の返却後に行う。HTTP/SDK の context 連携 callback は Handle の終了時に解放する。これらの流れを collect_reviews.go に残し、外の処理へ委譲するだけの入口にはしない。
 
 protocol は MCP の入力・結果・公開失敗・schema・埋め込みガイドを担当する。ParseInput、応答生成、InputSchema／OutputSchema と応答量超過のエラーを接続点として公開し、受信型・出力型・分類の詳細は非公開に維持する。構築側のツール定義も公開 schema を使い、上限やガイドの版を二重定義しない。protocol は親の handler と adapter を import しない。
 

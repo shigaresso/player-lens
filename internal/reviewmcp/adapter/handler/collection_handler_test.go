@@ -168,47 +168,70 @@ func TestCollectReviewsHandlerCancellation(t *testing.T) {
 }
 
 func TestCollectReviewsHandlerPanicCleanup(t *testing.T) {
-	t.Run("取得中のpanicを伝えてキャンセル連携と同時枠を解放する", func(t *testing.T) {
-		httpContext := &callbackTrackingContext{Context: context.Background(), done: make(chan struct{})}
-		sdkContext := &callbackTrackingContext{Context: context.Background(), done: make(chan struct{})}
-		gate := mcpdomain.NewLimiter(testutil.Limits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 10, RequestsPerDay: 10, MaxConcurrent: 1}), time.Now)
-		cause := errors.New("取得依存のpanic")
-		var passed context.Context
-		handler := NewCollectReviewsHandler(testutil.FetchFunc(func(ctx context.Context, _ steamdomain.AppID, _ steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
-			passed = ctx
-			if httpContext.activeCallbacks == 0 || sdkContext.activeCallbacks == 0 {
-				t.Error("取得中に親のキャンセルへ連携していない")
+	for _, tc := range []struct {
+		name        string
+		duringFetch bool
+	}{
+		{"取得中のpanicを伝えてキャンセル連携と同時枠を解放する", true},
+		{"応答変換中のpanicを伝えて返却済みの枠とキャンセル連携を維持する", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			httpContext := &callbackTrackingContext{Context: context.Background(), done: make(chan struct{})}
+			sdkContext := &callbackTrackingContext{Context: context.Background(), done: make(chan struct{})}
+			gate := mcpdomain.NewLimiter(testutil.Limits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 10, RequestsPerDay: 10, MaxConcurrent: 1}), time.Now)
+			cause := errors.New("取得依存のpanic")
+			var passed context.Context
+			handler := NewCollectReviewsHandler(testutil.FetchFunc(func(ctx context.Context, _ steamdomain.AppID, _ steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+				passed = ctx
+				if httpContext.activeCallbacks == 0 || sdkContext.activeCallbacks == 0 {
+					t.Error("取得中に親のキャンセルへ連携していない")
+				}
+
+				if tc.duringFetch {
+					panic(cause)
+				}
+
+				return steamdomain.ReviewPage{}, &testutil.ConversionProbeError{Classify: func() {
+					release, reason := gate.Acquire()
+					if release != nil {
+						release()
+					}
+
+					if reason != mcpdomain.NotRejected {
+						t.Errorf("応答変換前の同時枠=%v", reason)
+					}
+
+					panic(cause)
+				}}
+			}), httpContext, gate)
+			func() {
+				defer func() {
+					if got := recover(); got != cause {
+						t.Errorf("panicの原因=%v; want=%v", got, cause)
+					}
+				}()
+
+				_, err := handler(sdkContext, &mcp.CallToolRequest{
+					Params: &mcp.CallToolParamsRaw{Arguments: json.RawMessage(`{"app_id":440}`)},
+				})
+				t.Errorf("panicを呼び出し側へ伝えなかった: err=%v", err)
+			}()
+			if httpContext.activeCallbacks != 0 || sdkContext.activeCallbacks != 0 {
+				t.Fatalf("終了後に連携を保持している: HTTP=%d, SDK=%d", httpContext.activeCallbacks, sdkContext.activeCallbacks)
 			}
 
-			panic(cause)
-		}), httpContext, gate)
-		func() {
-			defer func() {
-				if got := recover(); got != cause {
-					t.Errorf("panicの原因=%v; want=%v", got, cause)
-				}
-			}()
+			if passed == nil || passed.Err() != context.Canceled || httpContext.Err() != nil || sdkContext.Err() != nil {
+				t.Fatal("所有するcontextだけを解放していない")
+			}
 
-			_, err := handler(sdkContext, &mcp.CallToolRequest{
-				Params: &mcp.CallToolParamsRaw{Arguments: json.RawMessage(`{"app_id":440}`)},
-			})
-			t.Errorf("panicを呼び出し側へ伝えなかった: err=%v", err)
-		}()
-		if httpContext.activeCallbacks != 0 || sdkContext.activeCallbacks != 0 {
-			t.Fatalf("終了後に連携を保持している: HTTP=%d, SDK=%d", httpContext.activeCallbacks, sdkContext.activeCallbacks)
-		}
+			release, reason := gate.Acquire()
+			if release != nil {
+				t.Cleanup(release)
+			}
 
-		if passed == nil || passed.Err() != context.Canceled || httpContext.Err() != nil || sdkContext.Err() != nil {
-			t.Fatal("所有するcontextだけを解放していない")
-		}
-
-		release, reason := gate.Acquire()
-		if release != nil {
-			t.Cleanup(release)
-		}
-
-		if reason != mcpdomain.NotRejected {
-			t.Fatalf("panic後に同時枠を返却しなかった: %v", reason)
-		}
-	})
+			if reason != mcpdomain.NotRejected {
+				t.Fatalf("panic後に同時枠を返却しなかった: %v", reason)
+			}
+		})
+	}
 }

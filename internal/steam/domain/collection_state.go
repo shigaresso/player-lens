@@ -28,9 +28,9 @@ func NewCollectionState(appID AppID, options CollectionOptions) (*CollectionStat
 	}, nil
 }
 
-// NextPage は次の取得条件と続行可否を返す。件数は収集の残件数までに制限する。
-// 終了済みならゼロ値と false を返す。
-func (s *CollectionState) NextPage() (PageOptions, bool) {
+// NextFetchConditions は次の取得条件と続行可否を返す。件数は収集の残件数までに制限する。
+// 通信や状態更新は行わず、終了済みならゼロ値と false を返す。
+func (s *CollectionState) NextFetchConditions() (PageOptions, bool) {
 	if s.result.StopReason != "" {
 		return PageOptions{}, false
 	}

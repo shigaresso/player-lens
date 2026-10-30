@@ -61,6 +61,10 @@ python3 scripts/verify_secrets.py
 
 Issue #77 で handler 直下の collect_reviews.go と health.go に関連する契約テストをまとめ、SDK 構築の server.go に通常／結合テストをまとめた。補助処理のサブフォルダを折りたたむと Controller を探せる表示にした。同名の Steam 収集操作のテストも既存の配置で表示できるパターンを維持した。
 
+Issue #119 では steam/domain の collection_state.go・collection_options.go・review_type.go に、同じ名前で始まる関連テストをワイルドカードでまとめる。現在の対象はそれぞれ6・2・2ファイルで、collection_failure_test.go と options_test.go は従来どおり同名の実装に対応させる。テストファイルを移動・統合せず、内容と Go の実行対象は維持する。パターンは同じフォルダ内の名前へ適用されるため、追加・改名時は実装との責務の対応と他フォルダへの影響も確認する。
+
+設定変更時は python3 -m json.tool .vscode/settings.json で構文を確認し、実際のファイル名をルールへ照合して親の重複・対応漏れを確認する。実表示はリポジトリのルートを VS Code で開き、エクスプローラーで対象の親を展開・折りたたんで確認する。JSON や名前の静的確認だけで実 UI も確認済みとは扱わない。
+
 Issue #103 で、cmd/server/adapter の mcp_handler_test.go を routes_test.go へ統合し、ルーティングの検査を routes.go に対応させた。internal/reviewmcp/adapter の未初期化 Limits を拒否する生成契約は server_test.go へ移した。cmd/server/adapter/limits_test.go は環境設定の読み取り・解析を担当する limits.go に対応し、MCP adapter の生成契約とは区別する。
 
 共有する server.go のパターンから limits_test.go を外し、同名の limits.go との対応の競合をなくした。handler.go のパターンから削除済みの mcp_handler_test.go も外した。同名の通常テスト・integration テストを実装の下へまとめる汎用パターンは維持する。steam_fetcher_integration_test.go は実接続の検証なので独立したファイルと integration build tag を保つ。表示上の親子関係は実行対象を変えない。配置と検証の詳細は [作業記録](worklogs/103-server-test-layout.md) を参照する。

@@ -2,7 +2,7 @@
 
 プレイヤーのレビューを収集・分析し、ゲーム企画に使える根拠付きレポートを生成するアプリケーションを開発する。
 
-現在は Go の最小 HTTP サーバー、上限付きの Steam レビュー収集、JSON を出力するローカル CLI、ChatGPT へ収集結果を返す MCP、Docker Compose の開発・検証環境、Git・GitHub の規約検査を導入した。バックエンドの分析・レポート・DB は未実装とし、Web UI の公開デモと実データのサンプルレポートはまだない。[分析の依頼例](docs/review-analysis.md) と [架空レビューの分析例](docs/examples/review-analysis.md) を掲載した。公開 MCP の基本接続先は [https://player-lens.onrender.com/tools](https://player-lens.onrender.com/tools) で、HTTP の初期化・一覧・不正入力の拒否を確認した。検証済み digest を配置する経路と実 ChatGPT 接続は未確認とする。
+現在は Go の最小 HTTP サーバー、上限付きの Steam レビュー収集、JSON を出力するローカル CLI、ChatGPT へ収集結果を返す MCP、Docker Compose の開発・検証環境、Git・GitHub の規約検査を導入した。バックエンドの分析・レポート・DB は未実装とし、Web UI の公開デモと実データのサンプルレポートはまだない。[分析の依頼例](docs/review-analysis.md) と [架空レビューの分析例](docs/examples/review-analysis.md) を掲載した。公開 MCP の基本接続先は [https://player-lens.onrender.com/tools](https://player-lens.onrender.com/tools) で、HTTP の初期化・一覧・不正入力の拒否を確認した。ChatGPT App からの MCP 利用はローカル・Render ともにユーザーが実機確認済みである。検証済み digest を配置する経路は未確認とする。
 
 ## 開発環境
 
@@ -63,6 +63,10 @@ PlayerLens の `/tools` にある `collect_reviews` で Steam レビューを収
 
 以下は日本語 UI の ChatGPT App での登録手順である。
 
+登録方法は [OpenAI 公式の MCP 設定手順](https://learn.chatgpt.com/docs/extend/mcp) と [Codex CLI リファレンス](https://learn.chatgpt.com/docs/cli/reference) を参照する。Claude Code を使う場合は [Claude Code 公式の MCP 登録手順（日本語）](https://code.claude.com/docs/ja/mcp) を参照する。
+
+**OpenAI 側（ChatGPT App／Codex）での MCP 利用は、ローカル・Render ともにユーザーが実機確認済みである。Claude Code のみ実機未確認**であり、上記の公式手順を案内する。確認状況は [Issue #138 の作業記録](docs/worklogs/138-codex-mcp-readme.md)、過去の実接続確認は [当時の記録](docs/worklogs/27-mcp-usage-limits.md) を参照する。
+
 ### ローカルの MCP を追加する
 
 1. Docker を起動し、リポジトリで `python3 scripts/dev.py` を実行する。起動とヘルスチェックが成功すると、同じターミナルに次のような行が表示される。
@@ -118,7 +122,7 @@ codex mcp add player_lens_render --url https://player-lens.onrender.com/tools
 
 ### 登録後の確認
 
-設定の変更後は、ChatGPT App を再起動する。CLI では Codex を起動し直す。入力欄の `/mcp` で対象の接続と `collect_reviews` が利用できるか確認する。CLI の `codex mcp list` は登録内容を確認するコマンドであり、取得・分析の成功確認とは別である。[OpenAI 公式の MCP 設定手順](https://learn.chatgpt.com/docs/extend/mcp) と [CLI リファレンス](https://learn.chatgpt.com/docs/cli/reference) も参照する。
+設定の変更後は、ChatGPT App を再起動する。CLI では Codex を起動し直す。入力欄の `/mcp` で対象の接続と `collect_reviews` が利用できるか確認する。CLI の `codex mcp list` は登録内容を確認するコマンドであり、取得・分析の成功確認とは別である。
 
 ### セットアップ後に送るチャット
 

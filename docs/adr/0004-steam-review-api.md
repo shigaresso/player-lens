@@ -30,7 +30,7 @@ Body の読み取りと Close を別の担当に分ける案では、解釈と C
 
 ## HTTP リクエストの組み立て（Issue #88）
 
-FetchReviewsPage に具体的な API 入力・JSON・クエリ・GET の構築を残す案と比較し、同じ adapter の review_page_request.go に非公開の newReviewPageHTTPRequest を置く。入力検査・期限・送受信の手順から、送信する HTTP リクエストの組み立てを分けて読めることを優先する。既存の newReviewPageRequest と encodeReviewPageQuery はその内部から使う。
+FetchReviewsPage に具体的な API 入力・JSON・クエリ・GET の構築を残す案と比較し、同じ adapter の review_page_request.go に非公開の newReviewPageHTTPRequest を置く。入力検査・期限・送受信の手順から、送信する HTTP リクエストの組み立てを分けて読めることを優先する。既存の newReviewPageAPIInput と buildReviewPageQuery はその内部から使う。
 
 接続先・App ID の検査と条件の正規化は呼び出し側で完了し、取得用 context の生成・解放と送信は FetchReviewsPage が担当する。分離先で通信・再検査・期限・再試行を追加しない。公開 API・依存・新しいレイヤーは増やさず、GET・エンコード・失敗時のゼロ値と原因・応答 Body の所有を維持する。関数呼び出しは増えるため、送信内容の詳細は同じファイルの既存の変換と一緒に配置する。
 

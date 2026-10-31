@@ -87,7 +87,7 @@ func TestCollect(t *testing.T) {
 
 func callCollectReviews(t *testing.T, ctx context.Context, fetcher steamapplication.PageFetcher, input json.RawMessage, gate *mcpdomain.Limiter) (*mcp.CallToolResult, error) {
 	t.Helper()
-	handler := NewCollectReviewsHandler(fetcher, ctx, gate)
+	handler := NewCollectReviewsHandler(fetcher, ctx, gate, testutil.DiscardLogger(), time.Now)
 	return handler(ctx, &mcp.CallToolRequest{
 		Params: &mcp.CallToolParamsRaw{Arguments: input},
 	})

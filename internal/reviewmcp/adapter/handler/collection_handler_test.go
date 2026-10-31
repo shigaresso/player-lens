@@ -1,9 +1,12 @@
 package handler
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -65,7 +68,7 @@ func TestCollectReviewsHandlerCleanup(t *testing.T) {
 				}
 
 				return steamdomain.ReviewPage{}, tc.fetchErr
-			}), httpContext, mcpdomain.NewLimiter(mcpdomain.DefaultLimits(), time.Now))
+			}), httpContext, mcpdomain.NewLimiter(mcpdomain.DefaultLimits(), time.Now), testutil.DiscardLogger(), time.Now)
 			result, err := handler(sdkContext, &mcp.CallToolRequest{
 				Params: &mcp.CallToolParamsRaw{Arguments: json.RawMessage(tc.input)},
 			})
@@ -113,7 +116,7 @@ func TestCollectReviewsHandlerCancellation(t *testing.T) {
 				case <-forceStop:
 					return steamdomain.ReviewPage{}, errors.New("テストの終了で取得を停止した")
 				}
-			}), httpContext, mcpdomain.NewLimiter(mcpdomain.DefaultLimits(), time.Now))
+			}), httpContext, mcpdomain.NewLimiter(mcpdomain.DefaultLimits(), time.Now), testutil.DiscardLogger(), time.Now)
 			t.Cleanup(func() {
 				cancelHTTP()
 				cancelSDK()
@@ -180,6 +183,7 @@ func TestCollectReviewsHandlerPanicCleanup(t *testing.T) {
 			sdkContext := &callbackTrackingContext{Context: context.Background(), done: make(chan struct{})}
 			gate := mcpdomain.NewLimiter(testutil.Limits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 10, RequestsPerDay: 10, MaxConcurrent: 1}), time.Now)
 			cause := errors.New("取得依存のpanic")
+			var output bytes.Buffer
 			var passed context.Context
 			handler := NewCollectReviewsHandler(testutil.FetchFunc(func(ctx context.Context, _ steamdomain.AppID, _ steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				passed = ctx
@@ -203,7 +207,7 @@ func TestCollectReviewsHandlerPanicCleanup(t *testing.T) {
 
 					panic(cause)
 				}}
-			}), httpContext, gate)
+			}), httpContext, gate, slog.New(slog.NewJSONHandler(&output, nil)), time.Now)
 			func() {
 				defer func() {
 					if got := recover(); got != cause {
@@ -216,6 +220,20 @@ func TestCollectReviewsHandlerPanicCleanup(t *testing.T) {
 				})
 				t.Errorf("panicを呼び出し側へ伝えなかった: err=%v", err)
 			}()
+			var record map[string]any
+			if err := json.Unmarshal(output.Bytes(), &record); err != nil {
+				t.Fatal(err)
+			}
+
+			stage := "response_encode"
+			if tc.duringFetch {
+				stage = "collection"
+			}
+
+			if record["error_code"] != "panic" || record["failure_stage"] != stage || record["level"] != "ERROR" || bytes.Count(output.Bytes(), []byte("\n")) != 1 || strings.Contains(output.String(), cause.Error()) {
+				t.Fatal("panic の固定分類・1回の出力・非漏出を満たさなかった")
+			}
+
 			if httpContext.activeCallbacks != 0 || sdkContext.activeCallbacks != 0 {
 				t.Fatalf("終了後に連携を保持している: HTTP=%d, SDK=%d", httpContext.activeCallbacks, sdkContext.activeCallbacks)
 			}

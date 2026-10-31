@@ -3,6 +3,7 @@ package adapter
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -24,7 +25,8 @@ const maxRequestBodyBytes = 16 * 1024
 // HTTP クライアントと接続プールの終了は呼び出し側が担当する。
 // config は NewHTTPConfig で生成し、ローカル用・公開用ともに渡す。
 // config のゼロ値は構築エラーとし、許可 Host から認証なしで受け付ける。
-func NewHandler(fetcher steamapplication.PageFetcher, limits mcpdomain.Limits, config HTTPConfig) (http.Handler, error) {
+// logger と計測用 now は非 nil かつ並行利用可能なものを渡す。nil は構築エラーとする。
+func NewHandler(fetcher steamapplication.PageFetcher, limits mcpdomain.Limits, config HTTPConfig, logger *slog.Logger, now func() time.Time) (http.Handler, error) {
 	if fetcher == nil {
 		return nil, fmt.Errorf("prepare review MCP handler: %w", steamdomain.ErrInvalidArgument)
 	}
@@ -37,10 +39,14 @@ func NewHandler(fetcher steamapplication.PageFetcher, limits mcpdomain.Limits, c
 		return nil, fmt.Errorf("prepare review MCP handler: HTTP config is required: %w", mcpaccess.ErrInvalidConfig)
 	}
 
+	if logger == nil || now == nil {
+		return nil, fmt.Errorf("prepare review MCP handler: logger and clock are required: %w", steamdomain.ErrInvalidArgument)
+	}
+
 	sharedLimiter := mcpdomain.NewLimiter(limits, time.Now)
 
 	createServerForRequest := func(request *http.Request) *mcp.Server {
-		return newServer(fetcher, request.Context(), sharedLimiter)
+		return newServer(fetcher, request.Context(), sharedLimiter, logger, now)
 	}
 
 	sdkHTTPHandler := mcp.NewStreamableHTTPHandler(createServerForRequest, &config.sdkOptions)
@@ -48,10 +54,10 @@ func NewHandler(fetcher steamapplication.PageFetcher, limits mcpdomain.Limits, c
 	return accessadapter.Protect(config.access, config.deniedMessage, sdkHTTPHandler)
 }
 
-func newServer(fetcher steamapplication.PageFetcher, requestContext context.Context, gate *mcpdomain.Limiter) *mcp.Server {
+func newServer(fetcher steamapplication.PageFetcher, requestContext context.Context, gate *mcpdomain.Limiter, logger *slog.Logger, now func() time.Time) *mcp.Server {
 	server := mcp.NewServer(&mcp.Implementation{Name: "PlayerLens", Version: "0.1.0"}, &mcp.ServerOptions{
 		SupportedProtocolVersions: []string{"2026-07-28", "2025-11-25", "2025-06-18", "2025-03-26"},
 	})
-	server.AddTool(collectReviewsDefinition(), controller.NewCollectReviewsHandler(fetcher, requestContext, gate))
+	server.AddTool(collectReviewsDefinition(), controller.NewCollectReviewsHandler(fetcher, requestContext, gate, logger, now))
 	return server
 }

@@ -48,6 +48,7 @@
 | [ADR-0017：生存確認の構造化ログ](adr/0017-health-structured-logging.md) | healthz の生成と経路登録、完了イベント、slog と context、出力と保存の責務 | 採用。ログ導入は Issue #72、生成と登録の分離は Issue #74 の作業記録に記載する |
 | [ADR-0018：検証済みサーバーポート](adr/0018-validated-server-port.md) | PORT の生成時の検査、ゼロ値と既定値、待ち受けアドレス構築との境界 | 採用。Issue #99 の実装・検証は [作業記録](worklogs/99-validated-port-number.md) に記載する |
 | [ADR-0020：MCP の同時枠を収集終了時に返却](adr/0020-mcp-collection-slot-lifetime.md) | MCP の収集と応答変換の実行順序、Result の直接返却、利用枠・context の寿命 | 採用。Issue #113 で ADR-0016 の保持期間と callback の契約を置換する。実装・検証は同 Issue に記録する |
+| [ADR-0021：MCP 収集の構造化ログ](adr/0021-mcp-collection-structured-logging.md) | 収集1回分の完了イベント・計測・安全な分類と slog/context | 採用。Issue #135 の実装・検証は作業記録に記載する |
 
 変更が複数の範囲にまたがる場合は、対応する文書をすべて読む。参照した節と ADR、要件に対応する検証を Issue・PR に記録する。ADR を追加・置換するときは、この一覧と適用範囲を更新する。
 

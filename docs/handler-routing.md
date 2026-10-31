@@ -18,6 +18,7 @@ reviewmcp/adapter/
   handler/
     collect_reviews.go              Controller：準備→入力→UseCase→応答
     protocol/                      入力・応答・失敗・schema・ガイドの詳細
+    logging/                       収集1回分のログ属性・分類・レベル
   internal/testutil/                 テストだけが使う fixture
 ```
 
@@ -26,6 +27,8 @@ reviewmcp/adapter/
 MCP の Controller は Issue #80 で collectReviewsHandler.Handle という名前付きメソッドにまとめた。NewCollectReviewsHandler は HTTP ごとの固定の依存を持つ値を組み立て、その Handle のメソッド値を SDK に渡す。Handle が protocol.ParseInput で入力を生成し、不正時は protocol.InvalidInputResult へ変換する。有効なら application.CollectReviews が直接返した Result を protocol.EncodeResult に渡す。Issue #113 で同時枠の保持を収集終了までに変更し、応答変換は枠の返却後に行う。HTTP/SDK の context 連携 callback は Handle の終了時に解放する。これらの流れを collect_reviews.go に残し、外の処理へ委譲するだけの入口にはしない。
 
 protocol は MCP の入力・結果・公開失敗・schema・埋め込みガイドを担当する。ParseInput、応答生成、InputSchema／OutputSchema と応答量超過のエラーを接続点として公開し、受信型・出力型・分類の詳細は非公開に維持する。構築側のツール定義も公開 schema を使い、上限やガイドの版を二重定義しない。protocol は親の handler と adapter を import しない。
+
+Issue #135 で MCP の Controller に完了計測と結果記録を追加する。main の logger と計測時計を外側から渡し、Controller の開始から応答生成までを1回記録する。属性・レベル・安全な原因分類は handler/logging に置く。application の結果と protocol の公開コードを使い、応答 JSON を読み戻さない。公開応答・利用枠・context の寿命を維持し、SDK の送信完了は別の観測とする。
 
 healthz の NewHealthHandler は http.HandlerFunc(handler.Handle) を返す。HTTP の ServeHTTP は標準ライブラリが実装し、応答の実行は healthHandler.Handle が担当する。healthz は HealthPath の1定義を登録とログで共有し、Controller が logging.HealthCheck に固定パス・メソッド・所要時間・書き込み結果を渡す。logging は親を参照せず、JSON 属性・level・安全な原因分類を担当する。受信 query や任意のエラー文字列は出さない。
 

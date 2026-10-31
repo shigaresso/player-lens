@@ -20,7 +20,7 @@ Issue #88 で、HTTP リクエストの組み立てを同じ adapter の非公�
 
 Issue #38 で adapter 内のリクエスト変換を分離した。Issue #43 では文字列の評価種別から数値への変換を入力境界へ移した。`newReviewPageAPIInput`、`newReviewPageQuery` は、正規化済みの条件を Steam API の入力とクエリへ変換する通信なしの処理であり、新しいユースケースではない。 Issue #64 で評価種別の検査を FetchReviewsPage が呼ぶ NormalizePageOptions に集約し、newReviewPageAPIInput は正の App ID と検査後の条件の変換だけを担当する構成にした。private の重複検査と error 戻り値を除き、公開入口で不正入力を通信前に拒否する契約を維持した。
 
-Issue #39 で応答解釈も分離した。`decodeReviewPage` は本文と取得条件からページを作り、Issue #43 の `parseRecommendationID` は ID の文字列を0を含む uint64 に変換する。Issue #66 で、Body の読み取り・サイズ制限・解釈の呼び出し・Close を同じ adapter の `readReviewPageResponse` にまとめた。FetchReviewsPage は送信と context を担当し、応答処理が Close を終えた後で context を解放する。JSON の解釈は decodeReviewPage に維持し、新しいユースケースやレイヤーは増やさない。
+Issue #39 で応答解釈も分離した。`decodeReviewPage` は本文と取得条件からページを作り、Issue #43 の `parseRecommendationID` は ID の文字列を0を含む uint64 に変換する。Issue #66 では読み取り・サイズ制限・Close を応答処理へまとめた。Issue #129 では、FetchReviewsPage が送信・HTTP ステータスの判断・Body の Close と context の寿命を所有する配置へ変更した。本文は io.Reader として同じ adapter の `readReviewPageBody` に渡し、上限付き読み取りと decodeReviewPage の呼び出しに絞る。Close の複合エラーとゼロ値・panic の伝播を維持し、Body を閉じた後で context を解放する。新しいユースケースやレイヤーは増やさない。
 
 Issue #68 で、レビュー1件の ID と項目の変換を convertReview にまとめた。decodeReviewPage はページ全体の検査・変換の呼び出し・組み立てを担当し、変換に失敗したページは部分的に返さない。両処理は同じ adapter 内の純粋な処理とする。
 

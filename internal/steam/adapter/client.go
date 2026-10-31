@@ -56,12 +56,14 @@ func NewClient(httpClient *http.Client, endpoint string) (*Client, error) {
 }
 
 // FetchReviewsPage は1ページを取得する。再試行や保存は行わず、失敗時にはゼロ値を返す。
-func (c *Client) FetchReviewsPage(ctx context.Context, appID steamdomain.AppID, options steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+// HTTP ステータスを判断し、Do が成功した Body は panic 時も1回閉じてから取得用 context を解放する。
+// Close 失敗ではページをゼロ値にし、元の原因と併せて返す。
+func (c *Client) FetchReviewsPage(ctx context.Context, appID steamdomain.AppID, options steamdomain.PageOptions) (page steamdomain.ReviewPage, err error) {
 	if appID == 0 {
 		return steamdomain.ReviewPage{}, fmt.Errorf("invalid Steam AppID: %w", steamdomain.ErrInvalidArgument)
 	}
 
-	options, err := steamdomain.NormalizePageOptions(options)
+	options, err = steamdomain.NormalizePageOptions(options)
 	if err != nil {
 		return steamdomain.ReviewPage{}, fmt.Errorf("prepare Steam review page options: %w", err)
 	}
@@ -79,5 +81,16 @@ func (c *Client) FetchReviewsPage(ctx context.Context, appID steamdomain.AppID, 
 		return steamdomain.ReviewPage{}, fmt.Errorf("fetch Steam reviews: %w", err)
 	}
 
-	return readReviewPageResponse(response, appID, options)
+	defer func() {
+		if closeErr := response.Body.Close(); closeErr != nil {
+			page = steamdomain.ReviewPage{}
+			err = errors.Join(err, fmt.Errorf("close Steam review response: %w", closeErr))
+		}
+	}()
+
+	if response.StatusCode != http.StatusOK {
+		return steamdomain.ReviewPage{}, &HTTPStatusError{StatusCode: response.StatusCode}
+	}
+
+	return readReviewPageBody(response.Body, appID, options)
 }

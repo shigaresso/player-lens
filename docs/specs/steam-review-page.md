@@ -22,7 +22,7 @@ HTTP クライアントと接続先は外から渡す。空の接続先は公式
 
 ### リクエスト変換の境界（Issue #38）
 
-`FetchReviewsPage` は必ず `NormalizePageOptions` を通し、未知の評価種別を通信前に `ErrInvalidArgument` で拒否する。Issue #64 では、その成功後に呼ぶ `review_page_request.go` の `newReviewPageAPIInput` から同じ検査を除いた。正の App ID と正規化済みの条件を渡すことを呼び出し側の契約とし、内部の ReviewType を EUserReviewsReviewType へ変換して固定の API 条件を設定する。変換だけを行うため error 戻り値は持たない。`newReviewPageQuery` は JSON とクエリへ変換する。これらは通信・時刻・保存に依存しない。既定値と入力検査は `NormalizePageOptions`、期限と送信は `FetchReviewsPage`、応答処理と Body の Close は `readReviewPageResponse` が担当する。
+`FetchReviewsPage` は必ず `NormalizePageOptions` を通し、未知の評価種別を通信前に `ErrInvalidArgument` で拒否する。Issue #64 では、その成功後に呼ぶ `review_page_request.go` の `newReviewPageAPIInput` から同じ検査を除いた。正の App ID と正規化済みの条件を渡すことを呼び出し側の契約とし、内部の ReviewType を EUserReviewsReviewType へ変換して固定の API 条件を設定する。変換だけを行うため error 戻り値は持たない。`newReviewPageQuery` は JSON とクエリへ変換する。これらは通信・時刻・保存に依存しない。既定値と入力検査は `NormalizePageOptions`、期限・送信・HTTP ステータスの判断・Body の Close は `FetchReviewsPage`、本文読み取りと変換の呼び出しは `readReviewPageBody` が担当する。
 
 API 側の数値定数は [公式の列挙名](https://partner.steamgames.com/doc/webapi/IUserReviewsService#Enums) と同じ `k_EUserReviewsReviewType_All`・`k_EUserReviewsReviewType_Positive`・`k_EUserReviewsReviewType_Negative`、`k_EUserReviewsAppReviewsFilter_Recent`、`k_EUserReviewsPurchaseType_All` を使う。これらは非公開とし、API へ送る値を明示的な数値で定義する。
 
@@ -32,7 +32,7 @@ Issue #121 で API 入力データ・クエリパラメーター・HTTP リク�
 
 同じ `review_page_request.go` の非公開関数 `newReviewPageHTTPRequest` が、API 入力への変換、JSON・クエリの生成、context 付き GET リクエストの構築をまとめる。呼び出し側が検査した接続先、正の App ID、正規化済みの条件と取得用 context を受け取り、再検査・通信・期限の生成は行わない。`format=json` と `input_json`、URL エンコード、固定条件、エラーの文脈と原因を維持する。
 
-`FetchReviewsPage` は入力検査、10秒の取得用 context と cancel、リクエスト構築の呼び出し、送信、応答処理の呼び出しを担当する。リクエスト構築に失敗した場合もページの完全なゼロ値と原因を返し、取得用 context を解放する。Body の読み取りと Close は `readReviewPageResponse` に維持し、Close を完了してから取得用 context を解放する。
+`FetchReviewsPage` は入力検査、10秒の取得用 context と cancel、リクエスト構築の呼び出し、送信、HTTP ステータスの判断、本文読み取りの呼び出しを担当する。リクエスト構築に失敗した場合もページの完全なゼロ値と原因を返し、取得用 context を解放する。Do の成功後は自身で Body の Close を予約し、200以外なら本文を読まず早期 return する。本文の読み取りは `readReviewPageBody` に分離し、Close は自身で完了してから取得用 context を解放する。
 
 ## 結果と失敗
 
@@ -46,7 +46,13 @@ Issue #90 で内部エラーの説明を明確にした。`response` の欠落�
 
 ### 応答解釈の境界（Issue #39）
 
-`review_page_response.go` の `decodeReviewPage` が本文の JSON 解析、wrapper・件数・カーソルの検査、空配列の正規化とページ生成を担当する。Issue #43 では専用の受信データから `parseRecommendationID` で ID を10進の uint64 に変換する。省略・null・空・構文不正・範囲超過は拒否し、0は受け付ける。先頭ゼロは数値に正規化する。これらは通信しない。Issue #66 では、HTTP ステータス、Body の読み取り・2 MiB 制限、解釈の呼び出し、Close と複合エラーを `read_review_page_response.go` の `readReviewPageResponse` にまとめた。Do が成功して返した有効な応答と、正の App ID・正規化済みの条件を受け取り、Body を読み取りから Close まで所有する。解釈を終えてから Close し、Close 失敗ではページをゼロ値にして元の原因と併せて返す。読み取り中の同じ goroutine の panic も Close した後に呼び出し側へ伝える。FetchReviewsPage は入力・要求構築・送信と取得用 context を所有し、応答処理が Close を完了してから context を解放する。失敗時のゼロ値と原因保持を維持する。
+`review_page_response.go` の `decodeReviewPage` が本文の JSON 解析、wrapper・件数・カーソルの検査、空配列の正規化とページ生成を担当する。Issue #43 では専用の受信データから `parseRecommendationID` で ID を10進の uint64 に変換する。省略・null・空・構文不正・範囲超過は拒否し、0は受け付ける。先頭ゼロは数値に正規化する。これらは通信しない。
+
+Issue #66 では応答処理にステータス・読み取り・Close をまとめたが、Issue #129 で成功条件と資源管理を FetchReviewsPage へ移した。分離先の `read_review_page_body.go` の `readReviewPageBody` は、200を確認した応答の `io.Reader`・正の App ID・正規化済みの条件を受け取り、最大2 MiBと1バイトまで読み取って超過を拒否し、decodeReviewPage を呼ぶ。HTTP Response や Close・期限の責務は持たない。
+
+FetchReviewsPage が読み取りと解釈の後で Body を1回 Close する。Close 失敗では名前付き戻り値のページをゼロ値にし、元の原因と Close の原因を併せて返す。ステータス不正時の早期 return と、同じ goroutine の読み取り中の panic でも Close し、その後に取得用 context を解放する。panic は呼び出し側へ伝え、既存の失敗時のゼロ値と原因保持を維持する。
+
+Issue #129 の責務移動と既存契約の検証は [作業記録](../worklogs/129-fetch-response-ownership.md) に残す。
 
 ### レビュー1件の変換（Issue #68）
 

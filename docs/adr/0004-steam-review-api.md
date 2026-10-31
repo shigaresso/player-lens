@@ -22,11 +22,13 @@
 
 ID・時刻と API の3列挙値の型、recommendationid の0の受理と数値化、外部 JSON との変換は [ADR-0012](0012-steam-domain-types.md) を採用する。内部は既存の ReviewType を数値列挙型に変更し、値を公式定数から定義する。HTTP adapter で公式型 EUserReviewsReviewType に変換し、外部の文字列入力・出力との変換は CLI・MCP・JSON の境界に集約する。Issue #33 の文字列型を内部へ伝播する方針をここで置き換える。
 
-## HTTP 応答と Body の所有（Issue #66）
+## HTTP 応答と Body の所有（Issue #66・#129）
 
-FetchReviewsPage は入力検査・要求構築・送信と取得用 context の寿命を担当し、Do の成功後は同じ adapter の readReviewPageResponse に応答を渡す。readReviewPageResponse はステータス確認、制限付き読み取り、純粋な decodeReviewPage の呼び出しと Close を同じ範囲で担当する。現在の defer による後始末を移動し、Close の回数や順序を変えない。
+Issue #66 では応答処理の関数にステータス確認・読み取り・Close をまとめた。Issue #129 でこの配置を変更し、FetchReviewsPage が Do の通信エラー確認、Body の Close の予約、HTTP 200 の確認、本文読み取りの呼び出しを順に担当する。取得全体の成功条件と、Body を取得した場所での資源管理を同じ関数から読めることを優先する。
 
-Body の読み取りと Close を別の担当に分ける案では、解釈と Close の複合失敗や資源の寿命が分断されるため、一連の応答処理としてまとめる。Close は解釈後・取得用 context の解放前に完了させる。Close 失敗は元の原因と併せて保持し、完全なゼロ値のページを返す。読み取り中の同じ goroutine の panic でも Close と context の解放を行い、panic は握りつぶさない。公開 API・通信上限・再試行と接続プールの所有は維持する。
+応答処理の関数へ所有権ごと渡し続ける案と比較し、FetchReviewsPage が Body を所有したまま、read_review_page_body.go の readReviewPageBody に io.Reader と正の App ID・正規化済みの条件だけを渡す構成を採用する。分離先は上限付き読み取りと decodeReviewPage の呼び出しを担当し、HTTP ステータス・Close・context の寿命を扱わない。旧関数の互換ラッパーは残さない。
+
+Close は解釈後・取得用 context の解放前に完了させる。FetchReviewsPage の名前付き戻り値と defer により、Close 失敗は元の原因と併せて保持し、完全なゼロ値のページを返す。読み取り中の同じ goroutine の panic でも Close と context の解放を行い、panic は握りつぶさない。公開 API の引数・戻り値の型、通信上限・再試行と接続プールの所有は維持する。
 
 ## HTTP リクエストの組み立て（Issue #88）
 

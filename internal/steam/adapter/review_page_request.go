@@ -33,7 +33,7 @@ type reviewPageAPIInput struct {
 // 呼び出し側は接続先と App ID の検査・取得条件の正規化を完了させ、context の寿命と送信を管理する。
 func newReviewPageHTTPRequest(ctx context.Context, endpoint string, appID steamdomain.AppID, options steamdomain.PageOptions) (*http.Request, error) {
 	input := newReviewPageAPIInput(appID, options)
-	query, err := buildReviewPageQuery(input)
+	query, err := newReviewPageQuery(input)
 	if err != nil {
 		return nil, err
 	}
@@ -61,9 +61,9 @@ func newReviewPageAPIInput(appID steamdomain.AppID, options steamdomain.PageOpti
 	}
 }
 
-// buildReviewPageQuery は API 入力を JSON 化し、format と input_json のクエリパラメーターを返す。
+// newReviewPageQuery は API 入力を JSON 化し、format と input_json のクエリパラメーターを返す。
 // URL エンコードは戻り値の Encode で行う。
-func buildReviewPageQuery(input reviewPageAPIInput) (url.Values, error) {
+func newReviewPageQuery(input reviewPageAPIInput) (url.Values, error) {
 	data, err := json.Marshal(input)
 	if err != nil {
 		return nil, fmt.Errorf("encode Steam review request: %w", err)

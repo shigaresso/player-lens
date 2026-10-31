@@ -48,13 +48,13 @@ func TestNewReviewPageAPIInput(t *testing.T) {
 	}
 }
 
-func TestBuildReviewPageQuery(t *testing.T) {
+func TestNewReviewPageQuery(t *testing.T) {
 	t.Run("APIの項目名でJSON化し言語と特殊文字のカーソルを保持する", func(t *testing.T) {
 		input := reviewPageAPIInput{
 			AppID: 440, Filter: 1, Languages: []string{"japanese"},
 			Cursor: "次+/=&?", PageSize: 7, ReviewType: 2, PurchaseType: 1, FilterOfftopic: true,
 		}
-		query, err := buildReviewPageQuery(input)
+		query, err := newReviewPageQuery(input)
 		if err != nil {
 			t.Fatal(err)
 		}

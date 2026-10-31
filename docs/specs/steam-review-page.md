@@ -22,13 +22,13 @@ HTTP クライアントと接続先は外から渡す。空の接続先は公式
 
 ### リクエスト変換の境界（Issue #38）
 
-`FetchReviewsPage` は必ず `NormalizePageOptions` を通し、未知の評価種別を通信前に `ErrInvalidArgument` で拒否する。Issue #64 では、その成功後に呼ぶ `review_page_request.go` の `newReviewPageAPIInput` から同じ検査を除いた。正の App ID と正規化済みの条件を渡すことを呼び出し側の契約とし、内部の ReviewType を EUserReviewsReviewType へ変換して固定の API 条件を設定する。変換だけを行うため error 戻り値は持たない。`buildReviewPageQuery` は JSON とクエリへ変換する。これらは通信・時刻・保存に依存しない。既定値と入力検査は `NormalizePageOptions`、期限と送信は `FetchReviewsPage`、応答処理と Body の Close は `readReviewPageResponse` が担当する。
+`FetchReviewsPage` は必ず `NormalizePageOptions` を通し、未知の評価種別を通信前に `ErrInvalidArgument` で拒否する。Issue #64 では、その成功後に呼ぶ `review_page_request.go` の `newReviewPageAPIInput` から同じ検査を除いた。正の App ID と正規化済みの条件を渡すことを呼び出し側の契約とし、内部の ReviewType を EUserReviewsReviewType へ変換して固定の API 条件を設定する。変換だけを行うため error 戻り値は持たない。`newReviewPageQuery` は JSON とクエリへ変換する。これらは通信・時刻・保存に依存しない。既定値と入力検査は `NormalizePageOptions`、期限と送信は `FetchReviewsPage`、応答処理と Body の Close は `readReviewPageResponse` が担当する。
 
 API 側の数値定数は [公式の列挙名](https://partner.steamgames.com/doc/webapi/IUserReviewsService#Enums) と同じ `k_EUserReviewsReviewType_All`・`k_EUserReviewsReviewType_Positive`・`k_EUserReviewsReviewType_Negative`、`k_EUserReviewsAppReviewsFilter_Recent`、`k_EUserReviewsPurchaseType_All` を使う。これらは非公開とし、API へ送る値を明示的な数値で定義する。
 
 ### HTTP リクエストの組み立て（Issue #88）
 
-Issue #121 で API 入力型を `reviewPageAPIInput`、その生成を `newReviewPageAPIInput`、クエリ構築を `buildReviewPageQuery` という名前に揃えた。API 入力データ・JSON を格納したクエリパラメーター・HTTP リクエストを区別し、処理の分離・入出力・失敗時の契約は変更しない。`buildReviewPageQuery` は `url.Values` を返し、URL エンコードは HTTP リクエストの生成時に `Encode` で行う。
+Issue #121 で API 入力データ・クエリパラメーター・HTTP リクエストを名前で区別した。Issue #127 ではクエリ生成関数を `newReviewPageQuery` に揃え、`newReviewPageAPIInput`・`newReviewPageHTTPRequest` と同じく値の生成を表す命名にした。処理の分離・入出力・失敗時の契約は変更しない。`newReviewPageQuery` は JSON を格納した `url.Values` を返し、URL エンコードは HTTP リクエストの生成時に `Encode` で行う。
 
 同じ `review_page_request.go` の非公開関数 `newReviewPageHTTPRequest` が、API 入力への変換、JSON・クエリの生成、context 付き GET リクエストの構築をまとめる。呼び出し側が検査した接続先、正の App ID、正規化済みの条件と取得用 context を受け取り、再検査・通信・期限の生成は行わない。`format=json` と `input_json`、URL エンコード、固定条件、エラーの文脈と原因を維持する。
 

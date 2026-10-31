@@ -2,13 +2,33 @@
 
 ## 起動と登録
 
+[OpenAI 公式の MCP 設定手順](https://learn.chatgpt.com/docs/extend/mcp) を参照する。OpenAI 側（ChatGPT App／Codex）での MCP 利用は、ローカル・Render ともにユーザーが実機確認済みである。確認状況は [Issue #138 の作業記録](worklogs/138-codex-mcp-readme.md) に記録する。
+
 1. Docker Desktop を起動し、リポジトリで `python3 scripts/dev.py` を実行する。表示されたホストポートを使う。8080が使用中なら入口が次の空きポートを選ぶ。
-2. ChatGPT デスクトップアプリの Settings → MCP servers → Add server で、名前を `PlayerLens`、種類を Streamable HTTP、URL を `http://127.0.0.1:<表示されたポート>/tools` にして保存し、アプリを再起動する。
+2. 日本語 UI の ChatGPT App で「設定」→「プラグイン」→「MCP」を開き、MCP サーバーを追加する。名前を `PlayerLens`、タイプを「ストリーミング可能な HTTP」、URL を `http://127.0.0.1:<表示されたポート>/tools` にする。この3項目だけを設定し、ほかの項目は入力不要で空欄のままにする。保存してアプリを再起動する。
 3. 入力欄で `/mcp` から PlayerLens の利用を確認する。設定項目が見つからない場合は [公式のデスクトップ MCP 手順](https://learn.chatgpt.com/docs/extend/mcp) と使用しているアプリの対応機能を確認する。
 
 生成 AI の API キーは PlayerLens に設定しない。ChatGPT のモデルがツール結果を受け取って分析する。アプリ設定は自動変更しない。ローカルアプリと同じマシンの localhost を使う手順であり、クラウド側から localhost へは接続できない。[クラウド接続の公式手順](https://developers.openai.com/api/docs/guides/custom-mcp-server) による HTTPS の公開配置・トンネルの作成は今回の実装範囲に含めない。
 
 接続 URL の `/tools` は Go サーバーのパスであり、入力欄の `/mcp` は ChatGPT アプリ内のコマンドである。例えばホストポート8080なら `http://127.0.0.1:8080/tools` を登録する。旧 URL の `/mcp` は404を返すため、以前登録した場合は URL を更新する。`collect_reviews` のツール名は変更していない。
+
+## Codex CLI で登録する場合
+
+設定画面の代わりに、Codex CLI でも登録できる。[公式 CLI リファレンス](https://learn.chatgpt.com/docs/cli/reference) を参照する。
+
+Render の公開サーバーを使う場合：
+
+```sh
+codex mcp add player_lens_render --url https://player-lens.onrender.com/tools
+```
+
+ローカルの場合は、先に `python3 scripts/dev.py` でサーバーを起動する。8080 は起動したターミナルに表示されたポートへ置き換える。
+
+```sh
+codex mcp add player_lens_local --url http://127.0.0.1:8080/tools
+```
+
+登録後は Codex を起動し直し、入力欄の `/mcp` で確認する。`codex mcp list` は登録内容を表示するコマンドであり、取得・分析の成功確認とは別である。
 
 ## 少量の手動確認
 
@@ -42,7 +62,7 @@ max_reviews=3、max_pages=1 で呼び出してください。
 
 `MCP_PUBLIC_URL` に実際に配置する HTTPS の `/tools` URL を設定する。未指定なら従来のローカル専用とする。指定時は設定した公開 Host と localhost/loopback から認証なしで接続でき、OAuth、API キー、issuer、JWKS の設定は不要である。異なる Host・Origin は拒否し、全利用者は既存の実行枠を共有する。Host 検査は本人確認ではない。
 
-Compose の app にも設定を渡す。ローカル専用のデバッグでは空のままにし、変更時は app を再作成する。公開設定は公開 URL・TLS・トンネルを作成しない。Issue #31 でユーザー配置の HTTPS の匿名初期化・一覧・不正入力の拒否を確認した。検証済み digest の実配置と実 HTTPS 上の ChatGPT 接続は未確認であり、ローカル SDK と本番イメージの結果だけで確認済みとは扱わない。公開配置時に実 URL と匿名クライアントからの接続・収集・制限を確認する。
+Compose の app にも設定を渡す。ローカル専用のデバッグでは空のままにし、変更時は app を再作成する。公開設定は公開 URL・TLS・トンネルを作成しない。Issue #31 でユーザー配置の HTTPS の匿名初期化・一覧・不正入力の拒否を確認した。その後、Issue #138 でユーザーから OpenAI 側でのローカル・Render の実機確認済みという報告を受けた。検証済み digest の実配置は引き続き未確認であり、クライアントの利用確認とは区別する。公開配置時に実 URL と匿名クライアントからの接続・収集・制限を確認する。
 
 [公開 MCP 仕様](specs/mcp-public-access.md) と [作業記録](worklogs/29-public-mcp-access.md) を参照する。バックエンドが LLM を実行する Web 機能、利用コード・残り回数、MCP/Web 共通の収集枠は未導入とする。
 

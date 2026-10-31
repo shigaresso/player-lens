@@ -9,6 +9,7 @@
 - 設定後の再起動・ツール確認、接続先ごとの少量取得と分析の依頼例、停止・ポート変更・接続失敗・利用制限時の確認を追加した。
 - 詳細な分析手順から README の設定へリンクし、公開デモ仕様の README 要件と整合させた。
 - 追加の確認で、ポートの表示先を起動コマンドを実行したターミナルと明記した。scripts/dev.py の出力に合わせて「開発サーバー」の表示例を載せ、表示中の8081から登録先の /tools URL を作る例を補足した。開発環境の説明も同じ表示へ揃えた。
+- ユーザーが確認した日本語 UI に基づき、README の両接続先と docs/mcp-debug.md の画面経路を、ChatGPT App の「設定」→「プラグイン」→「MCP」に修正した。日本語版の UI で案内する要件も仕様へ記載した。Streamable HTTP などの技術名・コマンドはそのまま保持した。
 
 ## 参照と判断
 
@@ -17,7 +18,7 @@
 - docs/specs/review-analysis.md「分析として案内する内容」「保証する範囲」、ADR-0011「決定」、docs/review-analysis.md「依頼の例」と、埋め込んだ analysis_guide.md を参照し、根拠 ID・意見と解釈の区別・偏り・部分失敗・外部指示を扱う例にした。
 - docs/specs/mcp-public-access.md「HTTP の受付」、ADR-0009「決定」、docs/mcp-debug.md「起動と登録」「少量の手動確認」、docs/deployment.md「公開後の確認」を参照した。匿名公開の設定と利用枠は変更しなかった。
 - docs/development.md「Issue・PR の作成手順」「各フックの責務」と ADR-0002「決定」に従い、Issue は事前検査付き CLI で作成した。
-- 2026-11-01 JST に [OpenAI 公式 MCP 設定手順](https://learn.chatgpt.com/docs/extend/mcp) と [CLI リファレンス](https://learn.chatgpt.com/docs/cli/reference) の本文を確認した。設定画面での Streamable HTTP 登録・保存後の再起動と、CLI の add --url・list に照合した。
+- 2026-11-01 JST に [OpenAI 公式 MCP 設定手順](https://learn.chatgpt.com/docs/extend/mcp) と [CLI リファレンス](https://learn.chatgpt.com/docs/cli/reference) の本文を確認した。Streamable HTTP 登録・保存後の再起動と、CLI の add --url・list に照合した。日本語 UI の画面経路はユーザーの確認結果に基づき修正し、公式資料の閲読を日本語画面の実操作確認とは扱わなかった。
 
 登録内容の確認、通信診断、Codex による実際のツール呼び出しと分析を区別した。既存の実接続記録は保持し、今回の文書確認を新しい取得・分析の成功として記載しなかった。
 

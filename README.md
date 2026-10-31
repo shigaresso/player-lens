@@ -61,6 +61,8 @@ JSON の `options.review_type` に正規化した評価種別を記録する。�
 
 PlayerLens の `/tools` にある `collect_reviews` で Steam レビューを収集し、返されたデータを Codex が分析する。PlayerLens に生成 AI の API キーを設定する必要はない。ローカルと Render は別々の接続名で登録でき、使いたい方だけを追加してもよい。
 
+以下は日本語 UI の ChatGPT App での登録手順である。
+
 ### ローカルの MCP を追加する
 
 1. Docker を起動し、リポジトリで `python3 scripts/dev.py` を実行する。起動とヘルスチェックが成功すると、同じターミナルに次のような行が表示される。
@@ -70,7 +72,7 @@ PlayerLens の `/tools` にある `collect_reviews` で Steam レビューを収
    ```
 
    この例では `8081` が登録に使うポートなので、MCP の URL は `http://127.0.0.1:8081/tools` となる。実際に表示された数字を使い、ターミナルは起動したままにする。必要な環境は [開発環境](#開発環境) を参照する。
-2. Codex デスクトップアプリの Settings → MCP servers → Add server で、次の値を入力する。
+2. ChatGPT App の「設定」→「プラグイン」→「MCP」を開き、MCP サーバーを追加する。登録には次の値を使う。
 
    | 項目 | 値 |
    | --- | --- |
@@ -92,7 +94,7 @@ codex mcp add player_lens_local --url http://127.0.0.1:8080/tools
 
 公開済みのサーバーを使う場合、ローカルのリポジトリや Docker サーバーの起動は不要である。
 
-1. Codex デスクトップアプリの Settings → MCP servers → Add server で、次の値を入力する。
+1. ChatGPT App の「設定」→「プラグイン」→「MCP」を開き、MCP サーバーを追加する。登録には次の値を使う。
 
    | 項目 | 値 |
    | --- | --- |
@@ -112,7 +114,7 @@ codex mcp add player_lens_render --url https://player-lens.onrender.com/tools
 
 ### 登録後の確認
 
-設定の変更後は、デスクトップアプリを再起動する。CLI では Codex を起動し直す。入力欄の `/mcp` で対象の接続と `collect_reviews` が利用できるか確認する。CLI の `codex mcp list` は登録内容を確認するコマンドであり、取得・分析の成功確認とは別である。[OpenAI 公式の MCP 設定手順](https://learn.chatgpt.com/docs/extend/mcp) と [CLI リファレンス](https://learn.chatgpt.com/docs/cli/reference) も参照する。
+設定の変更後は、ChatGPT App を再起動する。CLI では Codex を起動し直す。入力欄の `/mcp` で対象の接続と `collect_reviews` が利用できるか確認する。CLI の `codex mcp list` は登録内容を確認するコマンドであり、取得・分析の成功確認とは別である。[OpenAI 公式の MCP 設定手順](https://learn.chatgpt.com/docs/extend/mcp) と [CLI リファレンス](https://learn.chatgpt.com/docs/cli/reference) も参照する。
 
 ### セットアップ後に送るチャット
 

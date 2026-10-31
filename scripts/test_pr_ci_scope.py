@@ -1,12 +1,22 @@
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
 import unittest
 
 import pr_ci_scope
+
+
+class PRWorkflowTriggerTests(unittest.TestCase):
+    def test_only_pr_changes_trigger_metadata(self):
+        workflow = Path(__file__).resolve().parent.parent / ".github/workflows/pr-conventions.yml"
+        trigger = re.search(r"(?m)^  pull_request:\n    types: \[([^\]\n]+)\]$", workflow.read_text())
+        self.assertIsNotNone(trigger, "pull_request の対象イベントを確認できない")
+        actions = {action.strip() for action in trigger.group(1).split(",")}
+        self.assertEqual({"opened", "synchronize", "reopened", "edited", "labeled", "unlabeled"}, actions)
 
 
 class PRScopeTests(unittest.TestCase):
@@ -23,13 +33,13 @@ class PRScopeTests(unittest.TestCase):
             ("不正な変更情報は全検査", {"action": "edited", "changes": []}, True),
         ]
         cases.extend((f"{action} のメタデータ検査は軽量", {"action": action}, False)
-                     for action in ("opened", "synchronize", "reopened", "ready_for_review", "labeled", "unlabeled"))
+                     for action in ("opened", "synchronize", "reopened", "labeled", "unlabeled"))
         for name, event, expected in cases:
             with self.subTest(name):
                 self.assertEqual(expected, pr_ci_scope.needs_full_checks(event))
 
     def test_unknown_action_is_rejected(self):
-        for event in ({}, {"action": "unknown"}):
+        for event in ({}, {"action": "unknown"}, {"action": "ready_for_review"}):
             with self.subTest(event):
                 with self.assertRaises(ValueError):
                     pr_ci_scope.needs_full_checks(event)
@@ -56,7 +66,8 @@ class PRScopeCLITests(unittest.TestCase):
             root = Path(directory)
             event, output = root / "event.json", root / "outputs.txt"
             for name, content in (("壊れた JSON", "{"), ("未知のイベント", '{"action":"unknown"}'),
-                                  ("オブジェクトではない JSON", "[]")):
+                                  ("オブジェクトではない JSON", "[]"),
+                                  ("対象外のレビュー準備イベント", '{"action":"ready_for_review"}')):
                 with self.subTest(name):
                     event.write_text(content)
                     result = self.run_cli(event, output)

@@ -43,3 +43,15 @@ func usageFailure(reason mcpdomain.RejectionReason) toolFailureInfo {
 		panic("unknown usage rejection reason")
 	}
 }
+
+// CollectionErrorCode は公開応答と観測が共有する収集失敗のコードを返す。
+// 成功は空文字とし、原因の表示文字列は返さない。
+func CollectionErrorCode(err error) string {
+	return collectionFailure(err).code
+}
+
+// UsageErrorCode は公開応答と観測が共有する受付拒否のコードを返す。
+// 拒否なしは空文字とし、未知の内部値は usageFailure と同じく panic する。
+func UsageErrorCode(reason mcpdomain.RejectionReason) string {
+	return usageFailure(reason).code
+}

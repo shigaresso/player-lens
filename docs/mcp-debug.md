@@ -6,7 +6,7 @@
 
 1. Docker Desktop を起動し、リポジトリで `python3 scripts/dev.py` を実行する。表示されたホストポートを使う。8080が使用中なら入口が次の空きポートを選ぶ。
 2. 日本語 UI の ChatGPT App で「設定」→「プラグイン」→「MCP」を開き、MCP サーバーを追加する。名前を `PlayerLens`、タイプを「ストリーミング可能な HTTP」、URL を `http://127.0.0.1:<表示されたポート>/tools` にする。この3項目だけを設定し、ほかの項目は入力不要で空欄のままにする。保存してアプリを再起動する。
-3. 入力欄で `/mcp` から PlayerLens の利用を確認する。設定項目が見つからない場合は [公式のデスクトップ MCP 手順](https://learn.chatgpt.com/docs/extend/mcp) と使用しているアプリの対応機能を確認する。
+3. 入力欄で `/mcp` を実行し、上で登録したサーバー名 `PlayerLens` の接続状態を確認する。レビューの取得・分析は下の依頼例で試す。設定項目が見つからない場合は [公式のデスクトップ MCP 手順](https://learn.chatgpt.com/docs/extend/mcp) と使用しているアプリの対応機能を確認する。
 
 生成 AI の API キーは PlayerLens に設定しない。ChatGPT のモデルがツール結果を受け取って分析する。アプリ設定は自動変更しない。ローカルアプリと同じマシンの localhost を使う手順であり、クラウド側から localhost へは接続できない。[クラウド接続の公式手順](https://developers.openai.com/api/docs/guides/custom-mcp-server) による HTTPS の公開配置・トンネルの作成は今回の実装範囲に含めない。
 
@@ -28,11 +28,11 @@ codex mcp add player_lens_render --url https://player-lens.onrender.com/tools
 codex mcp add player_lens_local --url http://127.0.0.1:8080/tools
 ```
 
-登録後は Codex を起動し直し、入力欄の `/mcp` で確認する。`codex mcp list` は登録内容を表示するコマンドであり、取得・分析の成功確認とは別である。
+登録後は Codex を起動し直し、入力欄の `/mcp` で登録した `player_lens_render` または `player_lens_local` の接続状態を確認する。`codex mcp list` は登録内容を表示するコマンドであり、取得・分析の成功確認とは別である。
 
 ## 少量の手動確認
 
-次の依頼例で1回の少量収集を確認する。
+`collect_reviews` は Steam レビューを取得するツールの名前である。次の依頼例で1回の少量収集を確認する。
 
 ```text
 PlayerLens の collect_reviews を app_id=440、language=japanese、

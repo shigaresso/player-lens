@@ -52,10 +52,12 @@ ChatGPT App／Codex はローカル・Render ともに実機確認済み。Claud
 
 ### 登録後の確認
 
-入力欄の `/mcp` で対象の接続と `collect_reviews` が使えることを確認する。
+入力欄で `/mcp` を実行し、登録した `player_lens_render` または `player_lens_local` の接続状態を確認する。その後、下のチャット例を送り、レビューの取得と分析を試す。
 設定の詳細は [OpenAI 公式の MCP 手順](https://learn.chatgpt.com/docs/extend/mcp)、CLI での登録は [Codex CLI の登録手順](docs/mcp-debug.md#codex-cli-で登録する場合) を参照する。
 
 ### セットアップ後に送るチャット
+
+`collect_reviews` は、PlayerLens が提供する Steam レビュー取得ツールの名前である。
 
 登録した接続先の例をコピーして送る。`app_id=440` は、対象作品の Steam ストア URL の `/app/` の後の数字に置き換える。実 Steam への通信と収集開始回数の消費が発生する。
 

@@ -1,7 +1,9 @@
 package protocol
 
 import (
+	"encoding/json"
 	"errors"
+	"strings"
 	"testing"
 
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
@@ -98,6 +100,56 @@ func TestNormalizeToolInput(t *testing.T) {
 
 			if input != tc.input {
 				t.Fatal("失敗時に呼び出し側の入力を変更した")
+			}
+		})
+	}
+}
+
+func TestParseInputFailureCause(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		input     string
+		reason    string
+		jsonCause string
+	}{
+		{"構文エラーを保持する", `{"app_id":`, "decode MCP collection input", "syntax"},
+		{"値の型エラーを保持する", `{"app_id":440,"page_size":"1"}`, "decode MCP input values", "type"},
+		{"オブジェクト以外の型エラーを保持する", `[]`, "decode MCP input fields", "type"},
+		{"null オブジェクトの拒否理由を保持する", `null`, "input must be an object", ""},
+		{"未知の項目の拒否理由を保持する", `{"app_id":440,"private_field":"private_value"}`, "unknown input field", ""},
+		{"null 項目の拒否理由を保持する", `{"app_id":440,"max_reviews":null}`, "max_reviews must not be null", ""},
+		{"App ID の拒否理由を保持する", `{"app_id":0}`, "app_id must be positive", ""},
+		{"件数の拒否理由を保持する", `{"app_id":440,"max_reviews":101}`, "max_reviews must be between 0 and 100", ""},
+		{"ページ数の拒否理由を保持する", `{"app_id":440,"max_pages":6}`, "max_pages must be between 0 and 5", ""},
+		{"評価種別の変換原因を保持する", `{"app_id":440,"review_type":"private_value"}`, "parse Steam review type", ""},
+		{"ページ件数の検査原因を保持する", `{"app_id":440,"page_size":101}`, "steam review page size must be between", ""},
+		{"言語の検査原因を保持する", `{"app_id":440,"language":"private_value!"}`, "invalid Steam review language code", ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			appID, options, err := ParseInput([]byte(tc.input))
+			if !errors.Is(err, steamdomain.ErrInvalidArgument) || appID != 0 || options != (steamdomain.CollectionOptions{}) {
+				t.Fatalf("不正入力の結果 = %d, %+v, %v", appID, options, err)
+			}
+
+			if !strings.Contains(err.Error(), tc.reason) {
+				t.Fatalf("拒否理由を失った: %v; want %q", err, tc.reason)
+			}
+
+			switch tc.jsonCause {
+			case "syntax":
+				var cause *json.SyntaxError
+				if !errors.As(err, &cause) {
+					t.Fatalf("JSON 構文エラーを失った: %v", err)
+				}
+			case "type":
+				var cause *json.UnmarshalTypeError
+				if !errors.As(err, &cause) {
+					t.Fatalf("JSON 型エラーを失った: %v", err)
+				}
+			}
+
+			if strings.Contains(err.Error(), "private_field") || strings.Contains(err.Error(), "private_value") {
+				t.Fatalf("独自の診断文へ入力内容を転載した: %v", err)
 			}
 		})
 	}

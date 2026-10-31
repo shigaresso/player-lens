@@ -36,7 +36,7 @@ func (h collectReviewsHandler) Handle(sdkContext context.Context, request *mcp.C
 
 	appID, options, err := protocol.ParseInput(request.Params.Arguments)
 	if err != nil {
-		return protocol.InvalidInputResult()
+		return protocol.InvalidInputResult(err)
 	}
 
 	result := mcpapplication.CollectReviews(ctx, h.fetcher, appID, options, h.gate)

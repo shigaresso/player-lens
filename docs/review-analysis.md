@@ -10,10 +10,10 @@ PlayerLens はレビューと一緒に `analysis_guide`（`version` と `instruc
 
 ## 依頼の例
 
-[MCP デバッグ手順](mcp-debug.md) に従って登録・起動したうえで、次の文章の App ID を対象作品へ置き換えて依頼する。440 は指定形式の例で、この操作は実 Steam に接続する。
+[README の MCP 設定手順](../README.md#codex-から-mcp-を使ってレビューを分析する) に従ってローカルまたは Render を登録し、次の文章の接続名と App ID を利用先・対象作品へ置き換えて依頼する。ローカルの詳しい確認は [MCP デバッグ手順](mcp-debug.md) を参照する。440 は指定形式の例で、この操作は実 Steam に接続する。
 
 ```text
-PlayerLens の collect_reviews を使い、app_id=440、language=japanese、
+player_lens_render の collect_reviews を使い、app_id=440、language=japanese、
 review_type=all、page_size=20、max_reviews=20、max_pages=1 で取得してください。
 結果の analysis_guide に沿って、何が、どの条件で、なぜ評価されるかを整理してください。
 固定分類やおすすめフラグだけで判断せず、根拠のレビュー ID を付けてください。

@@ -33,6 +33,8 @@ reviewmcp の内部は domain（上限と受付）、application（期限・枠�
 
 `protocol.ParseInput` は標準の `json.Unmarshal` で読み取ってから条件を構築する。JSON 構文と末尾の不正は標準 Unmarshal が拒否し、メソッド内部も入力全体を検査する。2回目の Decode や DisallowUnknownFields の設定は置かない。メソッドを持たない同じフィールドの一時値へ読み、成功時だけ受信先へ反映する。失敗時は受信先を変更せず、省略項目は以前の値を引き継がずゼロ値にする。標準 Unmarshal が先に構文エラーを返す場合も、`protocol.ParseInput` は既存と同じゼロ値と `steamdomain.ErrInvalidArgument` を保持するエラーへ変換する。読み取り段階では既定値・MCP 上限・言語や評価種別の条件を適用しない。
 
+Issue #133 で入力失敗の診断原因を保持する。JSON の構文・型の失敗は `errors.As`、入力不正は `errors.Is(err, steamdomain.ErrInvalidArgument)` で識別できるようにする。オブジェクトでない入力・未知の項目・null と、App ID・件数・ページ数・評価種別・言語などの拒否理由を内部のエラーへ残す。条件生成が返した原因は置き換えずに引き継ぐ。未知の項目名や入力値・本文全体を独自の診断文へ転載せず、既知の項目名と拒否理由を説明する。標準 JSON エラー自体は入力の一部を含む場合があるため、診断用エラーをそのままクライアントへ返したりログへ出力したりしない。この変更は入力の受理・拒否、大小文字の区別、既定値を変えない。
+
 `input.go` は MCP 用の既定値・上限定数、`ParseInput`、`normalizeToolInput` の順に配置し、解析の手順と条件生成を同じファイルで読めるようにする（Issue #115）。関数の責務は分離したまま維持し、独自の JSON 読み取りは `tool_input.go` に置く。`normalizeToolInput` は `toolInput` を値で受け、App ID と MCP の件数・ページ上限を検査し、MCP 用の既定値を適用する。評価種別の文字列を `steamdomain.ParseReviewType` で変換し、`steamdomain.CollectionOptionsConfig` から `steamdomain.NewCollectionOptions` で言語・ページ件数などを検査・正規化した値を生成する。呼び出し側の入力は変更せず、失敗時はゼロ値と `steamdomain.ErrInvalidArgument` を返す。生成失敗のゼロ値を有効な既定条件として実行せず、`collectReviewsHandler.Handle` がエラーを処理して空の Collection から失敗応答を作る。生成済みの値を application と収集状態へ渡し、条件の検査を繰り返さない（[ADR-0015](../adr/0015-collection-options-boundary.md)）。両処理は通信・時刻・利用制限に依存しない。`collectReviewsHandler.Handle` による `invalid_input` 応答と、不正入力時に取得・利用枠を消費しない順序を維持する。
 
 ## 結果・失敗・資源

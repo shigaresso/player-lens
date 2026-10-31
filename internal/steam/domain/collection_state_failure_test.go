@@ -24,7 +24,7 @@ func TestCollectionStateFail(t *testing.T) {
 			}
 
 			for _, page := range tc.pages {
-				if err := state.AddPage(page); err != nil {
+				if err := state.UpdateFromFetchedPage(page); err != nil {
 					t.Fatal(err)
 				}
 			}

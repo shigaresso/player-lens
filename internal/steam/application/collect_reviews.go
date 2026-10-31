@@ -53,7 +53,7 @@ func CollectReviews(ctx context.Context, fetcher PageFetcher, appID steamdomain.
 			return result, fmt.Errorf("collect Steam review page %d: %w", result.PagesFetched+1, err)
 		}
 
-		if err := state.AddPage(page); err != nil {
+		if err := state.UpdateFromFetchedPage(page); err != nil {
 			result := state.Result()
 			return result, fmt.Errorf("collect Steam reviews after page %d: %w", result.PagesFetched, err)
 		}

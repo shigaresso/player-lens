@@ -12,6 +12,24 @@
 
 接続 URL の `/tools` は Go サーバーのパスであり、入力欄の `/mcp` は ChatGPT アプリ内のコマンドである。例えばホストポート8080なら `http://127.0.0.1:8080/tools` を登録する。旧 URL の `/mcp` は404を返すため、以前登録した場合は URL を更新する。`collect_reviews` のツール名は変更していない。
 
+## Codex CLI で登録する場合
+
+設定画面の代わりに、Codex CLI でも登録できる。[公式 CLI リファレンス](https://learn.chatgpt.com/docs/cli/reference) を参照する。
+
+Render の公開サーバーを使う場合：
+
+```sh
+codex mcp add player_lens_render --url https://player-lens.onrender.com/tools
+```
+
+ローカルの場合は、先に `python3 scripts/dev.py` でサーバーを起動する。8080 は起動したターミナルに表示されたポートへ置き換える。
+
+```sh
+codex mcp add player_lens_local --url http://127.0.0.1:8080/tools
+```
+
+登録後は Codex を起動し直し、入力欄の `/mcp` で確認する。`codex mcp list` は登録内容を表示するコマンドであり、取得・分析の成功確認とは別である。
+
 ## 少量の手動確認
 
 次の依頼例で1回の少量収集を確認する。

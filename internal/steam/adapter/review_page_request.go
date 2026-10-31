@@ -17,7 +17,8 @@ const (
 	k_EUserReviewsPurchaseType_All        steamdomain.EUserReviewsPurchaseType     = 1
 )
 
-type reviewPageRequest struct {
+// reviewPageAPIInput は Steam API の input_json に格納する入力データを表す。
+type reviewPageAPIInput struct {
 	AppID          steamdomain.AppID                        `json:"appid"`
 	Filter         steamdomain.EUserReviewsAppReviewsFilter `json:"filter"`
 	Languages      []string                                 `json:"languages"`
@@ -31,8 +32,8 @@ type reviewPageRequest struct {
 // newReviewPageHTTPRequest は API の入力とクエリを組み立て、context 付きの GET リクエストを作る。
 // 呼び出し側は接続先と App ID の検査・取得条件の正規化を完了させ、context の寿命と送信を管理する。
 func newReviewPageHTTPRequest(ctx context.Context, endpoint string, appID steamdomain.AppID, options steamdomain.PageOptions) (*http.Request, error) {
-	input := newReviewPageRequest(appID, options)
-	query, err := encodeReviewPageQuery(input)
+	input := newReviewPageAPIInput(appID, options)
+	query, err := buildReviewPageQuery(input)
 	if err != nil {
 		return nil, err
 	}
@@ -45,10 +46,10 @@ func newReviewPageHTTPRequest(ctx context.Context, endpoint string, appID steamd
 	return request, nil
 }
 
-// newReviewPageRequest は正の App ID と正規化済みの取得条件を API の入力データへ変換する。
+// newReviewPageAPIInput は正の App ID と正規化済みの取得条件を API の入力データへ変換する。
 // 呼び出し側は App ID の検査と NormalizePageOptions を先に完了させる。
-func newReviewPageRequest(appID steamdomain.AppID, options steamdomain.PageOptions) reviewPageRequest {
-	return reviewPageRequest{
+func newReviewPageAPIInput(appID steamdomain.AppID, options steamdomain.PageOptions) reviewPageAPIInput {
+	return reviewPageAPIInput{
 		AppID:          appID,
 		Filter:         k_EUserReviewsAppReviewsFilter_Recent,
 		Languages:      []string{options.Language},
@@ -60,7 +61,9 @@ func newReviewPageRequest(appID steamdomain.AppID, options steamdomain.PageOptio
 	}
 }
 
-func encodeReviewPageQuery(input reviewPageRequest) (url.Values, error) {
+// buildReviewPageQuery は API 入力を JSON 化し、format と input_json のクエリパラメーターを返す。
+// URL エンコードは戻り値の Encode で行う。
+func buildReviewPageQuery(input reviewPageAPIInput) (url.Values, error) {
 	data, err := json.Marshal(input)
 	if err != nil {
 		return nil, fmt.Errorf("encode Steam review request: %w", err)

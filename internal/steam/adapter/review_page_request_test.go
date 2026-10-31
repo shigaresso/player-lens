@@ -8,16 +8,16 @@ import (
 	steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
 )
 
-func TestNewReviewPageRequest(t *testing.T) {
+func TestNewReviewPageAPIInput(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
 		options steamdomain.PageOptions
-		want    reviewPageRequest
+		want    reviewPageAPIInput
 	}{
 		{
 			name:    "取得条件を保持し固定のSteam取得条件を設定する",
 			options: steamdomain.PageOptions{ReviewType: steamdomain.ReviewTypeNegative, Language: "japanese", Cursor: "次+/=&?", PageSize: 7},
-			want: reviewPageRequest{
+			want: reviewPageAPIInput{
 				AppID: 440, Filter: 1, Languages: []string{"japanese"},
 				Cursor: "次+/=&?", PageSize: 7, ReviewType: 2, PurchaseType: 1, FilterOfftopic: true,
 			},
@@ -25,7 +25,7 @@ func TestNewReviewPageRequest(t *testing.T) {
 		{
 			name:    "全評価をAPIの全評価へ変換する",
 			options: steamdomain.PageOptions{ReviewType: steamdomain.ReviewTypeAll, Language: "japanese", Cursor: "次+/=&?", PageSize: 7},
-			want: reviewPageRequest{
+			want: reviewPageAPIInput{
 				AppID: 440, Filter: 1, Languages: []string{"japanese"},
 				Cursor: "次+/=&?", PageSize: 7, ReviewType: 0, PurchaseType: 1, FilterOfftopic: true,
 			},
@@ -33,14 +33,14 @@ func TestNewReviewPageRequest(t *testing.T) {
 		{
 			name:    "おすすめをAPIのおすすめへ変換する",
 			options: steamdomain.PageOptions{ReviewType: steamdomain.ReviewTypePositive, Language: "japanese", Cursor: "次+/=&?", PageSize: 7},
-			want: reviewPageRequest{
+			want: reviewPageAPIInput{
 				AppID: 440, Filter: 1, Languages: []string{"japanese"},
 				Cursor: "次+/=&?", PageSize: 7, ReviewType: 1, PurchaseType: 1, FilterOfftopic: true,
 			},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			got := newReviewPageRequest(440, tc.options)
+			got := newReviewPageAPIInput(440, tc.options)
 			if !reflect.DeepEqual(got, tc.want) {
 				t.Fatalf("request=%+v want=%+v", got, tc.want)
 			}
@@ -48,13 +48,13 @@ func TestNewReviewPageRequest(t *testing.T) {
 	}
 }
 
-func TestEncodeReviewPageQuery(t *testing.T) {
+func TestBuildReviewPageQuery(t *testing.T) {
 	t.Run("APIの項目名でJSON化し言語と特殊文字のカーソルを保持する", func(t *testing.T) {
-		input := reviewPageRequest{
+		input := reviewPageAPIInput{
 			AppID: 440, Filter: 1, Languages: []string{"japanese"},
 			Cursor: "次+/=&?", PageSize: 7, ReviewType: 2, PurchaseType: 1, FilterOfftopic: true,
 		}
-		query, err := encodeReviewPageQuery(input)
+		query, err := buildReviewPageQuery(input)
 		if err != nil {
 			t.Fatal(err)
 		}

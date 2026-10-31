@@ -44,7 +44,7 @@ func TestCollectionStatePages(t *testing.T) {
 					t.Fatal("終了条件の前に停止した")
 				}
 
-				if err := state.AddPage(page); err != nil {
+				if err := state.UpdateFromFetchedPage(page); err != nil {
 					t.Fatal(err)
 				}
 			}

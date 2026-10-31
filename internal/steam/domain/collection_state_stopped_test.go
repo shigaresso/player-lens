@@ -29,7 +29,7 @@ func TestCollectionStateStopped(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			err = state.AddPage(tc.page)
+			err = state.UpdateFromFetchedPage(tc.page)
 			if (err != nil) != tc.cycle || (tc.cycle && !errors.Is(err, steamdomain.ErrCursorCycle)) {
 				t.Fatal(err)
 			}
@@ -44,7 +44,7 @@ func TestCollectionStateStopped(t *testing.T) {
 			}
 
 			state.Fail()
-			if err := state.AddPage(steamdomain.ReviewPage{Reviews: stateReviews(9), NextCursor: "Z"}); err != nil {
+			if err := state.UpdateFromFetchedPage(steamdomain.ReviewPage{Reviews: stateReviews(9), NextCursor: "Z"}); err != nil {
 				t.Fatal(err)
 			}
 

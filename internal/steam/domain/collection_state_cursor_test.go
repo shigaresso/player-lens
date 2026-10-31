@@ -31,7 +31,7 @@ func TestCollectionStateCursor(t *testing.T) {
 			}
 
 			for i, page := range tc.pages {
-				err = state.AddPage(page)
+				err = state.UpdateFromFetchedPage(page)
 				if i < len(tc.pages)-1 && err != nil {
 					t.Fatal(err)
 				}

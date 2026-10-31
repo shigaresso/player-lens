@@ -24,7 +24,7 @@ Issue #39 で応答解釈も分離した。`decodeReviewPage` は本文と取得
 
 Issue #68 で、レビュー1件の ID と項目の変換を convertReview にまとめた。decodeReviewPage はページ全体の検査・変換の呼び出し・組み立てを担当し、変換に失敗したページは部分的に返さない。両処理は同じ adapter 内の純粋な処理とする。
 
-Issue #58 で、重複・カーソル・成功ページ数・終了判断を steam/domain の CollectionState にまとめた。状態生成時に App ID を検査し、生成済みの CollectionOptions から設定のコピーを保持する。条件の検査は Issue #60 で NewCollectionOptions へ移し、状態では繰り返さない。NextFetchConditions と AddPage で続行と状態更新を扱う。CollectReviews は取得・期限・キャンセルと失敗の原因、Fail による失敗確定を担当する。Result はレビュー配列もコピーして返す。状態は通信や context を持たず、新しいユースケースではない。[ADR-0014](adr/0014-steam-collection-state.md) に境界を記録する。
+Issue #58 で、重複・カーソル・成功ページ数・終了判断を steam/domain の CollectionState にまとめた。状態生成時に App ID を検査し、生成済みの CollectionOptions から設定のコピーを保持する。条件の検査は Issue #60 で NewCollectionOptions へ移し、状態では繰り返さない。NextFetchConditions と UpdateFromFetchedPage で続行と状態更新を扱う。CollectReviews は取得・期限・キャンセルと失敗の原因、Fail による失敗確定を担当する。Result はレビュー配列もコピーして返す。状態は通信や context を持たず、新しいユースケースではない。[ADR-0014](adr/0014-steam-collection-state.md) に境界を記録する。
 
 `NormalizePageOptions` は1ページの取得条件を検査・正規化する。収集条件は `NewCollectionOptions` が未検証の `CollectionOptionsConfig` から生成し、検査・正規化とコピーの保持を担当する。`CollectionOptions` のゼロ値も有効な既定条件で、`Config()` はコピーを返す。結果の `Collection.Options` は表示・保存用の Config とし、空の Collection の未指定項目を保つ。旧公開 NormalizeCollectionOptions は残さず、条件が不正なテストの契約を生成 API・CLI/MCP の入口へ引き継ぐ。[ADR-0015](adr/0015-collection-options-boundary.md) に境界を記録する。`jsonoutput.MarshalCollection` は通信しない JSON 変換、`jsonoutput.Saver` は writer への出力を担当する。DB の永続保存・分析・レポート生成は未導入とする。
 
@@ -46,7 +46,7 @@ Issue #54 で、利用制限の設定は未検証の `LimitsConfig` から `NewL
 
 Issue #62 では [ADR-0016](adr/0016-mcp-response-slot-lifetime.md) に従い、同期 callback の応答変換完了後に同時枠を返す構成へ修復した。Issue #113 の [ADR-0020](adr/0020-mcp-collection-slot-lifetime.md) で目的を収集の同時実行制限に絞り、callback を廃止する。application は収集終了時に枠と取得用 context を解放し、既存の Result を直接返す。Controller が結果を受けて JSON・SDK 応答を生成し、application は SDK 型を含めない。開始前キャンセル・受付拒否では未確保の枠を返さず、収集の原因は Result.Err に保持する。
 
-Issue #86 で、CollectionState.AddPage の重複排除を非公開メソッド appendUnseenReviews に分離した。既読 ID とレビュー配列の更新を同じ場所に保ち、AddPage からはページ反映と終了判断の手順を読む。操作・通信・公開 API と終了優先順は変更していない。
+Issue #86 で、CollectionState.UpdateFromFetchedPage の重複排除を非公開メソッド appendUnseenReviews に分離した。既読 ID とレビュー配列の更新を同じ場所に保ち、UpdateFromFetchedPage からはページ反映と終了判断の手順を読む。操作・通信・公開 API と終了優先順は変更していない。
 
 Issue #84 で、MCP 用 CollectReviews の開始前キャンセル／期限超過は、共通の NewFailedCollection で空の失敗結果を作って早期 return する構成にした。Issue #113 では callback を削除し、同じ失敗 Result を直接返す。下位の収集・期限の生成・利用枠の確保へ進まない。CollectionState の取得・context・循環失敗と受付拒否も共通生成を使い、入力条件・部分結果を維持する。枠の確保と返却は application に残し、Issue #113 からは保持範囲を収集終了までにする。
 

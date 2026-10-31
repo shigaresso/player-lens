@@ -53,7 +53,9 @@ steam/domain の CollectionState は結果・既読 ID・既読カーソルと�
 
 Issue #117 で NextFetchConditions という名前に揃え、ページ自体を取得する関数と区別する。この処理は通信・状態更新を行わず、同じ状態からは同じ条件を返す。CollectReviews は nextFetchConditions・shouldContinue として受け取り、続行とキャンセルの確認後に FetchReviewsPage へ条件を渡す。
 
-NextFetchConditions は次の条件と続行可否、AddPage は成功ページの反映と循環のエラー、Fail は取得や context 失敗の結果への反映を担当する。Issue #86 で、AddPage の重複排除は同じ CollectionState の非公開メソッド appendUnseenReviews に分離した。既読 ID の確認・登録と配列への追加をまとめ、終了判定の位置と優先順を維持する。終了後は NextFetchConditions がゼロ値と false を返し、AddPage と Fail は結果を変更しない。終了後の AddPage は nil を返す。
+NextFetchConditions は次の条件と続行可否、UpdateFromFetchedPage は成功ページの反映と循環のエラー、Fail は取得や context 失敗の結果への反映を担当する。Issue #86 で、ページ反映の重複排除は同じ CollectionState の非公開メソッド appendUnseenReviews に分離した。既読 ID の確認・登録と配列への追加をまとめ、終了判定の位置と優先順を維持する。終了後は NextFetchConditions がゼロ値と false を返し、UpdateFromFetchedPage と Fail は結果を変更しない。終了後の UpdateFromFetchedPage は nil を返す。
+
+Issue #131 でページ反映メソッドを UpdateFromFetchedPage に改名した。取得済みページを基に既存の収集状態を更新する操作であり、成功ページ数・レビューと既読 ID・既読カーソル・次回カーソル・終了理由を従来と同じ条件・順序で更新する。更新項目を追加せず、NextFetchConditions の読み取り専用の契約も維持する。
 
 Result はレビュー配列も含めてコピーし、返した値の変更を内部へ伝えない。空配列は nil にしない。状態は通信・context・時計・再試行を扱わず、取得・期限・キャンセルと失敗の文脈は application が担当する。循環の識別には steam/domain.ErrCursorCycle を使う。判断は [ADR-0014](../adr/0014-steam-collection-state.md) に記録する。
 

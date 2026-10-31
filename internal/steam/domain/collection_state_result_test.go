@@ -25,7 +25,7 @@ func TestCollectionStateResultOwnership(t *testing.T) {
 			}
 
 			first := steamdomain.Review{RecommendationID: 1, Text: "最初の本文", TimestampCreated: 10, TimestampUpdated: 20}
-			if err := state.AddPage(steamdomain.ReviewPage{Reviews: []steamdomain.Review{first}, NextCursor: "A"}); err != nil {
+			if err := state.UpdateFromFetchedPage(steamdomain.ReviewPage{Reviews: []steamdomain.Review{first}, NextCursor: "A"}); err != nil {
 				t.Fatal(err)
 			}
 

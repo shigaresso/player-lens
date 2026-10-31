@@ -52,12 +52,14 @@ func (s *CollectionState) Result() Collection {
 	return result
 }
 
-// AddPage は成功したページを反映し、重複を除いて最初の値と取得順を保持する。
+// UpdateFromFetchedPage は取得済みのページを基に、この収集状態を更新する。
+// 成功ページ数・レビューと既読 ID・既読カーソル・次回カーソル・終了理由が更新対象となる。
+// レビューは重複を除いて最初の値と取得順を保持する。
 // 空ページ・件数上限・循環・ページ上限の順に判定し、循環は ErrCursorCycle を返す。
 // 循環したページも結果へ含める。ページの AppID と Options は採用しない。
 // ページは取得 adapter の契約に従う有効な応答を、取得順に渡す。
 // 終了済みなら変更せず nil を返す。
-func (s *CollectionState) AddPage(page ReviewPage) error {
+func (s *CollectionState) UpdateFromFetchedPage(page ReviewPage) error {
 	if s.result.StopReason != "" {
 		return nil
 	}

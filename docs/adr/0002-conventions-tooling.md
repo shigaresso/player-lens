@@ -26,7 +26,7 @@
 - `pre-push` は stdin を受け取る script 方式で接続する。コマンド方式の暗黙のファイル差分判定によって、空コミットのメッセージ検査が省略されることを避ける。
 - CI の Action はコミット SHA で固定し、既存検査の権限は読み取りに限定する。[ADR-0010](0010-render-deployment.md) の main から手動実行するイメージ公開ジョブだけは packages:write を許可する。Release 手順の権限は変更しない。
 - [Issue #15](https://github.com/shigaresso/player-lens/issues/15) で PR の現在の本文・ラベル・全コミット・関連 Issue の確認を `PR 規約検査 / metadata` へ分ける。本文・タイトルだけの編集とラベル変更は共通テスト・実フック検証を再実行しない。統合先変更や不明な編集は規約の全検査へ戻す。コード検査の `規約検査 / verify` と concurrency・ジョブ名を分け、メタデータ更新によるキャンセルや成功の上書きを避ける。条件で同じ verify ジョブのテストだけを省略する方式は採用しない。
-- [Issue #18](https://github.com/shigaresso/player-lens/issues/18) で、Draft PR 中に全検査の成功を確認してからレビュー準備へ進む運用に合わせる。`ready_for_review` はメタデータ検査だけとし、コード検査の起動条件から外す。Draft PR を含む作成・コミット追加・再開、main 更新・手動実行のコード検査は維持する。同じ SHA の全検査をレビュー準備の変更だけで重ねず、統合後の SHA の検査は main で実行する。
+- [Issue #18](https://github.com/shigaresso/player-lens/issues/18) で、Draft PR 中に全検査の成功を確認してからレビュー準備へ進む運用に合わせ、`ready_for_review` はメタデータ検査だけとした。[Issue #123](https://github.com/shigaresso/player-lens/issues/123) では、この切り替えを PR 規約検査の起動条件からも外す方針へ変更した。コード・本文・ラベルの変更時に検査しており、切り替えだけで同じ内容を再検査する利点が小さいためである。PR の作成・コミット追加・再開・編集・ラベル変更時のメタデータ検査と、Draft PR を含む作成・コミット追加・再開、main 更新・手動実行のコード検査は維持する。レビュー準備へ進む前に現在のコード・メタデータに対応する検査結果を確認し、統合後の SHA は main で検査する。
 - [Issue #9](https://github.com/shigaresso/player-lens/issues/9) で通常マージを基本とし、main 更新専用の `main-range` を追加する。作業コミットと PR・ローカルフックの検査は維持し、親が2つのコミットと同一リポジトリの main 向けマージ済み PR の統合 SHA・head を照合できた場合だけ、自動生成の統合メッセージを免除する。単にマージコミットを一律除外する方式は、未確認の統合を免除するため採用しない。
 
 ## 秘密情報の自動検査（Issue #97）

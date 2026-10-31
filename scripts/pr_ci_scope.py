@@ -13,7 +13,7 @@ def needs_full_checks(event):
         changes = event.get("changes")
         return not (isinstance(changes, dict) and changes and
                     set(changes).issubset({"title", "body"}))
-    if action in ("opened", "synchronize", "reopened", "ready_for_review", "labeled", "unlabeled"):
+    if action in ("opened", "synchronize", "reopened", "labeled", "unlabeled"):
         # コード変更の全検査は独立した conventions.yml が担当する。
         return False
     raise ValueError("未対応の PR イベント")

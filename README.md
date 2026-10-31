@@ -59,6 +59,23 @@ ChatGPT App／Codex はローカル・Render ともに実機確認済み。Claud
 
 `collect_reviews` は、PlayerLens が提供する Steam レビュー取得ツールの名前である。
 
+取得条件として指定できる項目は次の6つ。`app_id` だけが必須で、ほかは省略できる。表の既定値は、ツールへの入力で項目を省略した場合に使われる。
+
+| 項目 | 意味 | 指定できる値 | 省略時 |
+| --- | --- | --- | --- |
+| `app_id` | 取得対象のゲームの Steam App ID | 1〜4294967295 の整数 | 必須 |
+| `language` | 取得するレビューの言語 | `japanese`（日本語）、`english`（英語）、`all`（全言語）などの文字列 | `english` |
+| `review_type` | 取得する評価種別 | `all`（全評価）、`positive`（おすすめ）、`negative`（非おすすめ） | `all` |
+| `page_size` | Steam API への1回の通信で要求する件数 | 1〜100 の整数 | 100 |
+| `max_reviews` | 1回のツール実行で収集する合計件数の上限 | 1〜100 の整数 | 20 |
+| `max_pages` | Steam API から取得するページ数の上限 | 1〜5 の整数 | 3 |
+
+言語は [Steam 公式一覧の API language code](https://partner.steamgames.com/doc/store/localization/languages) を使う。アプリは半角英小文字で始まる1〜32文字を受け付け、2文字目以降は英小文字・数字・`_`・`-` を許可する。形式の検査だけで Steam 側の対応を保証するものではない。
+
+任意の数値項目は `0` でも省略扱いとなる。`language` と `review_type` は空文字でも省略扱いだが、`null` は受け付けない。評価種別は表の英小文字で指定する。
+
+下の例は1ページで最大3件を集める指定であり、必ず3件取得できるとは限らない。`all` は取得対象の指定で、全レビューの取得を意味しない。
+
 登録した接続先の例をコピーして送る。`app_id=440` は、対象作品の Steam ストア URL の `/app/` の後の数字に置き換える。実 Steam への通信と収集開始回数の消費が発生する。
 
 Render を使う場合：

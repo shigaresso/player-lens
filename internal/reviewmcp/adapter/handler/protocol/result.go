@@ -37,18 +37,19 @@ func (e *toolResultEncodingError) Error() string {
 	return "MCP の収集結果を生成できませんでした。"
 }
 
-// Unwrap は変換と収集の原因を errors.Is・errors.As で追跡できる形で返す。
+// Unwrap は変換と入力・収集の原因を errors.Is・errors.As で追跡できる形で返す。
 func (e *toolResultEncodingError) Unwrap() error {
 	return e.cause
 }
 
-// InvalidInputResult は入力不正の公開応答と共通ガイドを生成する。
-func InvalidInputResult() (*mcp.CallToolResult, error) {
+// InvalidInputResult は入力不正の固定の公開応答と共通ガイドを生成し、原因を内部へ保持する。
+// cause は ParseInput が返したエラーを渡し、公開するテキストや構造化結果へ含めない。
+func InvalidInputResult(cause error) (*mcp.CallToolResult, error) {
 	failure := toolFailureInfo{
 		code:    "invalid_input",
 		message: "取得条件が不正です。app_id とツールの入力上限を確認してください。",
 	}
-	return encodeResult(steamdomain.Collection{}, failure)
+	return encodeResultWithCause(steamdomain.Collection{}, failure, cause)
 }
 
 // EncodeResult は UseCase の結果を公開用の MCP 応答へ変換し、内部の原因を保持する。
@@ -58,19 +59,19 @@ func EncodeResult(result mcpapplication.Result) (*mcp.CallToolResult, error) {
 		return encodeResult(result.Collection, usageFailure(result.Rejection))
 	}
 
-	return encodeCollectionResult(result.Collection, result.Err)
+	return encodeResultWithCause(result.Collection, collectionFailure(result.Err), result.Err)
 }
 
-// encodeCollectionResult は公開用の失敗情報へ変換し、内部の原因を結果または戻りエラーへ保持する。
-func encodeCollectionResult(collection steamdomain.Collection, collectErr error) (*mcp.CallToolResult, error) {
-	failure := collectionFailure(collectErr)
+// encodeResultWithCause は公開情報から応答を生成し、入力・収集の原因を非公開で保持する。
+// 変換失敗時も両方の原因を引き継ぎ、表示文言は固定する。
+func encodeResultWithCause(collection steamdomain.Collection, failure toolFailureInfo, cause error) (*mcp.CallToolResult, error) {
 	result, err := encodeResult(collection, failure)
 	if err != nil {
-		return nil, &toolResultEncodingError{cause: errors.Join(err, collectErr)}
+		return nil, &toolResultEncodingError{cause: errors.Join(err, cause)}
 	}
 
-	if collectErr != nil {
-		result.SetError(errors.Join(result.GetError(), collectErr))
+	if cause != nil {
+		result.SetError(errors.Join(result.GetError(), cause))
 	}
 
 	return result, nil

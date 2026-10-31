@@ -51,6 +51,14 @@ HTTP 本文は16 KiBまでとし、SDK が超過を413で拒否する。シリ�
 
 Issue #84 で、MCP 用 application は開始前キャンセル／期限超過を入口で早期 return する。steam/domain.NewFailedCollection で入力条件と空配列を保持した失敗結果を作り、元の原因を MCP 用の文脈でラップして Result.Err に保持する。下位の収集をキャンセル結果の生成目的で呼ばない。受付拒否・収集中の失敗も共通の失敗結果生成を利用し、公開応答と部分結果は維持する。同時枠の保持範囲は Issue #113 で収集終了までに変更し、Result を返す前に枠を返却する。
 
+### 入力失敗の公開情報と内部原因（Issue #133）
+
+Controller は ParseInput のエラーを `protocol.InvalidInputResult(cause)` へ渡す。公開コードは従来の `invalid_input`、説明文は「取得条件が不正です。app_id とツールの入力上限を確認してください。」とし、入力や拒否理由によって変えない。空の Collection と分析ガイド、構造化結果と同じ JSON のテキストを維持する。
+
+入力失敗と取得失敗は `encodeResultWithCause` で、公開応答を生成した後に SDK の `SetError` へ原因を保持する。先に本文を設定することで、SDK がエラー文字列を公開本文へ補うことを避ける。サーバー側の `GetError` から `errors.Is`・`errors.As` で原因を追跡できるが、構造化結果・テキスト・シリアライズした SDK 結果には内部原因を含めない。応答変換にも失敗した場合は、固定の表示文言を持つエラーへ変換原因と入力・取得原因の両方を保持する。
+
+不正入力では引き続き UseCase を呼ばず、Steam 通信・利用枠を消費しない。context の連携と解放は既存の Controller の defer が担当する。ログ出力・保存・OpenTelemetry はこの変更で導入しない。標準 JSON エラーを含む診断原因の収集・出力方針は、観測を追加する Issue で決める。
+
 ### ツール登録と実行の境界（Issue #50）
 
 `newServer` は Server の生成・対応プロトコルの設定・ツール登録を担当する。`collection_definition.go` の `collectReviewsDefinition` がツール名・説明・入出力 schema・annotations を構築する。各生成の可変データは独立させ、ほかの Server の定義に変更を共有しない。定義の生成では通信・収集を行わない。
@@ -61,7 +69,7 @@ Issue #84 で、MCP 用 application は開始前キャンセル／期限超過�
 
 `collectReviewsHandler.Handle` は入力解析→application.CollectReviews→protocol.EncodeResult を順に呼ぶ。Issue #113 で同期 callback を廃止し、application は利用枠・取得期限・収集を管理して既存の Result を直接返す。Collection に収集結果、Rejection に受付の拒否理由、Err に収集の原因を保持する。所有する枠と取得用 context は戻る前に解放する。Controller は結果を受け取って公開用の失敗分類と SDK 応答変換を行い、変換エラーを SDK へ返す。`handler/protocol/failure.go` の `toolFailureInfo` は公開するコードと説明文を持つ情報型で、元のエラーは別途保持する。`collectionFailure` は収集エラーをこの公開情報へ変換し、`usageFailure` は limiter の拒否理由を公開コードと説明文へ変換する。複合原因ではキャンセル・期限・取得失敗の順を維持する。
 
-`handler/protocol/result.go` の `encodeResult` と `marshalToolResult` は公開情報を toolFailureInfo のまま受け取り、コードと説明文を別引数へ分解しない。`marshalToolResult` は Collection・公開情報・ガイドを同じ JSON の構造化結果・テキストへ変換する。`encodeResult` は省略件数を引数に受け取らず、SDK の通常応答と省略応答のサイズを判定する。`encodeOversizedResult` は省略件数を数えて本文を除いた応答を作り、`encodeResult` を再び呼ばない。`encodeCollectionResult` が取得の原因をサーバー側へ保持し、応答量超過の原因も失わせない。変換は通信・時計・保存に依存しない。同時枠は収集終了時に返却済みとなり、変換中も別の収集を受け付ける。変換失敗・panic で他の収集の枠を返さない。application は SDK 型を扱わない。Issue #62 の旧保持要件は Issue #113 の [ADR-0020](../adr/0020-mcp-collection-slot-lifetime.md) で変更し、[ADR-0016](../adr/0016-mcp-response-slot-lifetime.md) は履歴として残す。
+`handler/protocol/result.go` の `encodeResult` と `marshalToolResult` は公開情報を toolFailureInfo のまま受け取り、コードと説明文を別引数へ分解しない。`marshalToolResult` は Collection・公開情報・ガイドを同じ JSON の構造化結果・テキストへ変換する。`encodeResult` は省略件数を引数に受け取らず、SDK の通常応答と省略応答のサイズを判定する。`encodeOversizedResult` は省略件数を数えて本文を除いた応答を作り、`encodeResult` を再び呼ばない。`encodeResultWithCause` が入力・取得の原因をサーバー側へ保持し、応答量超過の原因も失わせない。変換は通信・時計・保存に依存しない。同時枠は収集終了時に返却済みとなり、変換中も別の収集を受け付ける。変換失敗・panic で他の収集の枠を返さない。application は SDK 型を扱わない。Issue #62 の旧保持要件は Issue #113 の [ADR-0020](../adr/0020-mcp-collection-slot-lifetime.md) で変更し、[ADR-0016](../adr/0016-mcp-response-slot-lifetime.md) は履歴として残す。
 
 公開 URL が未指定なら HTTP Host は localhost またはループバック IP に限定する。Issue #29 で、明示した公開 URL の Host からも認証なしで利用する設定を追加した。Issue #82 で NewLocal／NewPublic が生成する Access は Host 判定だけとし、NewHTTPConfig が許可条件・拒否文言・SDK 設定をまとめる構成にした。両モードで単一の mcpaccess/adapter.Protect を使う。NewHandler は生成済み HTTPConfig を受け取り、設定済みの値をそのまま使う。未生成の HTTPConfig のゼロ値は構築エラーとする。許可されない Host は403で拒否する。[公開 MCP 仕様](mcp-public-access.md) に従う。Docker 転送では SDK の接続先アドレスによる自動 localhost 判定が働かない場合があるため、Host を明示的に検査する。cross-origin 保護と併用する。
 

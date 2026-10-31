@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -90,5 +91,73 @@ func TestCollectOversizedFailure(t *testing.T) {
 
 	if len(data) > 128*1024 || strings.Contains(string(data), "secret") {
 		t.Fatal("応答量または内部エラーの非公開の契約を満たさなかった")
+	}
+}
+
+func TestCollectInputFailureCause(t *testing.T) {
+	var publicResponse []byte
+	for _, tc := range []struct {
+		name   string
+		input  string
+		reason string
+	}{
+		{"App ID の失敗", `{"app_id":0}`, "app_id must be positive"},
+		{"JSON の構文の失敗", `{"app_id":`, "decode MCP collection input"},
+		{"JSON の型の失敗", `{"app_id":440,"page_size":"private_value"}`, "decode MCP input values"},
+		{"未知の項目の失敗", `{"app_id":440,"private_field":"private_value"}`, "unknown input field"},
+		{"null 項目の失敗", `{"app_id":440,"max_reviews":null}`, "max_reviews must not be null"},
+		{"言語の失敗", `{"app_id":440,"language":"private_value!"}`, "invalid Steam review language code"},
+	} {
+		t.Run(tc.name+"の原因を保持し同じ公開応答を返す", func(t *testing.T) {
+			calls := 0
+			fetcher := testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
+				calls++
+				return steamdomain.ReviewPage{}, nil
+			})
+			gate := mcpdomain.NewLimiter(testutil.Limits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 1, RequestsPerDay: 1, MaxConcurrent: 1}), time.Now)
+			result, err := callCollectReviews(t, t.Context(), fetcher, json.RawMessage(tc.input), gate)
+			if err != nil || result == nil || !result.IsError {
+				t.Fatalf("result=%+v err=%v", result, err)
+			}
+
+			cause := result.GetError()
+			if !errors.Is(cause, steamdomain.ErrInvalidArgument) || !strings.Contains(cause.Error(), tc.reason) {
+				t.Fatalf("入力の原因を引き継がなかった: %v", cause)
+			}
+
+			if strings.Contains(tc.name, "型") {
+				var jsonCause *json.UnmarshalTypeError
+				if !errors.As(cause, &jsonCause) {
+					t.Fatalf("JSON 型エラーを失った: %v", cause)
+				}
+			}
+
+			out := testutil.DecodeOutput(t, result)
+			if out.ErrorCode != "invalid_input" || out.Message != "取得条件が不正です。app_id とツールの入力上限を確認してください。" || calls != 0 {
+				t.Fatalf("不正入力の応答・通信を変更した: %+v calls=%d", out, calls)
+			}
+
+			data, err := json.Marshal(result)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if publicResponse == nil {
+				publicResponse = data
+			}
+
+			if !bytes.Equal(data, publicResponse) {
+				t.Fatal("入力の拒否理由により公開応答が変化した")
+			}
+
+			if strings.Contains(string(data), "private") || strings.Contains(string(data), tc.reason) {
+				t.Fatal("内部診断を公開した")
+			}
+
+			valid, err := callCollectReviews(t, t.Context(), fetcher, json.RawMessage(`{"app_id":440}`), gate)
+			if err != nil || valid == nil || valid.IsError || calls != 1 {
+				t.Fatalf("不正入力が利用枠を消費した: result=%+v err=%v calls=%d", valid, err, calls)
+			}
+		})
 	}
 }

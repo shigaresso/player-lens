@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/shigaresso/player-lens/internal/reviewmcp/adapter/internal/testutil"
 	mcpdomain "github.com/shigaresso/player-lens/internal/reviewmcp/domain"
@@ -20,7 +21,7 @@ func TestPublicMCPAccess(t *testing.T) {
 	handler, err := NewHandler(testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 		t.Fatal("受付検査でSteamに接続した")
 		return steamdomain.ReviewPage{}, nil
-	}), mcpdomain.DefaultLimits(), config)
+	}), mcpdomain.DefaultLimits(), config, testutil.DiscardLogger(), time.Now)
 	if err != nil {
 		t.Fatal(err)
 	}

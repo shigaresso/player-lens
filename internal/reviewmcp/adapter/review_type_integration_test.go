@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/shigaresso/player-lens/internal/reviewmcp/adapter/internal/testutil"
@@ -27,7 +28,7 @@ func TestMCPReviewType(t *testing.T) {
 				}
 
 				return steamdomain.ReviewPage{Reviews: []steamdomain.Review{{RecommendationID: 1, Recommended: options.ReviewType == steamdomain.ReviewTypePositive}}, NextCursor: "next"}, nil
-			}), testutil.Limits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 3, RequestsPerDay: 10, MaxConcurrent: 1}), localHTTPConfig(t))
+			}), testutil.Limits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 3, RequestsPerDay: 10, MaxConcurrent: 1}), localHTTPConfig(t), testutil.DiscardLogger(), time.Now)
 			if err != nil {
 				t.Fatal(err)
 			}

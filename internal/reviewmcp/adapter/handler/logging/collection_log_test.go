@@ -46,6 +46,7 @@ func TestReviewCollectionWrite(t *testing.T) {
 		code    string
 		kind    string
 	}{
+		{"結果未設定", ReviewCollection{Stage: "collection"}, "ERROR", "failed", "collection", "missing_result", "unknown"},
 		{"成功", ReviewCollection{Result: collected(nil)}, "INFO", "success", "", "", ""},
 		{"構文不正", ReviewCollection{InputErr: syntaxCause}, "INFO", "rejected", "input", "invalid_input", "json_syntax"},
 		{"型不正", ReviewCollection{InputErr: typeCause}, "INFO", "rejected", "input", "invalid_input", "json_type"},

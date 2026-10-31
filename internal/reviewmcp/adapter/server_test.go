@@ -3,10 +3,12 @@ package adapter
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	mcpaccess "github.com/shigaresso/player-lens/internal/mcpaccess/domain"
 	"github.com/shigaresso/player-lens/internal/reviewmcp/adapter/internal/testutil"
@@ -18,7 +20,7 @@ func TestHandlerLimits(t *testing.T) {
 	handler, err := NewHandler(testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 		t.Fatal("拒否する HTTP リクエストで取得した")
 		return steamdomain.ReviewPage{}, nil
-	}), mcpdomain.DefaultLimits(), localHTTPConfig(t))
+	}), mcpdomain.DefaultLimits(), localHTTPConfig(t), testutil.DiscardLogger(), time.Now)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,14 +58,14 @@ func TestHandlerLimits(t *testing.T) {
 }
 
 func TestNewHandlerRejectsNilFetcher(t *testing.T) {
-	handler, err := NewHandler(nil, mcpdomain.DefaultLimits(), localHTTPConfig(t))
+	handler, err := NewHandler(nil, mcpdomain.DefaultLimits(), localHTTPConfig(t), testutil.DiscardLogger(), time.Now)
 	if handler != nil || !errors.Is(err, steamdomain.ErrInvalidArgument) {
 		t.Fatalf("handler=%v err=%v", handler, err)
 	}
 }
 
 func TestNewHandlerRejectsInvalidLimits(t *testing.T) {
-	handler, err := NewHandler(testutil.FetchFunc(nil), mcpdomain.Limits{}, localHTTPConfig(t))
+	handler, err := NewHandler(testutil.FetchFunc(nil), mcpdomain.Limits{}, localHTTPConfig(t), testutil.DiscardLogger(), time.Now)
 	if handler != nil || !errors.Is(err, steamdomain.ErrInvalidArgument) {
 		t.Fatalf("handler=%v err=%v", handler, err)
 	}
@@ -73,7 +75,7 @@ func TestLocalHost(t *testing.T) {
 	handler, err := NewHandler(testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 		t.Fatal("HTTP Host 検査で取得した")
 		return steamdomain.ReviewPage{}, nil
-	}), mcpdomain.DefaultLimits(), localHTTPConfig(t))
+	}), mcpdomain.DefaultLimits(), localHTTPConfig(t), testutil.DiscardLogger(), time.Now)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,9 +111,27 @@ func TestNewHandlerRejectsZeroHTTPConfig(t *testing.T) {
 		handler, err := NewHandler(testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 			t.Fatal("設定不正の構築時に取得した")
 			return steamdomain.ReviewPage{}, nil
-		}), mcpdomain.DefaultLimits(), config)
+		}), mcpdomain.DefaultLimits(), config, testutil.DiscardLogger(), time.Now)
 		if handler != nil || !errors.Is(err, mcpaccess.ErrInvalidConfig) {
 			t.Fatalf("handler=%v err=%v", handler, err)
 		}
 	})
+}
+
+func TestNewHandlerRejectsMissingLoggingDependency(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		logger *slog.Logger
+		now    func() time.Time
+	}{
+		{"logger が nil", nil, time.Now},
+		{"時計が nil", testutil.DiscardLogger(), nil},
+	} {
+		t.Run(tc.name+"なら構築エラーを返す", func(t *testing.T) {
+			handler, err := NewHandler(testutil.FetchFunc(nil), mcpdomain.DefaultLimits(), localHTTPConfig(t), tc.logger, tc.now)
+			if handler != nil || !errors.Is(err, steamdomain.ErrInvalidArgument) {
+				t.Fatalf("handler=%v err=%v", handler, err)
+			}
+		})
+	}
 }

@@ -49,7 +49,7 @@ func TestMCPResultResponse(t *testing.T) {
 					}
 
 					return steamdomain.ReviewPage{}, nil
-				}), mcpdomain.DefaultLimits(), localHTTPConfig(t))
+				}), mcpdomain.DefaultLimits(), localHTTPConfig(t), testutil.DiscardLogger(), time.Now)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -100,7 +100,7 @@ func TestMCPInputFailurePrivacy(t *testing.T) {
 			handler, err := NewHandler(testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				calls.Add(1)
 				return steamdomain.ReviewPage{}, nil
-			}), limits, localHTTPConfig(t))
+			}), limits, localHTTPConfig(t), testutil.DiscardLogger(), time.Now)
 			if err != nil {
 				t.Fatal(err)
 			}

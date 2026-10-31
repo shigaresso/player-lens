@@ -4,6 +4,8 @@ package testutil
 import (
 	"context"
 	"encoding/json"
+	"io"
+	"log/slog"
 	"reflect"
 	"testing"
 
@@ -120,4 +122,9 @@ func (e *ConversionProbeError) Is(target error) bool {
 	}
 
 	return false
+}
+
+// DiscardLogger はテストがターミナルへ出力しないための明示的な logger を返す。
+func DiscardLogger() *slog.Logger {
+	return slog.New(slog.NewJSONHandler(io.Discard, nil))
 }

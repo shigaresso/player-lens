@@ -44,7 +44,7 @@ func TestMCPShutdownWaitsForActiveCollection(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	mcpHandler, err := reviewmcp.NewHandler(fetcher, mcpdomain.DefaultLimits(), config)
+	mcpHandler, err := reviewmcp.NewHandler(fetcher, mcpdomain.DefaultLimits(), config, slog.New(slog.NewJSONHandler(io.Discard, nil)), time.Now)
 	if err != nil {
 		t.Fatal(err)
 	}

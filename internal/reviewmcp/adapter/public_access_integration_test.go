@@ -42,7 +42,7 @@ func TestPublicMCPProtocolsAndSharedBudget(t *testing.T) {
 			handler, err := NewHandler(testutil.FetchFunc(func(context.Context, steamdomain.AppID, steamdomain.PageOptions) (steamdomain.ReviewPage, error) {
 				calls.Add(1)
 				return steamdomain.ReviewPage{Reviews: []steamdomain.Review{{RecommendationID: 16, Text: "分析用の本文"}}, NextCursor: "next"}, nil
-			}), testutil.Limits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 1, RequestsPerDay: 10, MaxConcurrent: 1}), config)
+			}), testutil.Limits(t, mcpdomain.LimitsConfig{RequestsPerMinute: 1, RequestsPerDay: 10, MaxConcurrent: 1}), config, testutil.DiscardLogger(), time.Now)
 			if err != nil {
 				t.Fatal(err)
 			}

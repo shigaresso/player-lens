@@ -57,7 +57,39 @@ Controller は ParseInput のエラーを `protocol.InvalidInputResult(cause)` �
 
 入力失敗と取得失敗は `encodeResultWithCause` で、公開応答を生成した後に SDK の `SetError` へ原因を保持する。先に本文を設定することで、SDK がエラー文字列を公開本文へ補うことを避ける。サーバー側の `GetError` から `errors.Is`・`errors.As` で原因を追跡できるが、構造化結果・テキスト・シリアライズした SDK 結果には内部原因を含めない。応答変換にも失敗した場合は、固定の表示文言を持つエラーへ変換原因と入力・取得原因の両方を保持する。
 
-不正入力では引き続き UseCase を呼ばず、Steam 通信・利用枠を消費しない。context の連携と解放は既存の Controller の defer が担当する。ログ出力・保存・OpenTelemetry はこの変更で導入しない。標準 JSON エラーを含む診断原因の収集・出力方針は、観測を追加する Issue で決める。
+不正入力では引き続き UseCase を呼ばず、Steam 通信・利用枠を消費しない。context の連携と解放は既存の Controller の defer が担当する。Issue #133 ではログ出力・保存・OpenTelemetry を導入しなかった。Issue #135 の構造化ログでは標準 JSON エラーの全文を出さず、安全な分類のみを記録する。保存・OpenTelemetry は引き続き未導入とする。
+
+### レビュー収集の構造化ログ（Issue #135）
+
+`Handle` の開始から入力・UseCase・応答生成までの結果を、`review_collection.completed` として通常 return と panic の各終了時に1回記録する。msg は「MCP のレビュー収集を処理した」に固定する。SDK に返すまでの観測であり、HTTP 送信・クライアント受信の成功を意味しない。初期化・ツール一覧・未定義ツール・Host/Origin や本文上限での拒否はこのイベントに含めない。
+
+main の JSON/stderr logger（service.name=player-lens）と計測用の時計を run → NewHandler → newServer → NewCollectReviewsHandler へ渡す。NewHandler は logger と時計が nil なら構築エラーにする。構築時には計測・ログ・収集を実行しない。計測用の時計は既存 limiter の時計と分け、利用枠の規則は変えない。通常テストは明示した破棄先、ログの契約テストはメモリ上の記録先を渡す。
+
+Controller が実行の段階と結果をまとめ、handler/logging の ReviewCollection が属性・level・安全な分類を担当する。公開コードは protocol.CollectionErrorCode・UsageErrorCode が既存の応答分類を参照して共有する。応答の JSON やエラー文章を解析して属性を作らない。
+
+| 属性 | 内容・省略条件 |
+| --- | --- |
+| event | review_collection.completed |
+| service.name | 起動側の player-lens |
+| duration_ms | 開始から応答生成までの数値のミリ秒。ログ出力・context 後始末・送信時間を含まない |
+| outcome | success、rejected、cancelled、failed |
+| failure_stage | 失敗時だけ input・collection・response_encode。panic は発生段階 |
+| error_code | 失敗時だけ既存の公開分類。応答生成不能は response_encoding_failed、panic は panic |
+| cause_kind | 失敗時だけ安全な固定分類 |
+| app_id | 入力解析と条件生成が成功した場合だけ |
+| collected_count | UseCase が受付拒否以外の結果を返した場合の、本文省略前のレビュー件数 |
+| pages_fetched | 同じ条件で、空ページを含む成功ページ数 |
+| stop_reason | 同じ条件で、収集結果の終了理由 |
+
+失敗は panic → 応答生成不能 → 本文省略 → 入力不正 → 受付拒否 → 収集失敗の順に最終結果を分類する。成功・入力不正・受付拒否・キャンセルは INFO、期限超過・取得失敗・本文省略は WARN、応答生成不能・panic は ERROR とする。入力不正と受付拒否は outcome=rejected、キャンセルは cancelled、その他の失敗は failed とする。期限は収集失敗の分類であり、正常な全件取得とは扱わない。
+
+cause_kind は errors.Is・errors.As により cancelled、deadline_exceeded、json_syntax、json_type、response_too_large、cursor_cycle、http_status、timeout、upstream_response_too_large、invalid_response、invalid_argument をこの順に判定し、残りは unknown とする。受付拒否は usage_limit、panic は panic とする。判定中に任意の Error 文字列や型名・入力値を属性へ渡さない。入力不正の条件別の文章は内部原因として保持したままとし、ログ上は安全な invalid_argument にまとめる。
+
+入力 JSON・未知の項目名・レビュー本文・カーソル・URL・任意の内部エラー全文は記録しない。標準 JSON エラーの Value・Field なども転載しない。失敗していない属性や仮の trace ID は付けない。属性はアプリケーション固有であり、OTel の標準属性と称しない。
+
+計測と結果記録は所有 context の cancel より前に実行し、処理中の context を LogAttrs へ渡す。呼び出し元の値とキャンセルを維持し、自分自身の cleanup を失敗原因へ分類しない。収集の同時枠は従来どおり UseCase の終了時に返却済みとなる。ログ writer の通常の Write エラーでは公開結果・原因・枠返却・context の解放を変更せず、ログの再試行は行わない。panic の値をログへ含めず、回復せず元のまま伝播させる。
+
+新たなファイル・保存先・goroutine・buffer は本番に作らず、出力先の Close も引き受けない。stderr の保存・検索・保持期間、任意の writer の非ブロッキング、OTel の SDK・転送・trace・metrics は別途決定する。実装の検証は単体、4版の実 SDK、実バイナリの stderr と race で確認する。設計は [ADR-0021](../adr/0021-mcp-collection-structured-logging.md) を参照する。
 
 ### ツール登録と実行の境界（Issue #50）
 

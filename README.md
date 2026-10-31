@@ -59,16 +59,18 @@ ChatGPT App／Codex はローカル・Render ともに実機確認済み。Claud
 
 `collect_reviews` は、PlayerLens が提供する Steam レビュー取得ツールの名前である。
 
-取得条件として指定できる項目は次の6つ。`app_id` だけが必須で、ほかは省略できる。表の既定値は、ツールへの入力で項目を省略した場合に使われる。
+取得条件として指定できる項目は次の6つ。`app_id` だけが必須で、ほかは省略できる。「省略時」の値は PlayerLens の MCP 側で設定した既定値である。
 
-| 項目 | 意味 | 指定できる値 | 省略時 |
-| --- | --- | --- | --- |
-| `app_id` | 取得対象のゲームの Steam App ID | 1〜4294967295 の整数 | 必須 |
-| `language` | 取得するレビューの言語 | `japanese`（日本語）、`english`（英語）、`all`（全言語）などの文字列 | `english` |
-| `review_type` | 取得する評価種別 | `all`（全評価）、`positive`（おすすめ）、`negative`（非おすすめ） | `all` |
-| `page_size` | Steam API への1回の通信で要求する件数 | 1〜100 の整数 | 100 |
-| `max_reviews` | 1回のツール実行で収集する合計件数の上限 | 1〜100 の整数 | 20 |
-| `max_pages` | Steam API から取得するページ数の上限 | 1〜5 の整数 | 3 |
+| 項目 | 意味 | 指定できる値 | 省略時 | 制約の由来 |
+| --- | --- | --- | --- | --- |
+| `app_id` | 取得対象のゲームの Steam App ID | 1〜4294967295 の整数 | 必須 | 上限は Steam の `uint32` 型。0の拒否は PlayerLens |
+| `language` | 取得するレビューの言語 | `japanese`（日本語）、`english`（英語）、`all`（全言語）などの文字列 | `english` | 言語コードは Steam。文字数・形式の検査は PlayerLens |
+| `review_type` | 取得する評価種別 | `all`（全評価）、`positive`（おすすめ）、`negative`（非おすすめ） | `all` | 区分は Steam。文字列での指定は PlayerLens |
+| `page_size` | Steam API への1回の通信で要求する件数 | 1〜100 の整数 | 100 | 最大100件は Steam の上限 |
+| `max_reviews` | 1回のツール実行で収集する合計件数の上限 | 1〜100 の整数 | 20 | PlayerLens の MCP 用上限 |
+| `max_pages` | Steam API から取得するページ数の上限 | 1〜5 の整数 | 3 | PlayerLens の MCP 用上限 |
+
+Steam 由来の型・上限・評価区分は [公式 API 定義](https://partner.steamgames.com/doc/webapi/IUserReviewsService) を参照する。
 
 言語は [Steam 公式一覧の API language code](https://partner.steamgames.com/doc/store/localization/languages) を使う。アプリは半角英小文字で始まる1〜32文字を受け付け、2文字目以降は英小文字・数字・`_`・`-` を許可する。形式の検査だけで Steam 側の対応を保証するものではない。
 

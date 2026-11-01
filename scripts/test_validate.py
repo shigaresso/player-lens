@@ -46,6 +46,28 @@ class GitTests(unittest.TestCase):
         update = f"refs/heads/topic {head} refs/heads/topic {'0' * 40}\n"
         self.assertEqual([head], validate.validate_pre_push(update, "origin", cwd=self.repo))
 
+    def prepare_rebased_push(self):
+        message = "(#3) ci: 検査を追加した\n\n- 検査を実装した\n"
+        self.git("switch", "-qc", "topic")
+        old = self.commit(message)
+        self.git("update-ref", "refs/remotes/origin/topic", old)
+        self.git("switch", "-q", "main")
+        self.commit(message.replace("検査を追加した", "main の検査を追加した"))
+        self.git("switch", "-qc", "side", self.base)
+        self.commit(message.replace("検査を追加した", "別の検査を追加した"))
+        self.git("switch", "-q", "main")
+        self.git("merge", "--no-ff", "-qm", "Merge pull request #4 from side", "side")
+        self.git("update-ref", "refs/remotes/origin/main", self.git("rev-parse", "HEAD"))
+        self.git("switch", "-q", "topic")
+        self.git("rebase", "main")
+        return old
+
+    def test_existing_branch_rebase_checks_only_unpublished_commit(self):
+        old = self.prepare_rebased_push()
+        head = self.git("rev-parse", "HEAD")
+        updates = f"refs/heads/topic {head} refs/heads/topic {old}\n"
+        self.assertEqual([head], validate.validate_pre_push(updates, "origin", cwd=self.repo))
+
 
     def test_deleted_ref_is_not_a_commit(self):
         update = f"(delete) {'0' * 40} refs/heads/topic {self.base}\n"

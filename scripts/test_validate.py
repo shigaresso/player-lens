@@ -5,11 +5,13 @@ import unittest
 from pathlib import Path
 
 import validate
+from git_test_environment import isolated_git_environment
 from test_conventions import pr, issue
 
 
 class GitTests(unittest.TestCase):
     def setUp(self):
+        self.enterContext(isolated_git_environment())
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.repo = Path(self.temp.name)

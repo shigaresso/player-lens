@@ -7,11 +7,14 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from git_test_environment import isolated_git_environment
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
 class HookTests(unittest.TestCase):
     def setUp(self):
+        self.enterContext(isolated_git_environment())
         self.temp = tempfile.TemporaryDirectory(prefix="player lens hooks ")
         self.addCleanup(self.temp.cleanup)
         self.repo = Path(self.temp.name)

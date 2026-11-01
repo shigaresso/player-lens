@@ -5,10 +5,12 @@ from pathlib import Path
 from unittest.mock import Mock
 
 import staged_format
+from git_test_environment import isolated_git_environment
 
 
 class StagedFormatTests(unittest.TestCase):
     def setUp(self):
+        self.enterContext(isolated_git_environment())
         directory = tempfile.TemporaryDirectory(prefix="player lens index ")
         self.addCleanup(directory.cleanup)
         self.repo = Path(directory.name)

@@ -9,10 +9,12 @@ import unittest
 from unittest.mock import patch
 
 import check_secrets
+from git_test_environment import isolated_git_environment
 
 
 class SecretToolTests(unittest.TestCase):
     def setUp(self):
+        self.enterContext(isolated_git_environment())
         directory = tempfile.TemporaryDirectory(prefix="player lens secrets ")
         self.addCleanup(directory.cleanup)
         self.repo = Path(directory.name)

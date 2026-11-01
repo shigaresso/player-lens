@@ -23,6 +23,12 @@ python3 scripts/verify_hooks.py
 
 `check.sh` は規約・開発用ツールの全 Python テスト（0件なら失敗）、未ステージ・ステージ済みの空白、Lefthook 設定、actionlint、シェル構文を確認する。actionlint の ShellCheck 連携は無効にし、シェル構文は `bash -n` で確認する。静的解析による意味の保証とは区別する。
 
+### 一時 Git リポジトリの隔離
+
+一時 Git を使うテストと実ツール検証は、`scripts/git_test_environment.py` の `isolated_git_environment()` 内で操作する。Git フックは `GIT_DIR`・`GIT_INDEX_FILE` などを継承するため、作業ディレクトリを一時領域へ変えるだけでは操作先を分離できない。スコープ内では継承した `GIT_*` を除外し、system・global の Git 設定を読み込まない。正常終了・例外の両方で元の環境を復元する。環境を一時変更するため、この検査を同じプロセス内の別スレッドと並列実行しない。
+
+適用先は規約・ステージ済み整形の通常テストと、`verify_hooks.py`・`verify_secrets.py`・`verify_go_tools.py` の一時 Git 操作とする。実際のコミット・送信対象を扱う `validate.py`・`check_secrets.py`・`staged_format.py` の環境を一律に除外しない。使い捨ての親リポジトリの設定・参照・index・ファイルの保持と、`verify_hooks.py` の linked worktree からの実コミットで確認する。Issue #143 で追加した回帰検証の範囲であり、任意の検査スクリプトの安全性を保証するものではない。
+
 ## 環境ファイルの除外
 
 `.gitignore` は各階層の `.env` と `.env.*` を除外し、設定例の `.env.example` は管理対象に残す。例には実際の秘密情報を記載しない。既に追跡しているファイルや過去のコミットには、ignore の追加は適用されない。

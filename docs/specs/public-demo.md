@@ -16,7 +16,7 @@ Issue #148 でプロンプト作成画面を実装した。ローカル表示と
 
 ## プロンプト作成画面（Issue #148）
 
-GET/HEAD `/` で日本語の画面を提供する。画面は文章を作るだけで、Steam／MCP／LLM の呼び出し・利用枠の消費・保存を行わない。入力と出力は DOM 内でのみ扱い、サーバーへ送信したりログへ記録したりしない。Go の embed に HTML・CSS・JavaScript を含め、外部資産へ依存しない。CSP で固定資産のハッシュだけを許可し、通信とフォーム送信を禁止する。
+GET/HEAD `/` で日本語の画面を提供する。画面は文章を作るだけで、Steam／MCP／LLM の呼び出し・利用枠の消費・保存を行わない。入力と出力は DOM 内でのみ扱い、サーバーへ送信したりログへ記録したりしない。依頼文作成機能を `internal/reviewprompt` にまとめ、Controller は `adapter/handler/prompt_builder.go`、Go の描画と HTML・CSS・JavaScript は配下の `page` に置く。生成・組み立てとルーティング登録は `cmd/server` が担当する。Go の embed に HTML・CSS・JavaScript を含め、外部資産へ依存しない。CSP で固定資産のハッシュだけを許可し、通信とフォーム送信を禁止する。
 
 | 入力・操作 | 契約 |
 | --- | --- |

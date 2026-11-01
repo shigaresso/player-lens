@@ -54,7 +54,7 @@
 
 ## 現在の導入状況
 
-Issue #148 でトップページに MCP 分析依頼の作成画面を追加した。ブラウザ内で入力から依頼文を作り、収集と分析は登録済み MCP を使うクライアント AI が担当する。画面のローカル検証と公開配置の未確認は [公開デモ仕様](specs/public-demo.md#プロンプト作成画面issue-148) を参照する。
+Issue #148 でトップページに MCP 分析依頼の作成画面を追加し、`internal/reviewprompt` の領域へまとめた。ブラウザ内で入力から依頼文を作り、収集と分析は登録済み MCP を使うクライアント AI が担当する。画面のローカル検証と公開配置の未確認は [公開デモ仕様](specs/public-demo.md#プロンプト作成画面issue-148) を参照する。
 
 Issue #11 で Go モジュール、最小 HTTP サーバー、Dockerfile と Compose を追加した。DB・バックエンドの分析・公開デモは未導入とする。ローカル検証と新 CI の実行状況は [Issue #11](worklogs/11-http-server.md) に記録する。Issue #3 で Python の規約ツール・Git フック・テンプレート・CI の設定を追加した。PR #4 と Issue #5 の規約 CI を GitHub 上で確認した。Issue #5 で Release CLI と移植ガイドを追加した。保護設定は未設定とし、検査の成功だけでマージの機械的な制限や AI の遵守を保証しない。対象 SHA と結果は [Issue #3](worklogs/3-conventions.md) と [Issue #5](worklogs/5-release.md) の作業記録に残す。
 

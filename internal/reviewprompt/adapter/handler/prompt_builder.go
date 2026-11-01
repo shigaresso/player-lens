@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/shigaresso/player-lens/cmd/server/adapter/handler/promptbuilder"
 	"github.com/shigaresso/player-lens/internal/reviewmcp/adapter/handler/protocol"
+	promptpage "github.com/shigaresso/player-lens/internal/reviewprompt/adapter/handler/page"
 )
 
 type promptBuilderHandler struct {
@@ -18,7 +18,7 @@ type promptBuilderHandler struct {
 // 生成・リクエスト処理で Steam や MCP を呼ばず、入力・生成結果を保存しない。
 // 呼び出し側が GET/HEAD の厳密なルートパスへ登録する。
 func NewPromptBuilderHandler() (http.Handler, error) {
-	page, policy, err := promptbuilder.Render(protocol.InputSchema())
+	page, policy, err := promptpage.Render(protocol.InputSchema())
 	if err != nil {
 		return nil, err
 	}

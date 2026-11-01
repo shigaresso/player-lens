@@ -109,7 +109,7 @@ bash scripts/check-app.sh
 
 このコマンドは以下を順に実行し、いずれかの失敗で停止する。
 
-- `bash scripts/check-frontend.sh`：promptbuilder 内の `*.test.mjs` を固定版 Node.js で自動収集し、URL 解析・条件と依頼文・コピー成功／失敗を検証する。
+- `bash scripts/check-frontend.sh`：`internal/reviewprompt/adapter/handler/page` 内の `*.test.mjs` を固定版 Node.js で自動収集し、URL 解析・条件と依頼文・コピー成功／失敗を検証する。
 - `bash scripts/check-go.sh unit`：読み取り専用ソースの Compose サービスで gofmt の差分を検出し、`go vet ./...` と `go test -count=1 ./...` を実行する。自動修正で成功扱いにしない。
 - `bash scripts/check-lint.sh`：読み取り専用ソースの lint サービスで固定版 golangci-lint を実行する。通常のソースと integration タグ付きテストを含める。
 - `bash scripts/check-go.sh integration`：実行対象に結合テストが存在することを確認し、`go test -tags=integration -race -count=1 ./...` を実行する。通常のテストも含む。先に `scripts/verify_go_vcs.sh` で Git の失敗・不在と checkout の不在でも Go の処理と子ビルドが成功することを確認する。テスト一覧の取得失敗はテスト未検出とは区別して中断する。外部サービス・DB・実 Steam・実 LLM は使わず、HTTP と終了処理、ローカルの実 SDK クライアントとの MCP 連携を確認する。

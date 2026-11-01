@@ -19,7 +19,7 @@ Issue #103 の追加対応で、cmd/server/main.go はプロセスの入口を�
 
 run は http.NewServeMux でルーターを生成し、RegisterRoutes(mux, healthHandler, mcpHandler, promptHandler) で経路を登録してから待ち受けを開始する。RegisterRoutes は既存の mux に生成済み handler を登録するだけで、依存や handler・ルーターを生成せず、handler を実行しない。無関係な既存経路は維持する。旧 server adapter の NewHandler は残さない。
 
-RegisterRoutes は GET /healthz（HEAD を含む）と、MCP が非 nil の場合の /tools、promptHandler が非 nil の場合の GET /{$}（HEAD を含む）を登録する。トップページは NewPromptBuilderHandler で起動時に生成する。POST / は405、未定義の子パスは404とし、ルートを catch-all にしない。画面と失敗時の契約は [公開デモ仕様](public-demo.md#プロンプト作成画面issue-148) に定める。mux と healthHandler は有効な非 nil の値を渡し、登録は受付開始前に行う。競合するパターンは事前に登録しない。重複登録などは標準 ServeMux の panic に従い、独自の検査や復旧は追加しない。各 handler は並行利用可能なものを渡す。
+RegisterRoutes は GET /healthz（HEAD を含む）と、MCP が非 nil の場合の /tools、promptHandler が非 nil の場合の GET /{$}（HEAD を含む）を登録する。トップページは reviewprompt/adapter/handler の NewPromptBuilderHandler で起動時に生成する。POST / は405、未定義の子パスは404とし、ルートを catch-all にしない。画面と失敗時の契約は [公開デモ仕様](public-demo.md#プロンプト作成画面issue-148) に定める。mux と healthHandler は有効な非 nil の値を渡し、登録は受付開始前に行う。競合するパターンは事前に登録しない。重複登録などは標準 ServeMux の panic に従い、独自の検査や復旧は追加しない。各 handler は並行利用可能なものを渡す。
 
 Issue #76 で登録パターンのパスとログの http.route を1定義へ共有し、Issue #77 で handler パッケージへ移した。登録側とログ側は公開した handler.HealthPath の1定義を参照する。公開経路は /healthz のまま維持し、受信 URL・query を経路の定義へ取り込まない。公開契約を検証するテストの期待値はこの実装定数を参照せず、/healthz のリテラルで確認する。
 

@@ -213,6 +213,7 @@ bash scripts/check-go.sh format-fix
 - `cmd/server/`：HTTP 応答、設定、サーバー起動・終了とテストを管理する。
 - `cmd/collect-reviews/`：ローカル CLI の依存と出力・終了コードを組み立てる。
 - `internal/steam/`：domain に型と条件、application に収集・収集保存、adapter に HTTP を置く。
+- `internal/reviewprompt/`：adapter の handler に依頼文作成の入口、下位の page に画面とブラウザ内の生成処理を置く。
 - `internal/reviewmcp/`：domain に利用制限、application に制限付き収集、adapter に HTTP/SDK・入力・応答を置く。
 - `internal/reviewcli/adapter/`：CLI の入力と共通操作への接続を管理する。
 - `internal/jsonoutput/adapter/`：公開 JSON の変換と writer 出力を管理する。

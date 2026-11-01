@@ -2,7 +2,7 @@
 
 ## 状態と対象
 
-採用。[Issue #56](https://github.com/shigaresso/player-lens/issues/56) に対応する。既存の steam・reviewmcp・reviewcli・jsonoutput・mcpaccess と2つの cmd を維持し、それぞれの内部に domain・application・adapter を配置する。ADR-0005・0006 の配置を部分置換し、業務・保存・数値型・外部形式・資源の契約は維持する。
+採用。[Issue #56](https://github.com/shigaresso/player-lens/issues/56) に対応する。既存の steam・reviewmcp・reviewcli・jsonoutput・mcpaccess と2つの cmd を維持し、それぞれの内部に domain・application・adapter を配置する。ADR-0005・0006 の配置を部分置換し、業務・保存・数値型・外部形式・資源の契約は維持する。Issue #148 で同じ配置方針を依頼文作成の reviewprompt 領域へ適用した。
 
 ## 背景と比較
 
@@ -19,6 +19,7 @@
 | internal/reviewcli | 追加しない | 追加しない | 引数の解析と収集保存への接続 |
 | internal/jsonoutput | 追加しない | 追加しない | JSON 変換と writer 出力 |
 | internal/mcpaccess | 公開 URL・Host の設定と照合 | 追加しない | HTTP の Host/Origin 保護 |
+| internal/reviewprompt | 追加しない | 追加しない | MCP 分析依頼の作成画面・HTTP 応答・ブラウザ内の入力と生成 |
 | cmd/server | 追加しない | 追加しない | 設定の解析・HTTP・取得依存の構築 |
 | cmd/collect-reviews | 追加しない | 追加しない | CLI の表示と終了コード |
 
@@ -29,6 +30,12 @@ reviewmcp/application は reviewmcp/domain と steam の application/domain を�
 CLI と JSON 出力の責務は adapter であり、その内部へ業務操作を複製しない。Issue #82 で mcpaccess/domain の Access はローカル用・公開用の値型が満たす Host 判定だけの契約とする。HTTP の文言・SDK 設定との組み立ては reviewmcp/adapter の HTTPConfig に分ける。adapter.Protect は設定と next を受け取り、nil・ゼロ値・Host・Origin の既存の拒否を維持する。内部の authority 文字列表現は公開しない。
 
 cmd は main と起動の組み立てを root に維持する。既存の I/O 処理を内部の adapter へ移し、listener・接続・signal・goroutine・context の終了担当を変えない。
+
+### 依頼文作成の領域（Issue #148）
+
+依頼文作成を `internal/reviewprompt` にまとめる。Controller は `adapter/handler` 直下、HTML・CSS・JavaScript と Go の描画は下位の `page` に置く。`cmd/server` に画面を同居させる案よりも、機能名から入口と詳細を探せることを優先した。生成・組み立てとルーティング登録は `cmd/server` に残す。
+
+MCP の入力定義は `reviewmcp/adapter/handler/protocol.InputSchema` を参照し、上限・既定値を複製しない。この依存は adapter 同士であり、逆方向の参照や循環は追加しない。画面提供とブラウザ内の変換に必要な adapter だけを設け、空の domain/application、委譲だけの互換 handler は作らない。既存の HTTP と生成文の契約を維持し、テスト・検査対象・文書参照を同じ変更で移す。
 
 ### Controller を探す場所（Issue #77）
 

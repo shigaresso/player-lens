@@ -12,10 +12,11 @@ import (
 
 	serveradapter "github.com/shigaresso/player-lens/cmd/server/adapter"
 	serverhandler "github.com/shigaresso/player-lens/cmd/server/adapter/handler"
+	prompthandler "github.com/shigaresso/player-lens/internal/reviewprompt/adapter/handler"
 )
 
 func TestPromptBuilderWithHTTP(t *testing.T) {
-	page, err := serverhandler.NewPromptBuilderHandler()
+	page, err := prompthandler.NewPromptBuilderHandler()
 	if err != nil {
 		t.Fatal(err)
 	}

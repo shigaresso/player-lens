@@ -1,5 +1,5 @@
-// Package promptbuilder はブラウザ内の依頼文作成画面を構築する。
-package promptbuilder
+// Package page はブラウザ内の依頼文作成画面を構築する。
+package page
 
 import (
 	"bytes"

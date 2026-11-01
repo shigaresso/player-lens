@@ -12,6 +12,7 @@ import (
 	serveradapter "github.com/shigaresso/player-lens/cmd/server/adapter"
 	serverhandler "github.com/shigaresso/player-lens/cmd/server/adapter/handler"
 	reviewmcp "github.com/shigaresso/player-lens/internal/reviewmcp/adapter"
+	prompthandler "github.com/shigaresso/player-lens/internal/reviewprompt/adapter/handler"
 )
 
 const shutdownTimeout = 10 * time.Second
@@ -44,7 +45,7 @@ func run(ctx context.Context, port string, logger *slog.Logger) error {
 	}
 
 	healthHandler := serverhandler.NewHealthHandler(logger, time.Now)
-	promptHandler, err := serverhandler.NewPromptBuilderHandler()
+	promptHandler, err := prompthandler.NewPromptBuilderHandler()
 	if err != nil {
 		return fmt.Errorf("プロンプト作成画面の準備に失敗した: %w", err)
 	}

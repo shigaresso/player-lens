@@ -34,3 +34,11 @@
 入力・生成文のファイル／DB／ログ保存は追加していない。Node.js は npm 依存を持たず、テストソースは読み取り専用、テスト時のネットワークは無効にした。診断ログと画面確認用の画像はリポジトリ外へ置き、Git と本番イメージへ含めていない。
 
 push・PR 作成・Issue クローズ・Render 配置は行わず、ローカルコミットで停止する。
+
+## 領域別の配置への整理
+
+ユーザーとの追加確認に基づき、Controller を `internal/reviewprompt/adapter/handler/prompt_builder.go`、HTML・CSS・JavaScript・Go の描画と対応テストを配下の `page` へ移した。cmd/server は生成・組み立てと経路登録を維持し、実 HTTP のサーバー結合テストも同じ場所に残した。MCP schema への依存を維持し、空の domain/application や互換 handler は追加しなかった。ADR-0013 と Controller 一覧・仕様・検査パスを更新した。
+
+動作を変えない Refactor として既存テストを維持し、形式のための Red や新しいテストは追加していない。HTML・CSS・JavaScript とそのテストは移動前とバイト単位で一致することを確認した。
+
+移動後も `bash scripts/check-app.sh` が成功した。JavaScript 47ケース、Go の整形・vet・通常テスト、レイヤー依存・Controller 配置、通常／integration のリンター、race 付き結合テストを確認した。同じ本番 image ID `sha256:24d83bc5897a3b157de500fe0f3ae57281c1bd2e4fbed250eb70f9d4edfbb340` で画面・MCP・設定・終了処理の検査も成功した。画面資産の内容は変えていないため、上記のブラウザ確認を保持し、配置変更のための同じ操作の手動反復は行わなかった。

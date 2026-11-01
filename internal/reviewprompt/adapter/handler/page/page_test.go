@@ -1,4 +1,4 @@
-package promptbuilder
+package page
 
 import (
 	"strings"

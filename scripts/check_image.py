@@ -50,6 +50,29 @@ def check_prompt_builder(port):
         raise RuntimeError("プロンプト作成画面の HEAD が異なる")
 
 
+def check_prompt_page_logs(output):
+    """本番プロセスの GET/HEAD 完了イベントを確認し、他の診断と区別する。"""
+    records = []
+    for line in output.splitlines():
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(entry, dict) and entry.get("event") == "prompt_page.completed":
+            records.append(entry)
+    if len(records) != 2 or {entry.get("http.request.method") for entry in records} != {"GET", "HEAD"}:
+        raise RuntimeError("画面の GET/HEAD 完了ログがそれぞれ1件ではない")
+    fixed = {"event": "prompt_page.completed", "service.name": "player-lens",
+             "msg": "プロンプト作成画面の応答を処理した", "level": "INFO", "outcome": "success",
+             "http.route": "/", "http.response.status_code": 200}
+    allowed = set(fixed) | {"time", "duration_ms", "http.request.method"}
+    for entry in records:
+        duration = entry.get("duration_ms")
+        if (set(entry) != allowed or any(entry.get(key) != value for key, value in fixed.items())
+                or type(duration) not in (int, float) or duration < 0):
+            raise RuntimeError("画面の完了ログの項目・値・所要時間が異なる")
+
+
 def check_mcp(port, public_host=None):
     """初期化・一覧・不正入力だけを確認し、実 Steam 通信は行わない。"""
     def call(identifier, method, params):
@@ -160,7 +183,8 @@ def check_running(image, port, signal, *environment, public_host=None):
         docker("kill", "--signal", signal, identifier)
         if docker("wait", identifier, timeout=15) != "0":
             raise RuntimeError("終了シグナルで正常終了しなかった")
-        print(f"PORT={port}: HTTP・MCP 応答と {signal} の正常終了を確認した")
+        check_prompt_page_logs(docker("logs", identifier))
+        print(f"PORT={port}: HTTP・MCP 応答・画面ログと {signal} の正常終了を確認した")
 
 
 def main(argv=None):

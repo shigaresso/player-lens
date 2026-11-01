@@ -1,4 +1,13 @@
 services:
+  frontend-test:
+    profiles: [tools]
+    build:
+      context: .
+      target: frontend-test
+    volumes:
+      - .:/src:ro
+    network_mode: none
+
   app:
     build:
       context: .

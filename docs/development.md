@@ -99,6 +99,8 @@ Python は同じディレクトリの `test_<実装名>.py` を `<実装名>.py`
 
 ## Go・Compose・本番用イメージの検査
 
+Issue #148 の画面内 JavaScript は `bash scripts/check-frontend.sh` で検査する。Node.js 22.22.2 の公式イメージを index digest とともに固定し、`frontend-test` 専用 stage と Compose サービスで標準の `node:test` を実行する。ソースは読み取り専用、テスト時のネットワークは無効とする。npm 依存は使わず、Go の開発・本番ステージへ Node.js を含めない。この検査は `check-app.sh` と独立した `frontend-unit` CI から実行する。ブラウザ内の表示・操作確認は、純粋な変換の自動テストと別に記録する。
+
 Docker と Compose 2.23 以降を起動し、[README](../README.md#開発環境) の手順で開発する。`scripts/check.sh` は Docker・ネットワークを使わない Python テストと静的検査を行い、pre-commit のたびに本番用イメージをビルドしない。開発用の起動テストは `python3 -m unittest discover -s scripts -p test_dev.py` でも実行できる。Go の TDD の関連テストは Compose の verify サービスで実行し、変更確定時の必要な Go 検査を別途確認する。pre-push は規約検査の後に `scripts/check-app.sh` を必ず実行する。
 
 ```sh

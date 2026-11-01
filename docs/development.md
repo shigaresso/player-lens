@@ -113,7 +113,7 @@ bash scripts/check-app.sh
 - `bash scripts/check-go.sh unit`：読み取り専用ソースの Compose サービスで gofmt の差分を検出し、`go vet ./...` と `go test -count=1 ./...` を実行する。自動修正で成功扱いにしない。
 - `bash scripts/check-lint.sh`：読み取り専用ソースの lint サービスで固定版 golangci-lint を実行する。通常のソースと integration タグ付きテストを含める。
 - `bash scripts/check-go.sh integration`：実行対象に結合テストが存在することを確認し、`go test -tags=integration -race -count=1 ./...` を実行する。通常のテストも含む。先に `scripts/verify_go_vcs.sh` で Git の失敗・不在と checkout の不在でも Go の処理と子ビルドが成功することを確認する。テスト一覧の取得失敗はテスト未検出とは区別して中断する。外部サービス・DB・実 Steam・実 LLM は使わず、HTTP と終了処理、ローカルの実 SDK クライアントとの MCP 連携を確認する。
-- `python3 scripts/check_image.py`：本番用イメージを一度ビルドし、同じ image ID を使って非 root 設定、ソース共有なし・読み取り専用での起動、トップページの GET/HEAD と埋め込み画面、HTTP・MCP 応答と外部 Host の拒否、PORT の変更、不正設定の非0終了、SIGTERM/SIGINT の正常終了を確認する。Issue #29 の認証なし公開設定でも、同じイメージで初期化・一覧・不正入力・許可 Host・Origin・OAuth metadata の404・不正 URL の起動失敗を確認する。実 Steam への取得は行わない。一時コンテナは削除する。
+- `python3 scripts/check_image.py`：本番用イメージを一度ビルドし、同じ image ID を使って非 root 設定、ソース共有なし・読み取り専用での起動、トップページの GET/HEAD・埋め込み画面・stderr の完了イベント、HTTP・MCP 応答と外部 Host の拒否、PORT の変更、不正設定の非0終了、SIGTERM/SIGINT の正常終了を確認する。Issue #29 の認証なし公開設定でも、同じイメージで初期化・一覧・不正入力・許可 Host・Origin・OAuth metadata の404・不正 URL の起動失敗を確認する。実 Steam への取得は行わない。一時コンテナは削除する。
 
 Docker の停止・未導入でこの検査を省略して成功扱いにしない。Go の coverage 閾値・分岐・mutation 検査は別 Issue で導入するため、このコマンドの成功だけで100%と記載しない。
 

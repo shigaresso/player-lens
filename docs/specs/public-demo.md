@@ -31,6 +31,30 @@ GET/HEAD `/` で日本語の画面を提供する。画面は文章を作るだ�
 
 URL・条件の変換とコピー処理は Node.js の通常テスト、HTML と schema・CSP は Go の通常テスト、実 HTTP は integration タグ付きテストと本番イメージで検証する。実ブラウザの生成・変更・不正入力・コピー・狭い画面の確認は、これらの自動検査と区別して [検証記録](../worklogs/148-prompt-builder.md) と Issue #148 に記録する。クライアント AI の分析内容・ツール選択の遵守を画面のテスト成功だけで保証しない。
 
+## プロンプト作成画面の応答ログ（Issue #150）
+
+GET/HEAD `/` の handler が通常 return するときに、`prompt_page.completed` を1回記録する。ブラウザでの表示・依頼文生成・コピーの成功を表すものではなく、HTTP の応答処理を観測する。root の405・未定義404・他経路の記録は含めない。panic は回復せず伝播し、専用の完了ログも追加しない。
+
+起動側の slog.Logger と時計を生成関数に渡す。依存は有効な非 nil・並行利用可能なものとし、生成・登録時には計測・ログ出力を行わない。Controller が時刻と結果を取得し、`handler/page.Serve` が標準 ServeContent の実際のステータスと書き込み失敗を観測する。ログ項目・レベル・安全な分類は `handler/logging.PromptPage` が担当する。固定の `/` は handler.PromptPath を登録とログで共有する。
+
+| 項目 | 契約 |
+| --- | --- |
+| event | prompt_page.completed |
+| http.route | 固定の `/`。query を含めない |
+| http.request.method | GET／HEAD |
+| http.response.status_code | ServeContent が選んだ実際の値。200・206・304・412・416などを区別する |
+| duration_ms | Controller 開始から応答処理終了までの数値、ミリ秒。ログ出力時間とクライアント受信・表示は含まない |
+| outcome | success／rejected／response_failed／write_failed |
+| error_code・cause_kind | 書き込み失敗時だけ response_write_failed と安全な原因分類を付ける |
+
+200/206/304などは INFO/success、4xx は WARN/rejected、5xx は ERROR/response_failed とする。書き込み失敗はステータスによらず ERROR/write_failed を優先し、キャンセル・期限超過・切断・通信タイムアウト・unknown の順に分類する。ラップした原因も errors.Is/As で判断する。短い書き込みは失敗として観測する。部分応答・条件付き要求・既存の書き込み結果は変更せず、失敗時に再書き込みしない。
+
+時刻・level・msg と service.name は既存 slog 構成を使い、msg は「プロンプト作成画面の応答を処理した」に固定する。受信 query・ヘッダー・IP・User-Agent・入力・生成文・任意のエラー全文を属性に追加しない。ログ出力先の通常の Write エラーでは応答・元の失敗を変更しない。通常テストは io.Discard、内容の検証はメモリ上の記録先を明示し、ターミナルへ出力しない。
+
+リクエスト context をそのまま LogAttrs に渡し、キャンセル済みでも置き換えない。将来の OTel 接続経路を保持するものであり、仮の trace ID・SDK・保存基盤は追加しない。既存 JSON/stderr を使い、新しいファイル・DB・goroutine は設けない。保持・検索・送信成功は配置側の別の責務である。
+
+検証は Go の単体テスト、実 HTTP／実バイナリの stderr、同じ本番イメージに分ける。[ADR-0022](../adr/0022-prompt-page-structured-logging.md) に判断を記録し、[作業記録](../worklogs/150-prompt-page-logging.md) に Red/Green と実行結果を残す。
+
 ## README の要件
 
 アプリケーションの README に、目的、デモ URL、サンプルレポート、構成、起動・検証方法、現在の制約を記載する。URL やコマンドが未導入の場合は未導入と記載し、架空の URL や実施していない検証結果を載せない。

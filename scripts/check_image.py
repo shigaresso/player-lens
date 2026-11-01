@@ -39,6 +39,17 @@ def request(port, method, path, headers=None):
         connection.close()
 
 
+def check_prompt_builder(port):
+    """同じ本番イメージに画面と入力定義・実行コードが埋め込まれていることを確認する。"""
+    status, content_type, body = request(port, "GET", "/")
+    markers = [b'id="prompt-form"', b'name="steam_url"', b'id="prompt-output"',
+               b'data-input-schema="', b'function generatePrompt']
+    if status != 200 or content_type != "text/html; charset=utf-8" or not all(marker in body for marker in markers):
+        raise RuntimeError("本番イメージが埋め込んだプロンプト作成画面を返さなかった")
+    if request(port, "HEAD", "/") != (200, "text/html; charset=utf-8", b""):
+        raise RuntimeError("プロンプト作成画面の HEAD が異なる")
+
+
 def check_mcp(port, public_host=None):
     """初期化・一覧・不正入力だけを確認し、実 Steam 通信は行わない。"""
     def call(identifier, method, params):
@@ -139,7 +150,8 @@ def check_running(image, port, signal, *environment, public_host=None):
             raise RuntimeError(f"healthz の応答が異なる: {response!r}")
         if request(host_port, "HEAD", "/healthz") != (200, "text/plain; charset=utf-8", b""):
             raise RuntimeError("HEAD の応答が異なる")
-        for method, path, status in (("POST", "/healthz", 405), ("GET", "/", 404),
+        check_prompt_builder(host_port)
+        for method, path, status in (("POST", "/healthz", 405), ("POST", "/", 405), ("GET", "/unknown", 404),
                                      ("POST", "/mcp", 404), ("POST", "/tools/", 404),
                                      ("POST", "/tools/child", 404)):
             if request(host_port, method, path)[0] != status:

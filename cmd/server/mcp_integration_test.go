@@ -51,7 +51,7 @@ func TestMCPShutdownWaitsForActiveCollection(t *testing.T) {
 
 	healthHandler := serverhandler.NewHealthHandler(slog.New(slog.NewJSONHandler(io.Discard, nil)), time.Now)
 	router := http.NewServeMux()
-	serveradapter.RegisterRoutes(router, healthHandler, mcpHandler)
+	serveradapter.RegisterRoutes(router, healthHandler, mcpHandler, nil)
 	url, httpClient, cancel, done, closed := startTestServer(t, router, 2*time.Second)
 	client := mcp.NewClient(&mcp.Implementation{Name: "server-integration", Version: "1"}, nil)
 	ctx, stop := context.WithTimeout(context.Background(), 5*time.Second)

@@ -3,7 +3,19 @@
 Steam レビューを集め、レビュー ID を根拠にゲーム企画の材料を整理するツール。
 MCP でレビューを提供し、分析は接続先の Codex などの AI が担当する。PlayerLens に生成 AI の API キーを設定する必要はない。
 
-現在は MCP・レビュー収集 CLI を利用できる。Web UI、バックエンドでの AI 分析、レポート・DB 保存は未実装。[分析の依頼例](docs/review-analysis.md) と [架空レビューの分析例](docs/examples/review-analysis.md) を掲載している。
+現在は MCP・レビュー収集 CLI と、分析依頼を作るトップページを利用できる。バックエンドでの AI 分析、レポート・DB 保存は未実装。[分析の依頼例](docs/review-analysis.md) と [架空レビューの分析例](docs/examples/review-analysis.md) を掲載している。
+
+## 画面から分析の依頼文を作る
+
+[開発環境](#開発環境)で `python3 scripts/dev.py` を起動し、ターミナルの「開発サーバー:」に表示された URL をブラウザで開く。末尾に `/tools` は付けない。
+
+1. Steam の商品ページ URL を入力し、評価・言語・件数を選ぶ。
+2. AI に登録した MCP の接続名を選び、「分析の依頼文を作成」→「依頼文をコピー」を押す。
+3. コピーした文章を MCP 登録済みの AI のチャットへ貼り付ける。
+
+画面の初期選択は日本語・全評価・最大20件。1ページの件数と最大ページ数は「詳細設定」で変更できる。入力を変更すると依頼文は消えるため、作成し直す。コピーできない場合は表示された文章を手動でコピーする。
+
+この画面だけではレビューを取得しない。MCP は下の手順で別途登録する。入力・依頼文はブラウザ内だけで処理し、サーバーへ送信・保存しない。画面のローカル動作は確認済みで、Render への配置・公開 URL での表示確認は未実施。
 
 ## Codex から MCP を使ってレビューを分析する
 
@@ -201,13 +213,14 @@ bash scripts/check-go.sh format-fix
 - `cmd/server/`：HTTP 応答、設定、サーバー起動・終了とテストを管理する。
 - `cmd/collect-reviews/`：ローカル CLI の依存と出力・終了コードを組み立てる。
 - `internal/steam/`：domain に型と条件、application に収集・収集保存、adapter に HTTP を置く。
+- `internal/reviewprompt/`：adapter の handler に依頼文作成の入口、下位の page に画面とブラウザ内の生成処理を置く。
 - `internal/reviewmcp/`：domain に利用制限、application に制限付き収集、adapter に HTTP/SDK・入力・応答を置く。
 - `internal/reviewcli/adapter/`：CLI の入力と共通操作への接続を管理する。
 - `internal/jsonoutput/adapter/`：公開 JSON の変換と writer 出力を管理する。
 - `internal/mcpaccess/`：domain に公開設定と Host の照合、adapter に HTTP 保護を置く。
 - 各 cmd は入口を維持し、I/O と表示をそれぞれの adapter に置く。[ADR-0013](docs/adr/0013-domain-folder-layers.md) に配置の判断を記載する。
-- `compose.yaml`：開発用サーバーと検証用 Go 環境を管理する。
-- `Dockerfile`：development と production を分け、Go・実行用のベースイメージを digest で固定する。
+- `compose.yaml`：開発用サーバーと Go・JavaScript の検証環境を管理する。
+- `Dockerfile`：development・production・frontend-test を分け、ベースイメージを digest で固定する。Node.js は検証専用とし、本番には含めない。
 - `scripts/`：開発用の起動と共通検査、Issue・PR・Release の作成手順を管理する。
 - `docs/`：[仕様・ADR・開発手順](docs/README.md) を管理する。
 

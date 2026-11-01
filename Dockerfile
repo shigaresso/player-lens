@@ -1,3 +1,7 @@
+FROM node:22.22.2-bookworm-slim@sha256:9f6d5975c7dca860947d3915877f85607946403fc55349f39b4bc3688448bb6e AS frontend-test
+WORKDIR /src
+CMD ["sh", "-c", "exec node --test internal/reviewprompt/adapter/handler/page/*.test.mjs"]
+
 FROM golang:1.27.1-bookworm@sha256:8d48e12ec56735e9358640898b9d9b9fcca110612ed8a5567438c0a1baa24e66 AS development
 WORKDIR /src
 ENV GOTOOLCHAIN=local GOCACHE=/go-cache GOFLAGS=-buildvcs=false

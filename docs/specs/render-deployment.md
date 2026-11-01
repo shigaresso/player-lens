@@ -7,7 +7,7 @@ Issue #31 で配置準備を実装する。当初は Render サービス未作�
 ## 配布対象と事前検査
 
 - 対象は40桁の SHA と OWNER/REPO を明示する。checkout の HEAD と clean な状態、remote main の先端が一致することを要求する。
-- 同じ SHA の最新 push/main の `conventions.yml` の verify、`application.yml` の go-lint/go-unit/go-integration/production-image が一意に存在し、全て completed/success であることを要求する。未完了・欠落・重複・取得不完全・通信失敗では公開しない。
+- 同じ SHA の最新 push/main の `conventions.yml` の verify、`application.yml` の frontend-unit/go-lint/go-unit/go-integration/production-image が一意に存在し、全て completed/success であることを要求する。未完了・欠落・重複・取得不完全・通信失敗では公開しない。
 - `linux/amd64` の production イメージを一度だけビルドする。得た厳密な image ID を既存の本番検査へ渡し、再ビルドせず HTTP/MCP・設定・終了を検証する。PR の成果物で代用しない。
 - 検証後に main の先端を再確認し、同じ image ID を GHCR の SHA タグへ送る。送信後の manifest digest で読み取り、config.digest とローカル image ID の一致を要求する。返す配置先はタグではなく `ghcr.io/owner/repo@sha256:...` とする。
 - registry の visibility は自動変更しない。書き込みと照合に失敗した場合は自動再試行せず、registry に送信済みの可能性を報告する。main と registry の操作は原子的ではない。main が更新された場合に別ソースへ自動置換しない。

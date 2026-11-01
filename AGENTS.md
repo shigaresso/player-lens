@@ -265,10 +265,10 @@
 ## 自動検査の導入と運用
 
 - ローカルと CI は共通のスクリプト・規則を呼び出す。導入するファイル、実行コマンド、成功条件は対応 Issue に記載する。
-- 導入済みの運用検査は `bash scripts/check.sh`、Go・本番用イメージの検査は `bash scripts/check-app.sh`、実フックの検証は `python3 scripts/verify_hooks.py` を使う。準備、フックの責務、GitHub 上の未確認事項と保護設定の制約は [開発手順](docs/development.md) に従う。未導入の coverage 閾値・分岐・mutation と区別する。
+- 導入済みの運用検査は `bash scripts/check.sh`、JavaScript・Go・本番用イメージの検査は `bash scripts/check-app.sh`、実フックの検証は `python3 scripts/verify_hooks.py` を使う。準備、フックの責務、GitHub 上の未確認事項と保護設定の制約は [開発手順](docs/development.md) に従う。未導入の coverage 閾値・分岐・mutation と区別する。
 - Go の整形は固定版 Compose で `bash scripts/check-go.sh format`、明示的な修正は `bash scripts/check-go.sh format-fix` を使う。静的検査は `go vet ./...` と `bash scripts/check-lint.sh`、通常のテストは `go test ./...` を基本とする。フック・CI の検査で無言の修正・再ステージをしない。pre-commit はステージ済み Go の内容を検査する。
 - Go の検査は、Compose に定義した検証環境で共通コマンドから実行する。Go モジュール、検証サービス、検査スクリプトがまだない段階では、コマンドを予定として扱い、実行済みと記載しない。
-- 導入済みの検査は、コミット・PR 規約、Go の整形、`go vet`、golangci-lint、ユニットテスト、結合テストを含む race、本番用イメージのビルド・起動確認とする。coverage は最初のユースケースが動く段階、mutation はユニットテストが安定した段階で専用 Issue により導入を検討する。品質目標は維持し、未導入と達成済みを区別する。
+- 導入済みの検査は、コミット・PR 規約、Go の整形、`go vet`、golangci-lint、JavaScript・Go のユニットテスト、結合テストを含む race、本番用イメージのビルド・起動確認とする。coverage は最初のユースケースが動く段階、mutation はユニットテストが安定した段階で専用 Issue により導入を検討する。品質目標は維持し、未導入と達成済みを区別する。
 - Lefthook を導入し、`commit-msg` でタイトルの形式、許可した種別、空行、本文の箇条書き、誤った改行表現を確認する。
 - push 前に、導入済みの静的検査、ユニット・結合テスト、coverage、仕様対応、mutation を共通の検証コマンドで実行する。TDD の各反復では関連テストを実行する。
 - フック失敗時は原因を修正する。`--no-verify` などで回避して通さない。

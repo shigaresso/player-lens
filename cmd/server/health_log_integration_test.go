@@ -49,7 +49,7 @@ func TestHealthStructuredLogWithHTTP(t *testing.T) {
 			logger := slog.New(slog.NewJSONHandler(output, nil)).With("service.name", "player-lens")
 			healthHandler := serverhandler.NewHealthHandler(logger, time.Now)
 			router := http.NewServeMux()
-			serveradapter.RegisterRoutes(router, healthHandler, nil)
+			serveradapter.RegisterRoutes(router, healthHandler, nil, nil)
 			url, client, _, _, _ := startTestServer(t, router, time.Second)
 			request, err := http.NewRequestWithContext(t.Context(), tc.method, url+"/healthz", nil)
 			if err != nil {

@@ -12,6 +12,39 @@ import (
 	serverhandler "github.com/shigaresso/player-lens/cmd/server/adapter/handler"
 )
 
+func TestPromptBuilderRoutes(t *testing.T) {
+	for _, tc := range []struct {
+		name, method, path string
+		status             int
+		calls              int
+	}{
+		{"GETは画面に委譲する", "GET", "/", http.StatusNoContent, 1},
+		{"HEADは画面に委譲する", "HEAD", "/", http.StatusNoContent, 1},
+		{"POSTは許可しない", "POST", "/", http.StatusMethodNotAllowed, 0},
+		{"任意の子パスを画面にしない", "GET", "/unknown", http.StatusNotFound, 0},
+		{"旧MCPパスを画面にしない", "GET", "/mcp", http.StatusNotFound, 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			calls := 0
+			page := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				calls++
+				w.WriteHeader(http.StatusNoContent)
+			})
+			mux := http.NewServeMux()
+			RegisterRoutes(mux, serverhandler.NewHealthHandler(slog.New(slog.NewJSONHandler(io.Discard, nil)), time.Now), nil, page)
+			if calls != 0 {
+				t.Fatal("登録時に画面を実行した")
+			}
+
+			response := httptest.NewRecorder()
+			mux.ServeHTTP(response, httptest.NewRequest(tc.method, tc.path, nil))
+			if response.Code != tc.status || calls != tc.calls {
+				t.Fatalf("status=%d calls=%d", response.Code, calls)
+			}
+		})
+	}
+}
+
 func TestRegisterRoutes(t *testing.T) {
 	for _, tc := range []struct {
 		name       string
@@ -59,7 +92,7 @@ func TestRegisterRoutes(t *testing.T) {
 				calls = append(calls, "existing")
 				w.WriteHeader(http.StatusCreated)
 			})
-			RegisterRoutes(mux, health, mcp)
+			RegisterRoutes(mux, health, mcp, nil)
 			if len(calls) != 0 {
 				t.Fatalf("登録時にhandlerを実行した: %v", calls)
 			}
@@ -104,7 +137,7 @@ func TestHealthRoutes(t *testing.T) {
 			response := httptest.NewRecorder()
 			health := serverhandler.NewHealthHandler(slog.New(slog.NewJSONHandler(io.Discard, nil)), time.Now)
 			router := http.NewServeMux()
-			RegisterRoutes(router, health, nil)
+			RegisterRoutes(router, health, nil, nil)
 			router.ServeHTTP(response, httptest.NewRequest(tt.method, tt.path, nil))
 			if response.Code != tt.status {
 				t.Fatalf("status=%d; want=%d", response.Code, tt.status)
@@ -145,7 +178,7 @@ func TestOtherRoutesDoNotEmitHealthLog(t *testing.T) {
 			mcp := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusNoContent) })
 			response := httptest.NewRecorder()
 			router := http.NewServeMux()
-			RegisterRoutes(router, serverhandler.NewHealthHandler(logger, time.Now), mcp)
+			RegisterRoutes(router, serverhandler.NewHealthHandler(logger, time.Now), mcp, nil)
 			router.ServeHTTP(response, httptest.NewRequest(tc.method, tc.path, nil))
 			if response.Code != tc.status || output.Len() != 0 {
 				t.Fatalf("対象外の経路で契約を変更した: status=%d log=%q", response.Code, output.String())

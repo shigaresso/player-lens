@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	serverhandler "github.com/shigaresso/player-lens/cmd/server/adapter/handler"
+	prompthandler "github.com/shigaresso/player-lens/internal/reviewprompt/adapter/handler"
 )
 
 // RegisterRoutes は生成済みの handler を mux の /healthz・/tools・厳密な / に登録する。
@@ -19,6 +20,6 @@ func RegisterRoutes(mux *http.ServeMux, healthHandler, mcpHandler, promptHandler
 
 	mux.Handle("GET "+serverhandler.HealthPath, healthHandler)
 	if promptHandler != nil {
-		mux.Handle("GET /{$}", promptHandler)
+		mux.Handle("GET "+prompthandler.PromptPath+"{$}", promptHandler)
 	}
 }

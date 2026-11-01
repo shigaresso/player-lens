@@ -45,7 +45,7 @@ func run(ctx context.Context, port string, logger *slog.Logger) error {
 	}
 
 	healthHandler := serverhandler.NewHealthHandler(logger, time.Now)
-	promptHandler, err := prompthandler.NewPromptBuilderHandler()
+	promptHandler, err := prompthandler.NewPromptBuilderHandler(logger, time.Now)
 	if err != nil {
 		return fmt.Errorf("プロンプト作成画面の準備に失敗した: %w", err)
 	}

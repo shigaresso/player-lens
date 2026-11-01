@@ -5,15 +5,18 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"html"
+	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestPromptBuilderHandler(t *testing.T) {
-	handler, err := NewPromptBuilderHandler()
+	handler, err := NewPromptBuilderHandler(slog.New(slog.NewJSONHandler(io.Discard, nil)), time.Now)
 	if err != nil {
 		t.Fatal(err)
 	}

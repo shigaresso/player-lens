@@ -135,3 +135,38 @@ class ExistingImageTests(unittest.TestCase):
                 patch.object(check_image, 'check_running', side_effect=RuntimeError('失敗')), \
                 contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
             self.assertEqual(check_image.main(['--image', IMAGE]), 1)
+
+
+class PromptPageLogTests(unittest.TestCase):
+    def records(self):
+        return [dict(time='2026-11-02T00:00:00Z', level='INFO',
+                     msg='プロンプト作成画面の応答を処理した',
+                     **{'service.name': 'player-lens', 'event': 'prompt_page.completed',
+                        'http.route': '/', 'http.request.method': method,
+                        'http.response.status_code': 200, 'duration_ms': 0.25,
+                        'outcome': 'success'}) for method in ['GET', 'HEAD']]
+
+    def test_get_and_head_completion_logs_are_checked(self):
+        output = 'SDK diagnostic\n' + '\n'.join(json.dumps(item) for item in
+                                               [{'event': 'server.started'}, *self.records()])
+        check_image.check_prompt_page_logs(output)
+
+    def test_missing_duplicate_wrong_or_sensitive_logs_are_rejected(self):
+        for name in ['missing', 'duplicate', 'status', 'route', 'duration', 'level', 'input']:
+            with self.subTest(name=name):
+                records = self.records()
+                if name == 'missing':
+                    records.pop()
+                elif name == 'duplicate':
+                    records.append(records[0])
+                else:
+                    key, value = {
+                        'status': ('http.response.status_code', 500),
+                        'route': ('http.route', '/?private=value'),
+                        'duration': ('duration_ms', -1),
+                        'level': ('level', 'ERROR'),
+                        'input': ('query', 'private=value'),
+                    }[name]
+                    records[0][key] = value
+                with self.assertRaises(RuntimeError):
+                    check_image.check_prompt_page_logs('\n'.join(json.dumps(item) for item in records))

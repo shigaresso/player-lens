@@ -33,7 +33,7 @@ cmd は main と起動の組み立てを root に維持する。既存の I/O �
 
 ### 依頼文作成の領域（Issue #148）
 
-依頼文作成を `internal/reviewprompt` にまとめる。Controller は `adapter/handler` 直下、HTML・CSS・JavaScript と Go の描画は下位の `page` に置く。`cmd/server` に画面を同居させる案よりも、機能名から入口と詳細を探せることを優先した。生成・組み立てとルーティング登録は `cmd/server` に残す。
+依頼文作成を `internal/reviewprompt` にまとめる。Controller は `adapter/handler` 直下、HTML・CSS・JavaScript と Go の描画は下位の `page` に置く。Issue #150 で page に応答結果の観測、下位の logging に安全なログ属性の構築を追加する。`cmd/server` に画面を同居させる案よりも、機能名から入口と詳細を探せることを優先した。生成・組み立てとルーティング登録は `cmd/server` に残す。
 
 MCP の入力定義は `reviewmcp/adapter/handler/protocol.InputSchema` を参照し、上限・既定値を複製しない。この依存は adapter 同士であり、逆方向の参照や循環は追加しない。画面提供とブラウザ内の変換に必要な adapter だけを設け、空の domain/application、委譲だけの互換 handler は作らない。既存の HTTP と生成文の契約を維持し、テスト・検査対象・文書参照を同じ変更で移す。
 

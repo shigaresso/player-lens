@@ -16,7 +16,7 @@ import (
 )
 
 func TestPromptBuilderWithHTTP(t *testing.T) {
-	page, err := prompthandler.NewPromptBuilderHandler()
+	page, err := prompthandler.NewPromptBuilderHandler(slog.New(slog.NewJSONHandler(io.Discard, nil)), time.Now)
 	if err != nil {
 		t.Fatal(err)
 	}

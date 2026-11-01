@@ -22,7 +22,7 @@ python3 scripts/release.py create \
   --repo shigaresso/player-lens --tag v0.0.1 \
   --target '<remote main の完全な SHA>' \
   --title 'v0.0.1 開発基盤を公開した' \
-  --body-file docs/releases/v0.0.1.md
+  --body-file /path/to/release-notes.md
 
 python3 scripts/release.py publish \
   --repo shigaresso/player-lens --tag v0.0.1 \

@@ -18,7 +18,7 @@
 
 ## 単独ブランチでの引き渡し
 
-`codex/38-steam-request-conversion` を引き渡し対象とし、origin/main との差分をリクエスト変換の分離と、その仕様・検証記録に限定した。実装コミットは `71ca615`。応答解析の分離や MCP の変更は含めていない。既存コミットの書き換えは行わず、このブランチに単独の検証記録と [PR 本文案](38-pr.md) を追加した。
+`codex/38-steam-request-conversion` を引き渡し対象とし、origin/main との差分をリクエスト変換の分離と、その仕様・検証記録に限定した。実装コミットは `71ca615`。応答解析の分離や MCP の変更は含めていない。既存コミットの書き換えは行わず、このブランチに単独の検証記録と [PR 本文案](https://github.com/shigaresso/player-lens/blob/8572476cb600a7251455ab03e7139a5862509cc1/docs/worklogs/38-pr.md) を追加した。
 
 upstream は未設定のままとし、push・PR 作成・Issue のクローズは行っていない。PR の関連 Issue は `Closes #38` のみとする。GitHub の送信済み head/base を使う作成前検査とコード CI は、push・PR 作成をしないため未実施とする。
 

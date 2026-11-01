@@ -52,7 +52,7 @@ func TestInputSchemaReviewType(t *testing.T) {
 		Properties map[string]struct {
 			Type        string   `json:"type"`
 			Enum        []string `json:"enum"`
-			Default     string   `json:"default"`
+			Default     any      `json:"default"`
 			Description string   `json:"description"`
 		} `json:"properties"`
 	}

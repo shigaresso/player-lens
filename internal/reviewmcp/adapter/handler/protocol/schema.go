@@ -4,18 +4,19 @@ import steamdomain "github.com/shigaresso/player-lens/internal/steam/domain"
 
 // InputSchema は MCP の収集入力の公開 schema を独立した値として生成する。
 func InputSchema() map[string]any {
-	integer := func(maximum int) map[string]any {
-		return map[string]any{"type": "integer", "minimum": 0, "maximum": maximum}
+	defaults := (steamdomain.CollectionOptions{}).Config()
+	integer := func(maximum, defaultValue int) map[string]any {
+		return map[string]any{"type": "integer", "minimum": 0, "maximum": maximum, "default": defaultValue}
 	}
 	return map[string]any{
 		"type": "object", "additionalProperties": false, "required": []string{"app_id"},
 		"properties": map[string]any{
 			"app_id":      map[string]any{"type": "integer", "minimum": 1, "maximum": uint64(4294967295)},
 			"review_type": map[string]any{"type": "string", "enum": []string{"", "all", "positive", "negative"}, "default": "all", "description": "all は全評価、positive はおすすめ、negative は非おすすめ。省略・空なら all"},
-			"language":    map[string]any{"type": "string", "description": "Steam の言語コード。省略・空なら english"},
-			"page_size":   integer(steamdomain.MaxPageSize),
-			"max_reviews": integer(maxReviews),
-			"max_pages":   integer(maxPages),
+			"language":    map[string]any{"type": "string", "default": defaults.Language, "description": "Steam の言語コード。省略・空なら english"},
+			"page_size":   integer(steamdomain.MaxPageSize, defaults.PageSize),
+			"max_reviews": integer(maxReviews, defaultReviews),
+			"max_pages":   integer(maxPages, defaultPages),
 		},
 	}
 }

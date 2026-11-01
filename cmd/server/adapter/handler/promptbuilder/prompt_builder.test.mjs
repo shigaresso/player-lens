@@ -115,3 +115,8 @@ test('生成文だけをコピーし、失敗は手動コピーへ戻せる', as
     assert.equal(calls, 0);
   });
 });
+
+test('画面の英語選択は MCP の省略時言語に依存しない', () => {
+  const changed = { properties: { ...schema.properties, language: { default: 'japanese' } } };
+  assert.ok(generatePrompt({ ...fields, language: 'english' }, changed).includes('language=english'));
+});

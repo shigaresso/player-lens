@@ -45,7 +45,7 @@ export function generatePrompt(fields, schema) {
   if (!fields.review_type || !definitions.review_type.enum.includes(fields.review_type)) {
     throw new InputError('review_type', '評価は「すべて・おすすめ・非おすすめ」から選んでください。');
   }
-  if (!['japanese', 'all', definitions.language.default].includes(fields.language)) {
+  if (!['japanese', 'english', 'all'].includes(fields.language)) {
     throw new InputError('language', 'レビューの言語を選んでください。');
   }
   const pageSize = positiveInteger('page_size', fields.page_size, definitions.page_size, '1ページの件数');

@@ -12,7 +12,7 @@
 | 文書 | 対象となる変更 | 状態 |
 | --- | --- | --- |
 | [データ・調査仕様](specs/data-and-research.md) | 保存、収集、分析、レポート、ジョブと実行上限 | 基本要件を定義した。永続保存方式・分析の上限などは未決定、収集・JSON 出力は導入した |
-| [公開デモ仕様](specs/public-demo.md) | 公開 UI、認証、利用期限、実行制限、README | MCP は認証なしの方針。バックエンド分析の利用コードなどは未決定、デモは未配置 |
+| [公開デモ仕様](specs/public-demo.md) | 公開 UI、認証、利用期限、実行制限、README | MCP は認証なしの方針。バックエンド分析の利用コードなどは未決定。プロンプト作成画面はローカル検証済み、公開配置は未確認 |
 | [最小 HTTP サーバー仕様](specs/http-server.md) | healthz、PORT、開発用の公開ポート選択、サーバーの期限・終了処理 | Issue #11 で実装した。ローカル検証結果は作業記録へ記載する |
 | [Steam レビューの1ページ取得](specs/steam-review-page.md) | Steam HTTP adapter、取得条件、応答と通信の上限 | Issue #17 で実装した。収集操作の契約は別仕様、保存は未導入、収集操作を MCP へ接続した。Issue #88 で HTTP リクエストの組み立てを分離し、[検証記録](worklogs/88-steam-http-request.md) を残した。Issue #90 のエラー説明の整理は [検証記録](worklogs/90-steam-error-context.md) を参照する |
 | [Steam レビューの上限付き収集](specs/collect-reviews.md) | 複数ページ収集、条件・重複・上限・途中失敗 | Issue #21 で実装した。MCP 接続を導入した。Issue #84 で失敗結果の共通生成と開始前キャンセルの早期終了を整理し、[検証記録](worklogs/84-collection-cancellation.md) を残した。永続保存・再開・Web 接続は未導入 |
@@ -53,6 +53,8 @@
 変更が複数の範囲にまたがる場合は、対応する文書をすべて読む。参照した節と ADR、要件に対応する検証を Issue・PR に記録する。ADR を追加・置換するときは、この一覧と適用範囲を更新する。
 
 ## 現在の導入状況
+
+Issue #148 でトップページに MCP 分析依頼の作成画面を追加した。ブラウザ内で入力から依頼文を作り、収集と分析は登録済み MCP を使うクライアント AI が担当する。画面のローカル検証と公開配置の未確認は [公開デモ仕様](specs/public-demo.md#プロンプト作成画面issue-148) を参照する。
 
 Issue #11 で Go モジュール、最小 HTTP サーバー、Dockerfile と Compose を追加した。DB・バックエンドの分析・公開デモは未導入とする。ローカル検証と新 CI の実行状況は [Issue #11](worklogs/11-http-server.md) に記録する。Issue #3 で Python の規約ツール・Git フック・テンプレート・CI の設定を追加した。PR #4 と Issue #5 の規約 CI を GitHub 上で確認した。Issue #5 で Release CLI と移植ガイドを追加した。保護設定は未設定とし、検査の成功だけでマージの機械的な制限や AI の遵守を保証しない。対象 SHA と結果は [Issue #3](worklogs/3-conventions.md) と [Issue #5](worklogs/5-release.md) の作業記録に残す。
 

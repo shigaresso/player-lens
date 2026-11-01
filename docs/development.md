@@ -99,7 +99,7 @@ Python は同じディレクトリの `test_<実装名>.py` を `<実装名>.py`
 
 ## Go・Compose・本番用イメージの検査
 
-Issue #148 の画面内 JavaScript は `bash scripts/check-frontend.sh` で検査する。Node.js 22.22.2 の公式イメージを index digest とともに固定し、`frontend-test` 専用 stage と Compose サービスで標準の `node:test` を実行する。ソースは読み取り専用、テスト時のネットワークは無効とする。npm 依存は使わず、Go の開発・本番ステージへ Node.js を含めない。この検査は `check-app.sh` と独立した `frontend-unit` CI から実行する。ブラウザ内の表示・操作確認は、純粋な変換の自動テストと別に記録する。
+Issue #148 の画面内 JavaScript は `bash scripts/check-frontend.sh` で検査する。Node.js 22.22.2 の公式イメージを index digest とともに固定し、`frontend-test` 専用 stage と Compose サービスで標準の `node:test` を実行する。ソースは読み取り専用、テスト時のネットワークは無効とする。npm 依存は使わず、Go の開発・本番ステージへ Node.js を含めない。この検査は `check-app.sh` と独立した `frontend-unit` CI から実行し、イメージ公開の preflight でも同ジョブの成功を必須とする。ブラウザ内の表示・操作確認は、純粋な変換の自動テストと別に記録する。
 
 Docker と Compose 2.23 以降を起動し、[README](../README.md#開発環境) の手順で開発する。`scripts/check.sh` は Docker・ネットワークを使わない Python テストと静的検査を行い、pre-commit のたびに本番用イメージをビルドしない。開発用の起動テストは `python3 -m unittest discover -s scripts -p test_dev.py` でも実行できる。Go の TDD の関連テストは Compose の verify サービスで実行し、変更確定時の必要な Go 検査を別途確認する。pre-push は規約検査の後に `scripts/check-app.sh` を必ず実行する。
 
@@ -109,14 +109,15 @@ bash scripts/check-app.sh
 
 このコマンドは以下を順に実行し、いずれかの失敗で停止する。
 
+- `bash scripts/check-frontend.sh`：promptbuilder 内の `*.test.mjs` を固定版 Node.js で自動収集し、URL 解析・条件と依頼文・コピー成功／失敗を検証する。
 - `bash scripts/check-go.sh unit`：読み取り専用ソースの Compose サービスで gofmt の差分を検出し、`go vet ./...` と `go test -count=1 ./...` を実行する。自動修正で成功扱いにしない。
 - `bash scripts/check-lint.sh`：読み取り専用ソースの lint サービスで固定版 golangci-lint を実行する。通常のソースと integration タグ付きテストを含める。
 - `bash scripts/check-go.sh integration`：実行対象に結合テストが存在することを確認し、`go test -tags=integration -race -count=1 ./...` を実行する。通常のテストも含む。先に `scripts/verify_go_vcs.sh` で Git の失敗・不在と checkout の不在でも Go の処理と子ビルドが成功することを確認する。テスト一覧の取得失敗はテスト未検出とは区別して中断する。外部サービス・DB・実 Steam・実 LLM は使わず、HTTP と終了処理、ローカルの実 SDK クライアントとの MCP 連携を確認する。
-- `python3 scripts/check_image.py`：本番用イメージを一度ビルドし、同じ image ID を使って非 root 設定、ソース共有なし・読み取り専用での起動、HTTP・MCP 応答と外部 Host の拒否、PORT の変更、不正設定の非0終了、SIGTERM/SIGINT の正常終了を確認する。Issue #29 の認証なし公開設定でも、同じイメージで初期化・一覧・不正入力・許可 Host・Origin・OAuth metadata の404・不正 URL の起動失敗を確認する。実 Steam への取得は行わない。一時コンテナは削除する。
+- `python3 scripts/check_image.py`：本番用イメージを一度ビルドし、同じ image ID を使って非 root 設定、ソース共有なし・読み取り専用での起動、トップページの GET/HEAD と埋め込み画面、HTTP・MCP 応答と外部 Host の拒否、PORT の変更、不正設定の非0終了、SIGTERM/SIGINT の正常終了を確認する。Issue #29 の認証なし公開設定でも、同じイメージで初期化・一覧・不正入力・許可 Host・Origin・OAuth metadata の404・不正 URL の起動失敗を確認する。実 Steam への取得は行わない。一時コンテナは削除する。
 
 Docker の停止・未導入でこの検査を省略して成功扱いにしない。Go の coverage 閾値・分岐・mutation 検査は別 Issue で導入するため、このコマンドの成功だけで100%と記載しない。
 
-`.github/workflows/application.yml` に独立した `go-lint`・`go-unit`・`go-integration`・`production-image` のジョブを設定した。PR のソース SHA と main 更新時の SHA を取得し、同じコマンドを実行する。`go-lint` では実ツールの正常・違反の判定も確認する。ローカルの成功と実 CI の成功、PR/main のイメージ検証と配置するリリース成果物の検証を区別し、[Issue #13 の作業記録](worklogs/13-go-lint-format.md) と Issue・PR に対象 SHA の結果を残す。配置用の registry と digest の公開・配置経路は未導入とする。
+`.github/workflows/application.yml` に独立した `frontend-unit`・`go-lint`・`go-unit`・`go-integration`・`production-image` のジョブを設定した。PR のソース SHA と main 更新時の SHA を取得し、同じコマンドを実行する。`go-lint` では実ツールの正常・違反の判定も確認する。ローカルの成功と実 CI の成功、PR/main のイメージ検証と配置するリリース成果物の検証を区別し、[Issue #13 の作業記録](worklogs/13-go-lint-format.md) と Issue・PR に対象 SHA の結果を残す。配置用の registry と digest の公開・配置経路は未導入とする。
 
 ### Go の整形修正とリンターの更新
 
@@ -262,7 +263,7 @@ GitHub の PR 画面では PR CI・完了条件・差分を確認して `Merge p
 
 利用可能になったら、次の手順を実施する。
 
-1. PR で `規約検査 / verify`、`PR 規約検査 / metadata` と `アプリケーション検査` の4ジョブ（go-lint・go-unit・go-integration・production-image）が実際に成功したことと、GitHub に表示される必須チェック名を確認する。
+1. PR で `規約検査 / verify`、`PR 規約検査 / metadata` と `アプリケーション検査` の5ジョブ（frontend-unit・go-lint・go-unit・go-integration・production-image）が実際に成功したことと、GitHub に表示される必須チェック名を確認する。
 2. main の更新を PR 経由にし、このチェックを必須に設定する。
 3. 管理者などの迂回範囲も確認し、違反する PR をマージできないことを確かめる。
 4. 確認した設定と結果を Issue・PR に記録して導入状態を更新する。

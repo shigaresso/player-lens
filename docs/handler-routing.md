@@ -7,6 +7,7 @@ Issue #77 の配置基準は、handler 直下の本番ファイルを Controller
 | ルーティング・接続元 | Controller または委譲先 | 役割と詳細 |
 | --- | --- | --- |
 | [RegisterRoutes](../cmd/server/adapter/routes.go) の GET/HEAD /healthz | [handler/health.go](../cmd/server/adapter/handler/health.go) | healthHandler.Handle が開始時刻・応答・結果記録を担当し、標準 http.HandlerFunc が HTTP へ接続する。ログ整形は下位の [logging](../cmd/server/adapter/handler/logging/health_log.go) |
+| 同じ RegisterRoutes の GET/HEAD / | [handler/prompt_builder.go](../cmd/server/adapter/handler/prompt_builder.go) | promptBuilderHandler.Handle が起動時に生成済みの HTML を返す。専用の [promptbuilder](../cmd/server/adapter/handler/promptbuilder) にテンプレート・スタイル・ブラウザ処理を置く。UseCase は呼ばない |
 | 同じ RegisterRoutes の /tools | [adapter/server.go](../internal/reviewmcp/adapter/server.go) が構築した SDK の HTTP handler | SDK の生成・共有 limiter・Server 構築を担当する。Controller ではない |
 | newServer の collect_reviews 登録と SDK のディスパッチ | [handler/collect_reviews.go](../internal/reviewmcp/adapter/handler/collect_reviews.go) | NewCollectReviewsHandler が固定の依存を組み立て、collectReviewsHandler.Handle が context の準備・入力・UseCase・応答変換・後始末をつなぐ |
 | 公開／ローカルの Host/Origin 保護 | [Protect](../internal/mcpaccess/adapter/handler.go) | next の手前で検査する middleware。Controller の一覧には含めない |

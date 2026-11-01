@@ -44,8 +44,13 @@ func run(ctx context.Context, port string, logger *slog.Logger) error {
 	}
 
 	healthHandler := serverhandler.NewHealthHandler(logger, time.Now)
+	promptHandler, err := serverhandler.NewPromptBuilderHandler()
+	if err != nil {
+		return fmt.Errorf("プロンプト作成画面の準備に失敗した: %w", err)
+	}
+
 	router := http.NewServeMux()
-	serveradapter.RegisterRoutes(router, healthHandler, mcpHandler)
+	serveradapter.RegisterRoutes(router, healthHandler, mcpHandler, promptHandler)
 
 	address := net.JoinHostPort("", portNumber.String())
 	listener, err := net.Listen("tcp", address)

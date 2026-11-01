@@ -68,3 +68,92 @@ export async function copyPrompt(text, clipboard) {
     return false;
   }
 }
+
+// DOM への接続はページ上だけで行い、純粋な解析・変換は上の関数で検証する。
+function mountPromptBuilder(document) {
+  const schema = JSON.parse(document.body.dataset.inputSchema);
+  const form = document.getElementById('prompt-form');
+  const output = document.getElementById('prompt-output');
+  const copy = document.getElementById('copy-button');
+  const status = document.getElementById('output-status');
+  const error = document.getElementById('form-error');
+  const hint = document.getElementById('app-id-hint');
+  const definitions = schema.properties;
+  const labels = { all: 'すべて', positive: 'おすすめ', negative: '非おすすめ' };
+  for (const value of definitions.review_type.enum.filter(Boolean)) {
+    const label = document.createElement('label');
+    label.className = 'radio-option';
+    const radio = document.createElement('input');
+    Object.assign(radio, { type: 'radio', name: 'review_type', value, checked: value === definitions.review_type.default });
+    label.append(radio, document.createTextNode(labels[value] ?? value));
+    document.getElementById('review-options').append(label);
+  }
+  for (const name of ['page_size', 'max_reviews', 'max_pages']) {
+    const input = form.elements.namedItem(name);
+    input.max = definitions[name].maximum;
+    input.value = definitions[name].default;
+  }
+  document.getElementById('limit-note').textContent = `1回に最大${definitions.max_reviews.maximum}件・${definitions.max_pages.maximum}ページまで。指定した件数より少なくなる場合があります。`;
+
+  function invalidate() {
+    output.value = '';
+    copy.disabled = true;
+    error.hidden = true;
+    for (const element of form.querySelectorAll('[aria-invalid]')) element.removeAttribute('aria-invalid');
+    status.textContent = '条件を変更したら、依頼文を作成し直してください。';
+    try {
+      const id = parseSteamAppID(form.elements.namedItem('steam_url').value, definitions.app_id);
+      hint.textContent = `App ID: ${id} — この作品のレビューを対象にします。`;
+      hint.className = 'hint valid';
+    } catch (failure) {
+      const empty = !form.elements.namedItem('steam_url').value;
+      hint.textContent = empty ? '商品ページの URL から App ID を取り出します。' : failure.message;
+      hint.className = empty ? 'hint' : 'hint invalid';
+    }
+  }
+  form.addEventListener('input', invalidate);
+  form.addEventListener('change', invalidate);
+  document.getElementById('sample-button').addEventListener('click', () => {
+    form.elements.namedItem('steam_url').value = 'https://store.steampowered.com/app/440/';
+    invalidate();
+  });
+  document.getElementById('connection-preset').addEventListener('change', (event) => {
+    const field = form.elements.namedItem('connection');
+    field.readOnly = event.target.value !== 'custom';
+    field.value = field.readOnly ? event.target.value : '';
+    invalidate();
+    if (!field.readOnly) field.focus();
+  });
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    invalidate();
+    try {
+      output.value = generatePrompt(Object.fromEntries(new FormData(form)), schema);
+      copy.disabled = false;
+      status.textContent = '依頼文をコピーして、MCP を登録した AI のチャットへ貼り付けてください。';
+    } catch (failure) {
+      error.textContent = failure.message;
+      error.hidden = false;
+      const field = form.querySelector(`[name="${failure.field}"]`);
+      if (field) {
+        field.setAttribute('aria-invalid', 'true');
+        const details = field.closest('details');
+        if (details) details.open = true;
+        field.focus();
+      }
+    }
+  });
+  copy.addEventListener('click', async () => {
+    const text = output.value;
+    const copied = await copyPrompt(text, globalThis.navigator?.clipboard);
+    if (output.value !== text) return;
+    status.textContent = copied ? 'コピーしました。AI のチャットに貼り付けてください。' : 'コピーできませんでした。表示された依頼文を選択して、手動でコピーしてください。';
+    if (!copied) {
+      output.focus();
+      output.select();
+    }
+  });
+  document.getElementById('generate-button').disabled = false;
+}
+
+if (typeof document !== 'undefined') mountPromptBuilder(document);

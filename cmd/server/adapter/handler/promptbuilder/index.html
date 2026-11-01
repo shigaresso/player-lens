@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Steam の商品ページと取得条件から、MCP を使ったレビュー分析の依頼文を作れます。">
+<title>Steam レビューの分析依頼を作成 | PlayerLens</title>
+<style>{{.Style}}</style>
+</head>
+<body data-input-schema="{{.Schema}}">
+<header class="site-header">
+  <a class="brand" href="/" aria-label="PlayerLens トップ"><span class="brand-mark" aria-hidden="true">P<span></span></span>PlayerLens</a>
+  <span class="header-label">レビューから、ゲーム企画のヒントを。</span>
+</header>
+<main>
+  <section class="hero" aria-labelledby="page-title">
+    <p class="eyebrow"><span></span> MCP PROMPT BUILDER</p>
+    <h1 id="page-title">Steam レビューの<br class="mobile-break">分析依頼を作成</h1>
+    <p class="intro">作品と条件を選んで、お使いの AI へ。<br>レビューを根拠に、どんな体験が評価されているかを読み解きます。</p>
+    <ol class="steps" aria-label="使い方"><li><b>01</b> 作品を選ぶ</li><li><b>02</b> 条件を決める</li><li><b>03</b> コピーして AI へ</li></ol>
+  </section>
+  <noscript><p class="notice">この画面の URL 解析・依頼文生成には JavaScript が必要です。ブラウザで有効にしてください。</p></noscript>
+  <div class="workspace">
+    <section class="card input-card" aria-labelledby="conditions-heading">
+      <div class="card-heading"><span class="section-number">01 / 02</span><h2 id="conditions-heading">作品と取得条件</h2></div>
+      <form id="prompt-form" novalidate>
+        <div class="field">
+          <div class="label-row"><label for="steam-url">Steam の商品ページ URL <span class="required">必須</span></label><button id="sample-button" type="button" class="text-button">サンプルを入力</button></div>
+          <input id="steam-url" name="steam_url" type="url" inputmode="url" autocomplete="off" spellcheck="false" maxlength="2048" placeholder="https://store.steampowered.com/app/440/" required aria-describedby="app-id-hint">
+          <p id="app-id-hint" class="hint" aria-live="polite">商品ページの URL から App ID を取り出します。</p>
+        </div>
+        <fieldset class="field"><legend>評価の種類</legend><div class="radio-options" id="review-options"></div><p class="hint">Steam のおすすめフラグで絞り込みます。本文の内容は AI が分析します。</p></fieldset>
+        <div class="field-grid">
+          <div class="field"><label for="language">レビューの言語</label><select id="language" name="language"><option value="japanese">日本語</option><option value="english">英語</option><option value="all">すべての言語</option></select></div>
+          <div class="field"><label for="max-reviews">最大収集件数</label><div class="number-unit"><input id="max-reviews" name="max_reviews" type="number" min="1" step="1" required><span>件</span></div></div>
+        </div>
+        <p class="limit-note" id="limit-note">取得上限を読み込んでいます。</p>
+        <div class="field"><label for="connection-preset">MCP の接続先</label><select id="connection-preset"><option value="player_lens_render">Render を使う</option><option value="player_lens_local">ローカルを使う</option><option value="custom">登録名を指定する</option></select></div>
+        <div class="field"><label for="connection">登録した接続名</label><input id="connection" name="connection" type="text" value="player_lens_render" readonly maxlength="64" autocomplete="off" spellcheck="false" required aria-describedby="connection-hint"><p class="hint" id="connection-hint">AI に登録した MCP サーバーの名前に合わせてください。</p></div>
+        <details class="advanced"><summary>詳細設定 <span>1ページの件数・最大ページ数</span></summary><div class="field-grid"><div class="field"><label for="page-size">1ページの件数</label><input id="page-size" name="page_size" type="number" min="1" step="1" required></div><div class="field"><label for="max-pages">最大ページ数</label><input id="max-pages" name="max_pages" type="number" min="1" step="1" required></div></div><p class="hint">Steam API への1回の通信で要求する件数と、取得するページ数の上限です。</p></details>
+        <p id="form-error" class="error" role="alert" hidden></p>
+        <button id="generate-button" class="primary-button" type="submit" disabled>分析の依頼文を作成 <span aria-hidden="true">↗</span></button>
+      </form>
+    </section>
+    <div class="output-column">
+      <section class="card output-card" aria-labelledby="output-heading">
+        <div class="card-heading output-heading"><div><span class="section-number">03</span><h2 id="output-heading">AI への依頼文</h2></div><span class="output-tag">コピーして使う</span></div>
+        <label class="visually-hidden" for="prompt-output">生成した分析依頼文</label>
+        <textarea id="prompt-output" readonly rows="13" spellcheck="false" placeholder="条件を入力して「分析の依頼文を作成」を押すと、ここに依頼文が表示されます。"></textarea>
+        <button id="copy-button" class="copy-button" type="button" disabled>依頼文をコピー</button>
+        <p id="output-status" class="hint output-status" role="status">生成後、Codex などのチャットに貼り付けてください。</p>
+      </section>
+      <aside class="usage-note"><span class="note-icon" aria-hidden="true">i</span><div><h3>取得・分析は、チャットで実行します</h3><p>このページは依頼文を作るだけです。Steam への通信や利用枠の消費はありません。</p><p>MCP の登録を済ませた AI に貼り付けると、レビューの取得と分析が始まります。</p><a href="https://github.com/shigaresso/player-lens#codex-から-mcp-を使ってレビューを分析する" target="_blank" rel="noreferrer">MCP の登録手順を見る <span aria-hidden="true">↗</span></a></div></aside>
+      <p class="privacy-note">入力・依頼文はこの画面内だけで扱い、サーバーには送信・保存しません。</p>
+    </div>
+  </div>
+</main>
+<footer><a class="footer-brand" href="/">PlayerLens</a><span>プレイヤーの声を、企画の根拠に。</span><a href="https://github.com/shigaresso/player-lens" target="_blank" rel="noreferrer">GitHub ↗</a></footer>
+<script type="module">{{.Script}}</script>
+</body>
+</html>

@@ -129,7 +129,7 @@ func startTestServer(t *testing.T, handler http.Handler, timeout time.Duration) 
 func TestServerHealthAndShutdown(t *testing.T) {
 	healthHandler := serverhandler.NewHealthHandler(slog.New(slog.NewJSONHandler(io.Discard, nil)), time.Now)
 	router := http.NewServeMux()
-	serveradapter.RegisterRoutes(router, healthHandler, nil)
+	serveradapter.RegisterRoutes(router, healthHandler, nil, nil)
 	url, client, cancel, done, _ := startTestServer(t, router, time.Second)
 	response, err := client.Get(url + "/healthz")
 	if err != nil {

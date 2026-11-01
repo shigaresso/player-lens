@@ -27,7 +27,7 @@ func TestServeFailure(t *testing.T) {
 	listener := &failedListener{cause: cause}
 	healthHandler := serverhandler.NewHealthHandler(slog.New(slog.NewJSONHandler(io.Discard, nil)), time.Now)
 	router := http.NewServeMux()
-	RegisterRoutes(router, healthHandler, nil)
+	RegisterRoutes(router, healthHandler, nil, nil)
 	err := Serve(t.Context(), listener, router, time.Second)
 	if !errors.Is(err, cause) {
 		t.Fatalf("原因が保持されなかった: %v", err)

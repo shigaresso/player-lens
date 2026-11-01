@@ -58,7 +58,7 @@ main の保護・Rulesets は API が403を返したため未設定とした。�
 
 ## ローカル実装を完了した時点の PR 準備
 
-ブランチは `codex/3-conventions-validation` とし、最新の origin/main から作成した。上流と remote の同名ブランチは作成しなかった。ユーザーが確認・調整してから、[PR 本文案](3-pr.md) と検査を更新して PR を作成できる状態とした。
+ブランチは `codex/3-conventions-validation` とし、最新の origin/main から作成した。上流と remote の同名ブランチは作成しなかった。ユーザーが確認・調整してから、[PR 本文案](https://github.com/shigaresso/player-lens/blob/8572476cb600a7251455ab03e7139a5862509cc1/docs/worklogs/3-pr.md) と検査を更新して PR を作成できる状態とした。
 
 ## PR 作成と GitHub 上の検証
 

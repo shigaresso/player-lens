@@ -169,7 +169,7 @@ gofmt と format-fix はこの空行の区切りを自動生成しない。lint 
 ```sh
 python3 scripts/validate.py commit /path/to/message.txt
 python3 scripts/validate.py range origin/main HEAD
-python3 scripts/validate.py pr --title '規約検査を追加した' --body-file docs/worklogs/3-pr.md --label ci
+python3 scripts/validate.py pr --title '規約検査を追加した' --body-file /path/to/pr.md --label ci
 python3 scripts/validate.py issue --title '運用規約を検査する' --body-file /path/to/issue.md --label ci
 ```
 
@@ -189,7 +189,7 @@ python3 scripts/github.py pr \
   --repo shigaresso/player-lens \
   --head codex/3-conventions-validation --base main \
   --title '規約検査を追加した' \
-  --body-file docs/worklogs/3-pr.md --label ci
+  --body-file /path/to/pr.md --label ci
 ```
 
 例の Issue タイトルと本文ファイルは実際の作業内容へ置き換える。`--label` は1件以上必須とし、複数なら繰り返す。作成先の既存ラベルと名前を一致させる。gh のカンマ区切り解釈で検査した名前が変わらないよう、カンマを含む名前は拒否する。不足するラベルは先に別途整備し、このコマンドで自動作成しない。

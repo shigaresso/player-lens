@@ -81,6 +81,28 @@ class SecretToolTests(unittest.TestCase):
         self.assertNotIn(self.token, output.getvalue())
         self.assertIn("github-pat", output.getvalue())
 
+    def test_pre_push_rebased_history_rejects_removed_secret(self):
+        self.commit("base\n")
+        self.git("switch", "-qc", "topic")
+        old = self.commit("topic\n")
+        self.git("update-ref", "refs/remotes/origin/topic", old)
+        self.git("switch", "-q", "main")
+        (self.repo / "main.txt").write_text("main の更新\n")
+        self.git("add", "main.txt")
+        self.git("commit", "-qm", "(#145) test: main を更新した\n\n- 入力を追加した")
+        self.git("update-ref", "refs/remotes/origin/main", self.git("rev-parse", "HEAD"))
+        self.git("switch", "-q", "topic")
+        self.git("rebase", "main")
+        self.commit(self.token + "\n")
+        head = self.commit("safe again\n")
+        updates = f"refs/heads/topic {head} refs/heads/topic {old}\n"
+        output = io.StringIO()
+        with patch("sys.stdin", io.StringIO(updates)), contextlib.redirect_stderr(output):
+            result = check_secrets.main(["pre-push", "origin"], repo=self.repo)
+        self.assertEqual(1, result)
+        self.assertIn("github-pat", output.getvalue())
+        self.assertNotIn(self.token, output.getvalue())
+
     def test_staged_initial_and_partial_inputs_are_preserved(self):
         cases = [
             ("ステージ済みだけに秘密情報があれば拒否する", self.token, "safe", 1),

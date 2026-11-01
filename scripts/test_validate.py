@@ -46,6 +46,71 @@ class GitTests(unittest.TestCase):
         update = f"refs/heads/topic {head} refs/heads/topic {'0' * 40}\n"
         self.assertEqual([head], validate.validate_pre_push(update, "origin", cwd=self.repo))
 
+    def prepare_rebased_push(self):
+        message = "(#3) ci: 検査を追加した\n\n- 検査を実装した\n"
+        self.git("switch", "-qc", "topic")
+        old = self.commit(message)
+        self.git("update-ref", "refs/remotes/origin/topic", old)
+        self.git("switch", "-q", "main")
+        self.commit(message.replace("検査を追加した", "main の検査を追加した"))
+        self.git("switch", "-qc", "side", self.base)
+        self.commit(message.replace("検査を追加した", "別の検査を追加した"))
+        self.git("switch", "-q", "main")
+        self.git("merge", "--no-ff", "-qm", "Merge pull request #4 from side", "side")
+        self.git("update-ref", "refs/remotes/origin/main", self.git("rev-parse", "HEAD"))
+        self.git("switch", "-q", "topic")
+        self.git("rebase", "main")
+        return old
+
+    def test_existing_branch_rebase_checks_only_unpublished_commit(self):
+        old = self.prepare_rebased_push()
+        head = self.git("rev-parse", "HEAD")
+        updates = f"refs/heads/topic {head} refs/heads/topic {old}\n"
+        self.assertEqual([head], validate.validate_pre_push(updates, "origin", cwd=self.repo))
+
+    def test_existing_branch_rebase_rejects_unpublished_violation(self):
+        old = self.prepare_rebased_push()
+        bad = self.commit("規約違反")
+        updates = f"refs/heads/topic {bad} refs/heads/topic {old}\n"
+        with self.assertRaisesRegex(ValueError, bad):
+            validate.validate_pre_push(updates, "origin", cwd=self.repo)
+
+    def test_existing_branch_rebase_rejects_unpublished_merge(self):
+        old = self.prepare_rebased_push()
+        message = "(#3) ci: 検査を追加した\n\n- 検査を実装した\n"
+        self.git("switch", "-qc", "unpublished-side")
+        self.commit(message)
+        self.git("switch", "-q", "topic")
+        self.commit(message.replace("検査を追加した", "作業を追加した"))
+        self.git("merge", "--no-ff", "-qm", "Merge pull request #5 from unpublished-side", "unpublished-side")
+        head = self.git("rev-parse", "HEAD")
+        updates = f"refs/heads/topic {head} refs/heads/topic {old}\n"
+        with self.assertRaisesRegex(ValueError, head):
+            validate.validate_pre_push(updates, "origin", cwd=self.repo)
+
+    def test_existing_branch_without_remote_refs_still_checks_new_commit(self):
+        head = self.commit("(#3) ci: 検査を追加した\n\n- 検査を実装した\n")
+        updates = f"refs/heads/topic {head} refs/heads/topic {self.base}\n"
+        self.assertEqual([head], validate.validate_pre_push(updates, "origin", cwd=self.repo))
+
+    def test_existing_branch_with_unknown_old_head_is_rejected(self):
+        self.git("update-ref", "refs/remotes/origin/main", self.base)
+        updates = f"refs/heads/topic {self.base} refs/heads/topic {'a' * 40}\n"
+        with self.assertRaises(subprocess.CalledProcessError):
+            validate.validate_pre_push(updates, "origin", cwd=self.repo)
+
+    def test_new_branch_without_remote_refs_is_rejected(self):
+        updates = f"refs/heads/topic {self.base} refs/heads/topic {'0' * 40}\n"
+        with self.assertRaisesRegex(ValueError, "fetch"):
+            validate.validate_pre_push(updates, "origin", cwd=self.repo)
+
+    def test_main_updates_and_deletion_are_rejected(self):
+        for name, local in [("直接更新", self.base), ("削除", '0' * 40)]:
+            with self.subTest(name):
+                updates = f"refs/heads/main {local} refs/heads/main {self.base}\n"
+                with self.assertRaisesRegex(ValueError, "main"):
+                    validate.validate_pre_push(updates, "origin", cwd=self.repo)
+
 
     def test_deleted_ref_is_not_a_commit(self):
         update = f"(delete) {'0' * 40} refs/heads/topic {self.base}\n"

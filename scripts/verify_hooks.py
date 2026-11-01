@@ -141,6 +141,26 @@ fi
         self.command([str(self.repo / ".git/hooks/pre-push"), "origin", "unused"], input=updates)
         self.assertEqual("called\n", (self.repo / "app-check.txt").read_text())
 
+    def test_pre_push_accepts_rebased_existing_branch(self):
+        self.command(["git", "switch", "-qc", "topic"])
+        self.commit("(#145) test: 作業を記録した\n\n- 入力を記録した", expected=0)
+        old = self.command(["git", "rev-parse", "HEAD"]).stdout.strip()
+        self.command(["git", "update-ref", "refs/remotes/origin/topic", old])
+        tree = self.command(["git", "rev-parse", f"{self.bad}^{{tree}}"]).stdout.strip()
+        # 公開済み履歴の入力を構築する。検査対象の push は下で実フックへ渡す。
+        main = self.command(["git", "commit-tree", tree, "-p", self.bad,
+                             "-m", "main の既存コミット"]).stdout.strip()
+        side = self.command(["git", "commit-tree", tree, "-p", self.bad,
+                             "-m", "別の既存コミット"]).stdout.strip()
+        published = self.command(["git", "commit-tree", tree, "-p", main, "-p", side,
+                                  "-m", "Merge pull request #4 from side"]).stdout.strip()
+        self.command(["git", "update-ref", "refs/remotes/origin/main", published])
+        self.command(["git", "rebase", "refs/remotes/origin/main"])
+        head = self.command(["git", "rev-parse", "HEAD"]).stdout.strip()
+        updates = f"refs/heads/topic {head} refs/heads/topic {old}\n"
+        self.command([str(self.repo / ".git/hooks/pre-push"), "origin", "unused"], input=updates)
+        self.assertEqual("called\n", (self.repo / "app-check.txt").read_text())
+
     def test_pre_push_rejects_application_failure(self):
         self.command(["git", "update-ref", "refs/remotes/origin/main", self.bad])
         self.commit("(#3) ci: 検査を追加した\n\n- 検査を実装した\n", expected=0)

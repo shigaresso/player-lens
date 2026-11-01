@@ -81,13 +81,12 @@ def validate_pre_push(updates, remote, *, cwd=None):
         if not local.strip("0"):
             continue
         local = resolve_commit(local, cwd=cwd)
+        refs = run(["git", "for-each-ref", "--format=%(objectname)", f"refs/remotes/{remote}/"], cwd=cwd).splitlines()
         if old.strip("0"):
-            commits.update(validate_range(old, local, cwd=cwd))
-        else:
-            refs = run(["git", "for-each-ref", "--format=%(objectname)", f"refs/remotes/{remote}/"], cwd=cwd).splitlines()
-            if not refs:
-                raise ValueError("新規 ref の検査前に remote の参照を fetch する")
-            commits.update(run(["git", "rev-list", "--reverse", local, "--not", *refs], cwd=cwd).splitlines())
+            refs.append(resolve_commit(old, cwd=cwd))
+        elif not refs:
+            raise ValueError("新規 ref の検査前に remote の参照を fetch する")
+        commits.update(run(["git", "rev-list", "--reverse", local, "--not", *refs], cwd=cwd).splitlines())
     validate_commits(sorted(commits), cwd=cwd)
     return sorted(commits)
 

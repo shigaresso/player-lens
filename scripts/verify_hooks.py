@@ -7,11 +7,14 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from git_test_environment import isolated_git_environment
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
 class HookTests(unittest.TestCase):
     def setUp(self):
+        self.enterContext(isolated_git_environment())
         self.temp = tempfile.TemporaryDirectory(prefix="player lens hooks ")
         self.addCleanup(self.temp.cleanup)
         self.repo = Path(self.temp.name)
@@ -67,6 +70,35 @@ fi
 
     def test_commit_accepts_valid_message(self):
         self.commit("(#3) ci: 検査を追加した\n\n- 検査を実装した\n", expected=0)
+
+    def test_linked_worktree_commit_preserves_primary_repository(self):
+        self.command(["git", "add", "scripts", ".github", ".lefthook", "docs",
+                      "lefthook.yml", "AGENTS.md", ".gitignore", ".gitleaks.toml"])
+        self.commit("(#143) test: worktree 検証用の入力を記録した\n\n- 検査ファイルを記録した", expected=0)
+        directory = tempfile.TemporaryDirectory(prefix="player lens linked worktree ")
+        self.addCleanup(directory.cleanup)
+        linked = Path(directory.name)
+        self.command(["git", "worktree", "add", "--detach", str(linked)])
+        (linked / ".tools").symlink_to(ROOT / ".tools", target_is_directory=True)
+
+        def snapshot():
+            tracked = self.command(["git", "ls-files", "-z"]).stdout.split("\0")
+            return (self.command(["git", "show-ref"]).stdout,
+                    tuple((name, (self.repo / name).read_bytes()) for name in tracked if name),
+                    tuple((self.repo / ".git" / name).read_bytes()
+                          for name in ("config", "HEAD", "index")))
+
+        before = snapshot()
+        result = subprocess.run(["git", "commit", "--allow-empty", "-m",
+                                 "(#143) test: worktree の実フックを検証した\n\n- 必須検査を実行した"],
+                                cwd=linked, env=self.env, capture_output=True,
+                                text=True, timeout=90)
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertEqual(before, snapshot(), "主リポジトリの設定・参照・index・ファイルを保持する")
+        status = subprocess.run(["git", "status", "--porcelain", "--untracked-files=no"],
+                                cwd=linked, env=self.env, capture_output=True,
+                                text=True, check=True, timeout=10)
+        self.assertEqual("", status.stdout)
 
     def test_pre_commit_rejects_staged_whitespace(self):
         (self.repo / "example.txt").write_text("末尾空白  \n", encoding="utf-8")

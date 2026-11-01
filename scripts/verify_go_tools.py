@@ -6,6 +6,7 @@ import tempfile
 from pathlib import Path
 
 import staged_format
+from git_test_environment import isolated_git_environment
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -86,6 +87,11 @@ func Run() error {
 
 
 def verify_staged_format(directory):
+    with isolated_git_environment():
+        _verify_staged_format(directory)
+
+
+def _verify_staged_format(directory):
     repo = directory / "index"
     repo.mkdir()
     subprocess.run(["git", "init", "-q", str(repo)], check=True)

@@ -31,7 +31,7 @@ def preflight(repo, target, api):
             raise ValueError('対象が remote main の先端と一致しない')
         workflows = {
             'conventions.yml': {'verify'},
-            'application.yml': {'go-lint', 'go-unit', 'go-integration', 'production-image'},
+            'application.yml': {'frontend-unit', 'go-lint', 'go-unit', 'go-integration', 'production-image'},
         }
         for workflow, required in workflows.items():
             runs = api(f'{prefix}/actions/workflows/{workflow}/runs?head_sha={target}&event=push&branch=main&per_page=1')['workflow_runs']

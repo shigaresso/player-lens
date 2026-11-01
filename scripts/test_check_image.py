@@ -14,6 +14,29 @@ import check_image
 IMAGE = 'sha256:' + 'a' * 64
 
 
+class PromptBuilderImageTests(unittest.TestCase):
+    def test_get_and_head_check_the_embedded_page(self):
+        page = b'<form id="prompt-form"><input name="steam_url"><textarea id="prompt-output"></textarea></form><body data-input-schema="{}">function generatePrompt() {}</body>'
+        with patch.object(check_image, 'request', side_effect=[
+                (200, 'text/html; charset=utf-8', page),
+                (200, 'text/html; charset=utf-8', b'')]) as request:
+            check_image.check_prompt_builder(8080)
+        self.assertEqual([('GET', '/'), ('HEAD', '/')],
+                         [(call.args[1], call.args[2]) for call in request.call_args_list])
+
+    def test_missing_page_wrong_type_and_head_body_are_rejected(self):
+        good = (200, 'text/html; charset=utf-8', b'id="prompt-form" name="steam_url" id="prompt-output" data-input-schema="{}" function generatePrompt')
+        for name, get, head in [
+            ('画面がない', (404, 'text/plain', b''), (200, 'text/html; charset=utf-8', b'')),
+            ('形式が違う', (200, 'application/json', good[2]), (200, 'text/html; charset=utf-8', b'')),
+            ('フォームがない', (200, 'text/html; charset=utf-8', b''), (200, 'text/html; charset=utf-8', b'')),
+            ('HEADに本文がある', good, (200, 'text/html; charset=utf-8', b'unexpected')),
+        ]:
+            with self.subTest(name=name), patch.object(check_image, 'request', side_effect=[get, head]):
+                with self.assertRaises(RuntimeError):
+                    check_image.check_prompt_builder(8080)
+
+
 class MCPGuideTests(unittest.TestCase):
     def setUp(self):
         temporary = tempfile.TemporaryDirectory(prefix='player-lens-guide-test-')

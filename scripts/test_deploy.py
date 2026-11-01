@@ -14,7 +14,7 @@ def ci_fixture():
     data = {f'{prefix}/git/ref/heads/main': {'object': {'sha': TARGET}}}
     for identifier, workflow, names in [
         (101, 'conventions.yml', ['verify']),
-        (202, 'application.yml', ['go-lint', 'go-unit', 'go-integration', 'production-image']),
+        (202, 'application.yml', ['frontend-unit', 'go-lint', 'go-unit', 'go-integration', 'production-image']),
     ]:
         data[f'{prefix}/actions/workflows/{workflow}/runs?head_sha={TARGET}&event=push&branch=main&per_page=1'] = {
             'workflow_runs': [{'id': identifier, 'head_sha': TARGET, 'head_branch': 'main',
@@ -28,6 +28,23 @@ class PreflightTests(unittest.TestCase):
     def test_main_and_required_latest_ci_pass(self):
         data = ci_fixture()
         deploy.preflight(REPO, TARGET, lambda path: copy.deepcopy(data[path]))
+
+    def test_frontend_ci_must_succeed_before_image_publication(self):
+        path = f'repos/{REPO}/actions/runs/202/jobs?per_page=100'
+        for state in ['missing', 'failure', 'in_progress']:
+            with self.subTest(state=state):
+                data = ci_fixture()
+                jobs = data[path]['jobs']
+                frontend = next(job for job in jobs if job['name'] == 'frontend-unit')
+                if state == 'missing':
+                    jobs.remove(frontend)
+                    data[path]['total_count'] = len(jobs)
+                elif state == 'failure':
+                    frontend['conclusion'] = 'failure'
+                else:
+                    frontend['status'] = 'in_progress'
+                with self.assertRaises(ValueError):
+                    deploy.preflight(REPO, TARGET, lambda key: copy.deepcopy(data[key]))
 
     def test_invalid_reference_is_rejected_before_api(self):
         for repo, target in [('../repo', TARGET), (REPO, 'main'), (REPO, 'A'*40), (REPO, TARGET+'\n')]:
